@@ -2,17 +2,43 @@ import os
 import sys
 import math
 import gi
+from gi._gi import GObject
 
 gi.require_version('Gtk', '3.0')
+from gi.repository import GObject
 from gi.repository import Gtk
 from gi.repository import Gdk
 from gi.repository import GdkPixbuf
 
+import neonmeate.mpd as nmpd
 
 class MyWindow(Gtk.Window):
-    def __init__(self, covers):
+    def __init__(self, mpdclient, covers):
         Gtk.Window.__init__(self, title="PyMusic")
+        self.mpdclient = mpdclient
         self.set_default_size(4 * 200 + 3 * 5, 4 * 200 + 3 * 5)
+
+        self.titlebar = Gtk.HeaderBar()
+        self.titlebar.set_title("NeonMeate")
+        self.titlebar.set_show_close_button(True)
+        self.set_titlebar(self.titlebar)
+
+        self.panes = Gtk.HPaned()
+        self.add(self.panes)
+
+        self.artist_list = Gtk.ListStore(GObject.TYPE_STRING)
+        for a in mpdclient.find_artists():
+            self.artist_list.append([a])
+
+        self.artists_window = Gtk.ScrolledWindow()
+        self.artists = Gtk.TreeView(self.artist_list)
+        renderer = Gtk.CellRendererText()
+        column = Gtk.TreeViewColumn('Artist', renderer, text=0)
+        self.artists.append_column(column)
+
+        self.artists_window.add(self.artists)
+        self.panes.pack1(self.artists_window)
+
         self.covers = covers
         self.grid = Gtk.Grid()
         self.grid.set_row_homogeneous(True)
@@ -22,7 +48,7 @@ class MyWindow(Gtk.Window):
 
         self.scrolled = Gtk.ScrolledWindow()
         self.scrolled.add(self.grid)
-        self.add(self.scrolled)
+        self.panes.pack2(self.scrolled)
 
         attach_row = 0
         attach_col = 0
@@ -63,7 +89,9 @@ def main(args):
         if i == 200:
             break
     print(covers)
-    win = MyWindow(covers)
+    mpdclient = nmpd.Mpd('localhost', 6600)
+    mpdclient.connect()
+    win = MyWindow(mpdclient, covers)
     win.connect('destroy', Gtk.main_quit)
     win.show_all()
     Gtk.main()
