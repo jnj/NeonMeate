@@ -12,6 +12,7 @@ from gi.repository import GdkPixbuf
 
 import neonmeate.mpd as nmpd
 
+
 class MyWindow(Gtk.Window):
     def __init__(self, mpdclient, covers):
         Gtk.Window.__init__(self, title="PyMusic")
@@ -32,6 +33,8 @@ class MyWindow(Gtk.Window):
 
         self.artists_window = Gtk.ScrolledWindow()
         self.artists = Gtk.TreeView(self.artist_list)
+        artist_selection = self.artists.get_selection()
+        artist_selection.connect('changed', self.artist_clicked)
         renderer = Gtk.CellRendererText()
         column = Gtk.TreeViewColumn('Artist', renderer, text=0)
         self.artists.append_column(column)
@@ -69,6 +72,12 @@ class MyWindow(Gtk.Window):
             attach_col += 1
             count += 1
 
+    def artist_clicked(self, selection):
+        print('artist clicked')
+        model, treeiter = selection.get_selected()
+        if treeiter is not None:
+            print('You selected', model[treeiter][0])
+
 
 def each_cover(path):
     if os.path.isfile(path) and path[-9:] == 'cover.jpg':
@@ -80,7 +89,21 @@ def each_cover(path):
                 yield f
 
 
+class Handler:
+    def on_destroy(self, *args):
+        Gtk.main_quit()
+
+    def onButtonPressed(self, button):
+        pass
+
+
 def main(args):
+    # builder = Gtk.Builder()
+    # builder.add_from_file("/home/josh/neonmeate.glade")
+    # builder.connect_signals(Handler())
+    # window = builder.get_object('MainWindow')
+    # window.show_all()
+
     i = 0
     covers = []
     for cover in each_cover('/media/josh/Music'):
