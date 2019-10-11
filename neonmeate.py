@@ -10,13 +10,14 @@ from gi.repository import Gtk
 from gi.repository import Gdk
 from gi.repository import GdkPixbuf
 
-import neonmeate.mpd as nmpd
-
+import neonmeate.mpdlib as nmpd
+import neonmeate.cache as nmcache
 
 class MyWindow(Gtk.Window):
-    def __init__(self, mpdclient, covers):
+    def __init__(self, mpdclient, covers, cache):
         Gtk.Window.__init__(self, title="PyMusic")
         self.mpdclient = mpdclient
+        self.album_cache = cache
         self.set_default_size(4 * 200 + 3 * 5, 4 * 200 + 3 * 5)
 
         self.titlebar = Gtk.HeaderBar()
@@ -28,7 +29,7 @@ class MyWindow(Gtk.Window):
         self.add(self.panes)
 
         self.artist_list = Gtk.ListStore(GObject.TYPE_STRING)
-        for a in mpdclient.find_artists():
+        for a in self.album_cache.all_artists():
             self.artist_list.append([a])
 
         self.artists_window = Gtk.ScrolledWindow()
@@ -73,10 +74,11 @@ class MyWindow(Gtk.Window):
             count += 1
 
     def artist_clicked(self, selection):
-        print('artist clicked')
         model, treeiter = selection.get_selected()
         if treeiter is not None:
-            print('You selected', model[treeiter][0])
+            artist = model[treeiter][0]
+            print('You selected', artist)
+            print('albums are ', self.album_cache.get_albums(artist))
 
 
 def each_cover(path):
@@ -114,7 +116,9 @@ def main(args):
     print(covers)
     mpdclient = nmpd.Mpd('localhost', 6600)
     mpdclient.connect()
-    win = MyWindow(mpdclient, covers)
+    album_cache = nmcache.AlbumCache()
+    mpdclient.populate_cache(album_cache)
+    win = MyWindow(mpdclient, covers, album_cache)
     win.connect('destroy', Gtk.main_quit)
     win.show_all()
     Gtk.main()
