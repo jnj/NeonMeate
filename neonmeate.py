@@ -12,6 +12,7 @@ from gi.repository import GdkPixbuf
 
 import neonmeate.mpdlib as nmpd
 import neonmeate.cache as nmcache
+import neonmeate.ui.table as table
 
 
 class MyWindow(Gtk.Window):
@@ -29,18 +30,14 @@ class MyWindow(Gtk.Window):
         self.panes = Gtk.HPaned()
         self.add(self.panes)
 
-        self.artist_list = Gtk.ListBox()
+        artist_album_table = table.Table(['Artist', 'Album'], [str, str])
+        self.artist_list = artist_album_table
         for artist, album in self.album_cache.all_artists_and_albums():
             if artist != '' and album != '':
-                list_box_row = Gtk.ListBoxRow()
-                list_box_row.set_selectable(True)
-                label = Gtk.Label(f"{artist} | {album}")
-                label.set_halign(Gtk.Align.START)
-                list_box_row.add(label)
-                self.artist_list.add(list_box_row)
+                artist_album_table.add([artist, album])
 
         self.artists_window = Gtk.ScrolledWindow()
-        self.artists_window.add(self.artist_list)
+        self.artists_window.add(self.artist_list.as_widget())
         self.panes.pack1(self.artists_window)
 
         self.covers = covers
@@ -51,8 +48,20 @@ class MyWindow(Gtk.Window):
         self.grid.set_row_spacing(5)
 
         self.scrolled = Gtk.ScrolledWindow()
-        self.scrolled.add(self.grid)
+        self.covers_and_playlist = Gtk.VPaned()
+
+        covers_scrollable = Gtk.ScrolledWindow()
+        covers_scrollable.add(self.grid)
+        self.covers_and_playlist.pack2(covers_scrollable)
+
+        playlist_scrollable = Gtk.ScrolledWindow()
+        self.covers_and_playlist.pack1(playlist_scrollable)
+        self.scrolled.add(self.covers_and_playlist)
         self.panes.pack2(self.scrolled)
+
+        playlist = self.mpdclient.playlistinfo()
+        for i in playlist:
+            print(i)
 
         attach_row = 0
         attach_col = 0

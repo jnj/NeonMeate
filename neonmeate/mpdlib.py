@@ -27,6 +27,9 @@ class Mpd:
     def status(self):
         return self.client.status()
 
+    def playlistinfo(self):
+        return self.client.playlistinfo()
+
     def populate_cache(self, albumcache):
         artists = self.client.list('artist')
         for artist in artists:
