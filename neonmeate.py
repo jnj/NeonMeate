@@ -59,9 +59,11 @@ class MyWindow(Gtk.Window):
         self.scrolled.add(self.covers_and_playlist)
         self.panes.pack2(self.scrolled)
 
-        playlist = self.mpdclient.playlistinfo()
-        for i in playlist:
-            print(i)
+        self.queue_table = table.Table(['Artist', 'Title'], [str, str])
+        current_queue = self.mpdclient.playlistinfo()
+        for i in current_queue:
+            self.queue_table.add([i['artist'], i['title']])
+        playlist_scrollable.add(self.queue_table.as_widget())
 
         attach_row = 0
         attach_col = 0
