@@ -13,6 +13,7 @@ from gi.repository import GdkPixbuf
 import neonmeate.mpdlib as nmpd
 import neonmeate.cache as nmcache
 
+
 class MyWindow(Gtk.Window):
     def __init__(self, mpdclient, covers, cache):
         Gtk.Window.__init__(self, title="PyMusic")
@@ -28,19 +29,18 @@ class MyWindow(Gtk.Window):
         self.panes = Gtk.HPaned()
         self.add(self.panes)
 
-        self.artist_list = Gtk.ListStore(GObject.TYPE_STRING)
-        for a in self.album_cache.all_artists():
-            self.artist_list.append([a])
+        self.artist_list = Gtk.ListBox()
+        for artist, album in self.album_cache.all_artists_and_albums():
+            if artist != '' and album != '':
+                list_box_row = Gtk.ListBoxRow()
+                list_box_row.set_selectable(True)
+                label = Gtk.Label(f"{artist} | {album}")
+                label.set_halign(Gtk.Align.START)
+                list_box_row.add(label)
+                self.artist_list.add(list_box_row)
 
         self.artists_window = Gtk.ScrolledWindow()
-        self.artists = Gtk.TreeView(self.artist_list)
-        artist_selection = self.artists.get_selection()
-        artist_selection.connect('changed', self.artist_clicked)
-        renderer = Gtk.CellRendererText()
-        column = Gtk.TreeViewColumn('Artist', renderer, text=0)
-        self.artists.append_column(column)
-
-        self.artists_window.add(self.artists)
+        self.artists_window.add(self.artist_list)
         self.panes.pack1(self.artists_window)
 
         self.covers = covers
