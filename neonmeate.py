@@ -1,6 +1,8 @@
 import os
 import sys
 import math
+import threading
+import time
 import gi
 from gi._gi import GObject
 
@@ -13,19 +15,22 @@ from gi.repository import GdkPixbuf
 import neonmeate.mpdlib as nmpd
 import neonmeate.cache as nmcache
 import neonmeate.ui.table as table
+import neonmeate.ui.controls as controls
 
 
-class MyWindow(Gtk.Window):
+class MyWindow(Gtk.ApplicationWindow):
     def __init__(self, mpdclient, covers, cache):
         Gtk.Window.__init__(self, title="PyMusic")
         self.mpdclient = mpdclient
         self.album_cache = cache
         self.set_default_size(4 * 200 + 3 * 5, 4 * 200 + 3 * 5)
-
         self.titlebar = Gtk.HeaderBar()
         self.titlebar.set_title("NeonMeate")
         self.titlebar.set_show_close_button(True)
         self.set_titlebar(self.titlebar)
+        self.titlebar_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.titlebar_box.pack_start(controls.PlayPauseButton(), False, False, 0)
+        self.titlebar.pack_start(self.titlebar_box)
 
         self.panes = Gtk.HPaned()
         self.add(self.panes)
@@ -84,13 +89,6 @@ class MyWindow(Gtk.Window):
             attach_col += 1
             count += 1
 
-    def artist_clicked(self, selection):
-        model, treeiter = selection.get_selected()
-        if treeiter is not None:
-            artist = model[treeiter][0]
-            print('You selected', artist)
-            print('albums are ', self.album_cache.get_albums(artist))
-
 
 def each_cover(path):
     if os.path.isfile(path) and path[-9:] == 'cover.jpg':
@@ -117,18 +115,28 @@ def main(args):
     # window = builder.get_object('MainWindow')
     # window.show_all()
 
+    num_covers = 5
+
     i = 0
     covers = []
     for cover in each_cover('/media/josh/Music'):
         covers.append(cover)
         i += 1
-        if i == 200:
+        if i == num_covers:
             break
     print(covers)
     mpdclient = nmpd.Mpd('localhost', 6600)
     mpdclient.connect()
+
     album_cache = nmcache.AlbumCache()
     mpdclient.populate_cache(album_cache)
+
+    def check_status():
+        print("Checking status...")
+
+    timer = threading.Timer(1, check_status)
+    timer.start()
+
     win = MyWindow(mpdclient, covers, album_cache)
     win.connect('destroy', Gtk.main_quit)
     win.show_all()
