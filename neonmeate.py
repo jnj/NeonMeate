@@ -21,6 +21,8 @@ import neonmeate.ui.controls as controls
 class MyWindow(Gtk.ApplicationWindow):
     def __init__(self, mpdclient, covers, cache):
         Gtk.Window.__init__(self, title="PyMusic")
+        self.heartbeat = nmpd.MpdHeartbeat(mpdclient, 200)
+        self.heartbeat.start()
         self.mpdclient = mpdclient
         self.album_cache = cache
         self.set_default_size(4 * 200 + 3 * 5, 4 * 200 + 3 * 5)
@@ -109,37 +111,31 @@ class Handler:
 
 
 def main(args):
-    builder = Gtk.Builder()
-    builder.add_from_file("/home/josh/neonmeate.glade")
-    builder.connect_signals(Handler())
-    window = builder.get_object('MainWindow')
-    window.show_all()
+    num_covers = 5
 
-    # num_covers = 5
-    #
-    # i = 0
-    # covers = []
-    # for cover in each_cover('/media/josh/Music'):
-    #     covers.append(cover)
-    #     i += 1
-    #     if i == num_covers:
-    #         break
-    # print(covers)
-    # mpdclient = nmpd.Mpd('localhost', 6600)
-    # mpdclient.connect()
-    #
-    # album_cache = nmcache.AlbumCache()
-    # mpdclient.populate_cache(album_cache)
-    #
-    # def check_status():
-    #     print("Checking status...")
-    #
-    # timer = threading.Timer(1, check_status)
-    # timer.start()
-    #
-    # win = MyWindow(mpdclient, covers, album_cache)
-    # win.connect('destroy', Gtk.main_quit)
-    # win.show_all()
+    i = 0
+    covers = []
+    for cover in each_cover('/media/josh/Music'):
+        covers.append(cover)
+        i += 1
+        if i == num_covers:
+            break
+    print(covers)
+    mpdclient = nmpd.Mpd('localhost', 6600)
+    mpdclient.connect()
+
+    album_cache = nmcache.AlbumCache()
+    mpdclient.populate_cache(album_cache)
+
+    def check_status():
+        print("Checking status...")
+
+    timer = threading.Timer(1, check_status)
+    timer.start()
+
+    win = MyWindow(mpdclient, covers, album_cache)
+    win.connect('destroy', Gtk.main_quit)
+    win.show_all()
     Gtk.main()
 
 
