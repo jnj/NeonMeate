@@ -20,6 +20,9 @@ class Mpd:
         self.client.close()
         self.client.disconnect()
 
+    def stop_playing(self):
+        self.client.stop()
+
     def find_artists(self):
         return self.client.list('artist')
 

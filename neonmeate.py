@@ -1,16 +1,10 @@
 import os
 import sys
-import math
-import threading
-import time
+
 import gi
-from gi._gi import GObject
 
 gi.require_version('Gtk', '3.0')
-from gi.repository import GObject
-from gi.repository import Gtk
-from gi.repository import Gdk
-from gi.repository import GdkPixbuf
+from gi.repository import Gtk, GdkPixbuf
 
 import neonmeate.mpdlib as nmpd
 import neonmeate.cache as nmcache
@@ -31,7 +25,8 @@ class MyWindow(Gtk.ApplicationWindow):
         self.titlebar.set_show_close_button(True)
         self.set_titlebar(self.titlebar)
         self.titlebar_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        self.titlebar_box.pack_start(controls.ControlButtons(), False, False, 0)
+        self.controlbuttons = controls.ControlButtons()
+        self.titlebar_box.pack_start(self.controlbuttons, False, False, 0)
         self.titlebar.pack_start(self.titlebar_box)
 
         self.panes = Gtk.HPaned()
@@ -91,6 +86,11 @@ class MyWindow(Gtk.ApplicationWindow):
             attach_col += 1
             count += 1
 
+        self.controlbuttons.connect('neonmeate_stop_playing', self.on_stop)
+
+    def on_stop(self, x):
+        self.mpdclient.stop_playing()
+
 
 def each_cover(path):
     if os.path.isfile(path) and path[-9:] == 'cover.jpg':
@@ -100,14 +100,6 @@ def each_cover(path):
         for c in children:
             for f in each_cover(os.path.join(path, c)):
                 yield f
-
-
-class Handler:
-    def on_destroy(self, *args):
-        Gtk.main_quit()
-
-    def onButtonPressed(self, button):
-        pass
 
 
 def main(args):
@@ -126,12 +118,6 @@ def main(args):
 
     album_cache = nmcache.AlbumCache()
     mpdclient.populate_cache(album_cache)
-
-    def check_status():
-        print("Checking status...")
-
-    timer = threading.Timer(1, check_status)
-    timer.start()
 
     win = MyWindow(mpdclient, covers, album_cache)
     win.connect('destroy', Gtk.main_quit)

@@ -41,8 +41,15 @@ class ControlButton(Gtk.Button):
         if self.click_handler:
             self.click_handler(widget)
 
+    def set_click_handler(self, fn):
+        self.click_handler = fn
+
 
 class ControlButtons(Gtk.ButtonBox):
+    __gsignals__ = {
+        'neonmeate_stop_playing': (GObject.SignalFlags.RUN_FIRST, None, ())
+    }
+
     def __init__(self):
         super(ControlButtons, self).__init__(Gtk.Orientation.HORIZONTAL)
         self.set_layout(Gtk.ButtonBoxStyle.EXPAND)
@@ -51,6 +58,11 @@ class ControlButtons(Gtk.ButtonBox):
         self.prev_song_button = ControlButton('media-skip-backward')
         self.next_song_button = ControlButton('media-skip-forward')
 
+        self.stop_button.set_click_handler(self._on_stop_clicked)
+
         for btn in [self.play_pause_button, self.stop_button, self.prev_song_button, self.next_song_button]:
             self.add(btn)
 
+    def _on_stop_clicked(self, btn):
+        self.emit('neonmeate_stop_playing')
+        print('stop clicked')
