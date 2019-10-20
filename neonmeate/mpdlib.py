@@ -1,7 +1,7 @@
 import mpd as mpd2
 import neonmeate.cache
 
-from gi.repository import Gdk, GLib
+from gi.repository import GObject, GLib
 
 
 class Mpd:
@@ -52,19 +52,29 @@ class MpdState:
         self.duration = 0
 
     def update(self, attrs):
-        if attrs['state'] == 'pause':
+        state_ = attrs['state']
+        if state_ == 'pause':
             self.playing = False
             self.stopped = False
-        self.elapsed = attrs['elapsed']
-        self.duration = attrs['duration']
-        self.song_id = attrs['songid']
+            self.song_id = attrs['songid']
+        elif state_ == 'stop':
+            self.elapsed = 0
+        elif state_ == 'play':
+            self.elapsed = attrs['elapsed']
+            self.duration = attrs['duration']
+            self.song_id = attrs['songid']
 
     def __str__(self):
         return f'songid={self.song_id}, elapsed={self.elapsed}, duration={self.duration}'
 
 
-class MpdHeartbeat:
+class MpdHeartbeat(GObject.GObject):
+    __gsignals__ = {
+        'song_elapsed_changed': (GObject.SignalFlags.RUN_FIRST, None, (float,))
+    }
+
     def __init__(self, client, millis_interval):
+        GObject.GObject.__init__(self)
         self.millis_interval = millis_interval
         self.client = client
         self.source_id = -1
@@ -78,8 +88,9 @@ class MpdHeartbeat:
             GLib.source_remove(self.source_id)
 
     def on_sync(self):
-        self.state.update(self.client.status())
-        print(self.state)
+        status = self.client.status()
+        print(status)
+        self.state.update(status)
         return True
 
 

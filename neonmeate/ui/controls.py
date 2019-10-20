@@ -29,8 +29,28 @@ class PlayPauseButton(Gtk.Button):
         self.get_child().show()
 
 
+class ControlButton(Gtk.Button):
+    def __init__(self, icon_name):
+        super(ControlButton, self).__init__()
+        self.icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.MENU)
+        self.add(self.icon)
+        self.connect('clicked', self.on_clicked)
+        self.click_handler = None
+
+    def on_clicked(self, widget):
+        if self.click_handler:
+            self.click_handler(widget)
+
+
 class ControlButtons(Gtk.ButtonBox):
     def __init__(self):
-        super(ControlButtons, self).__init__()
+        super(ControlButtons, self).__init__(Gtk.Orientation.HORIZONTAL)
+        self.set_layout(Gtk.ButtonBoxStyle.EXPAND)
+        self.play_pause_button = PlayPauseButton()
+        self.stop_button = ControlButton('media-playback-stop')
+        self.prev_song_button = ControlButton('media-skip-backward')
+        self.next_song_button = ControlButton('media-skip-forward')
 
+        for btn in [self.play_pause_button, self.stop_button, self.prev_song_button, self.next_song_button]:
+            self.add(btn)
 

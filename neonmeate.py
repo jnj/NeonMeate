@@ -31,7 +31,7 @@ class MyWindow(Gtk.ApplicationWindow):
         self.titlebar.set_show_close_button(True)
         self.set_titlebar(self.titlebar)
         self.titlebar_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        self.titlebar_box.pack_start(controls.PlayPauseButton(), False, False, 0)
+        self.titlebar_box.pack_start(controls.ControlButtons(), False, False, 0)
         self.titlebar.pack_start(self.titlebar_box)
 
         self.panes = Gtk.HPaned()
