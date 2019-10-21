@@ -1,7 +1,18 @@
-import gi
+from gi.repository import Gtk, Pango
 
-gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+
+class Column(Gtk.ListBox):
+    """
+    Renders text items in a column using a Gtk.ListBox.
+    """
+    def __init__(self):
+        super(Column, self).__init__()
+
+    def add_row(self, text):
+        label = Gtk.Label(text, xalign=0)
+        label.set_justify(Gtk.Justification.LEFT)
+        label.set_ellipsize(Pango.EllipsizeMode.END)
+        self.add(label)
 
 
 class Table:
@@ -50,8 +61,10 @@ if __name__ == "__main__":
     win.connect('destroy', Gtk.main_quit)
     win.add(t.as_widget())
 
+
     def on_select(row):
         print(f"You selected {row[0]} {row[1]}")
+
 
     t.set_selection_handler(on_select)
     win.show_all()

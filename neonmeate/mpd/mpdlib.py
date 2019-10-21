@@ -1,5 +1,5 @@
 import mpd as mpd2
-import neonmeate.cache
+import neonmeate.mpd.cache
 
 from gi.repository import GObject, GLib
 
@@ -23,6 +23,15 @@ class Mpd:
     def stop_playing(self):
         self.client.stop()
 
+    def next_song(self):
+        self.client.next()
+
+    def prev_song(self):
+        self.client.previous()
+
+    def toggle_pause(self, should_pause):
+        self.client.pause(1 if should_pause else 0)
+
     def find_artists(self):
         return self.client.list('artist')
 
@@ -31,6 +40,9 @@ class Mpd:
 
     def status(self):
         return self.client.status()
+
+    def clear_playlist(self):
+        self.client.playlistclear()
 
     def playlistinfo(self):
         return self.client.playlistinfo()
@@ -67,13 +79,19 @@ class MpdState:
             self.duration = attrs['duration']
             self.song_id = attrs['songid']
 
+    def is_playing(self):
+        return self.playing
+
+    def elapsed_percent(self):
+        return int(100.0 * float(self.elapsed) / float(self.duration))
+
     def __str__(self):
         return f'songid={self.song_id}, elapsed={self.elapsed}, duration={self.duration}'
 
 
 class MpdHeartbeat(GObject.GObject):
     __gsignals__ = {
-        'song_elapsed_changed': (GObject.SignalFlags.RUN_FIRST, None, (float,))
+        'song_played_percent': (GObject.SignalFlags.RUN_FIRST, None, (int,))
     }
 
     def __init__(self, client, millis_interval):
@@ -92,14 +110,16 @@ class MpdHeartbeat(GObject.GObject):
 
     def on_sync(self):
         status = self.client.status()
-        print(status)
         self.state.update(status)
+        if self.state.is_playing():
+            self.emit('song_played_percent', self.state.elapsed_percent())
+
         return True
 
 
 if __name__ == '__main__':
     client = Mpd('localhost', 6600)
     client.connect()
-    album_cache = neonmeate.cache.AlbumCache()
+    album_cache = neonmeate.mpd.cache.AlbumCache()
     client.populate_cache(album_cache)
     print(album_cache)
