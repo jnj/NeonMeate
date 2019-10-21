@@ -30,7 +30,10 @@ class Mpd:
         self.client.previous()
 
     def toggle_pause(self, should_pause):
-        self.client.pause(1 if should_pause else 0)
+        if should_pause:
+            self.client.pause(1)
+        else:
+            self.client.play(0)
 
     def find_artists(self):
         return self.client.list('artist')
@@ -66,6 +69,13 @@ class MpdState:
         if 'state' in self.state_attrs:
             return self.state_attrs['state'] == 'play'
 
+    def is_paused(self):
+        if 'state' in self.state_attrs:
+            return self.state_attrs['state'] == 'pause'
+
+    def playing_status(self):
+        return self.state_attrs.get('state', 'stop')
+
     def elapsed_percent(self):
         if 'elapsed' in self.state_attrs:
             t = float(self.state_attrs['elapsed'])
@@ -79,7 +89,8 @@ class MpdState:
 
 class MpdHeartbeat(GObject.GObject):
     __gsignals__ = {
-        'song_played_percent': (GObject.SignalFlags.RUN_FIRST, None, (int,))
+        'song_played_percent': (GObject.SignalFlags.RUN_FIRST, None, (int,)),
+        'song_playing_status': (GObject.SignalFlags.RUN_FIRST, None, (str,))
     }
 
     def __init__(self, client, millis_interval):
@@ -99,7 +110,9 @@ class MpdHeartbeat(GObject.GObject):
     def on_sync(self):
         status = self.client.status()
         self.state.update(status)
-
+        self.emit('song_playing_status', self.state.playing_status())
+        if self.state.playing_status() == 'stop':
+            self.emit('song_played_percent', 0)
         if self.state.is_playing():
             self.emit('song_played_percent', self.state.elapsed_percent())
 

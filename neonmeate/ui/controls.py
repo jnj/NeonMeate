@@ -19,23 +19,33 @@ class ControlButton(Gtk.Button):
 
 
 class PlayPauseButton(ControlButton):
+    __gsignals__ = {
+        'neonmeate_playpause_toggled': (GObject.SignalFlags.RUN_FIRST, None, (bool,))
+    }
+
     def __init__(self):
         super(PlayPauseButton, self).__init__('media-playback-start')
         self.pause_icon = Gtk.Image.new_from_icon_name('media-playback-pause', self.icon_size)
         self.play_icon = self.icon
-        self.connect('clicked', self.on_clicked)
-        self.set_paused(False)
+        self.connect('clicked', self._on_clicked)
         self.paused = False
+        self.set_paused(False)
 
-    def on_clicked(self, widget):
-        self.set_paused(not self.paused)
+    def set_play_icon(self):
+        child = self.get_child()
+        if not child == self.play_icon:
+            self._swap_icons()
 
     def set_paused(self, paused):
         child = self.get_child()
-        if child == self.play_icon and paused:
+        if child == self.play_icon and not paused:
             self._swap_icons()
-        elif child == self.pause_icon and not paused:
+        elif child == self.pause_icon and paused:
             self._swap_icons()
+
+    def _on_clicked(self, widget):
+        self.set_paused(not self.paused)
+        self.emit('neonmeate_playpause_toggled', self.paused)
 
     def _swap_icons(self):
         child = self.get_child()
@@ -49,6 +59,7 @@ class PlayPauseButton(ControlButton):
 class ControlButtons(Gtk.ButtonBox):
     __gsignals__ = {
         'neonmeate_stop_playing': (GObject.SignalFlags.RUN_FIRST, None, ()),
+        'neonmeate_start_playing': (GObject.SignalFlags.RUN_FIRST, None, ()),
         'neonmeate_toggle_pause': (GObject.SignalFlags.RUN_FIRST, None, ())
     }
 
@@ -66,8 +77,19 @@ class ControlButtons(Gtk.ButtonBox):
         for btn in [self.play_pause_button, self.stop_button, self.prev_song_button, self.next_song_button]:
             self.add(btn)
 
-    def _on_playpause_clicked(self, btn):
-        self.emit('neonmeate_toggle_pause')
+        self.play_pause_button.connect('neonmeate_playpause_toggled', self._on_playpause)
+
+    def set_paused(self, paused, stopped):
+        if stopped:
+            self.play_pause_button.set_play_icon()
+        else:
+            self.play_pause_button.set_paused(paused)
+
+    def _on_playpause(self, btn, is_paused):
+        if is_paused:
+            self.emit('neonmeate_toggle_pause')
+        else:
+            self.emit('neonmeate_start_playing')
 
     def _on_stop_clicked(self, btn):
         self.emit('neonmeate_stop_playing')

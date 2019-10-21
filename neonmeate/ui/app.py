@@ -10,7 +10,7 @@ from ..mpd import mpdlib as nmpd
 
 class App(Gtk.ApplicationWindow):
     def __init__(self, mpdclient, covers, cache):
-        Gtk.Window.__init__(self, title="PyMusic")
+        Gtk.Window.__init__(self, title="NeonMeate")
         self.heartbeat = nmpd.MpdHeartbeat(mpdclient, 200)
         self.heartbeat.start()
         self.mpdclient = mpdclient
@@ -97,10 +97,27 @@ class App(Gtk.ApplicationWindow):
             count += 1
 
         self.controlbuttons.connect('neonmeate_stop_playing', self.on_stop)
+        self.controlbuttons.connect('neonmeate_start_playing', self.on_start)
+        self.controlbuttons.connect('neonmeate_toggle_pause', self.on_pause)
         self.heartbeat.connect('song_played_percent', self._on_song_percent)
+        self.heartbeat.connect('song_playing_status', self._on_song_playing_status)
 
-    def _on_song_percent(self, x, pct):
+    def _on_song_playing_status(self, hb, status):
+        if status == 'play':
+            self.controlbuttons.set_paused(False, False)
+        elif status == 'pause':
+            self.controlbuttons.set_paused(True, False)
+        elif status == 'stop':
+            self.controlbuttons.set_paused(False, True)
+
+    def _on_song_percent(self, hb, pct):
         self.songprogress.set_fraction(pct / 100.0)
+
+    def on_start(self, x):
+        self.mpdclient.toggle_pause(0)
+
+    def on_pause(self, x):
+        self.mpdclient.toggle_pause(1)
 
     def on_stop(self, x):
         self.mpdclient.stop_playing()
