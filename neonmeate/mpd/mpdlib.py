@@ -57,33 +57,21 @@ class Mpd:
 
 class MpdState:
     def __init__(self):
-        self.playing = False
-        self.stopped = False
-        self.repeat = False
-        self.random = False
-        self.consume = False
-        self.song_id = -1
-        self.elapsed = 0
-        self.duration = 0
+        self.state_attrs = {}
 
     def update(self, attrs):
-        state_ = attrs['state']
-        if state_ == 'pause':
-            self.playing = False
-            self.stopped = False
-            self.song_id = attrs['songid']
-        elif state_ == 'stop':
-            self.elapsed = 0
-        elif state_ == 'play':
-            self.elapsed = attrs['elapsed']
-            self.duration = attrs['duration']
-            self.song_id = attrs['songid']
+        self.state_attrs = attrs
 
     def is_playing(self):
-        return self.playing
+        if 'state' in self.state_attrs:
+            return self.state_attrs['state'] == 'play'
 
     def elapsed_percent(self):
-        return int(100.0 * float(self.elapsed) / float(self.duration))
+        if 'elapsed' in self.state_attrs:
+            t = float(self.state_attrs['elapsed'])
+            d = float(self.state_attrs['duration'])
+            return int(100.0 * t / d)
+        return 0
 
     def __str__(self):
         return f'songid={self.song_id}, elapsed={self.elapsed}, duration={self.duration}'
@@ -111,6 +99,7 @@ class MpdHeartbeat(GObject.GObject):
     def on_sync(self):
         status = self.client.status()
         self.state.update(status)
+
         if self.state.is_playing():
             self.emit('song_played_percent', self.state.elapsed_percent())
 
