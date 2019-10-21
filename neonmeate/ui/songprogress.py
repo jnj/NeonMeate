@@ -1,12 +1,14 @@
 from gi.repository import Gtk
 
 
-class SongProgress(Gtk.LevelBar):
+class SongProgress(Gtk.ProgressBar):
     def __init__(self):
         super(SongProgress, self).__init__()
-        self.set_min_value(0)
-        self.set_max_value(100)
         self.set_valign(Gtk.Align.CENTER)
         self.set_hexpand(True)
-        self.set_value(0)
-        self.set_mode(Gtk.LevelBarMode.CONTINUOUS)
+        self.set_fraction(0)
+
+    def set_fraction(self, frac):
+        super(SongProgress, self).set_fraction(frac)
+        self.set_tooltip_text(f'{frac}')
+

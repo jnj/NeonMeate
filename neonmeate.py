@@ -31,7 +31,7 @@ class MyWindow(Gtk.ApplicationWindow):
         self.titlebar_box.pack_start(self.controlbuttons, False, False, 0)
         self.songprogress = songprogress.SongProgress()
         self.songprogress.show()
-        self.songprogress.set_value(0)
+        self.songprogress.set_fraction(0)
         #self.titlebar_box.pack_start(self.songprogress, False, False, 0)
         self.titlebar.pack_start(self.titlebar_box)
         self.titlebar.add(self.songprogress)
@@ -106,10 +106,11 @@ class MyWindow(Gtk.ApplicationWindow):
         self.heartbeat.connect('song_played_percent', self._on_song_percent)
 
     def _on_song_percent(self, x, pct):
-        self.songprogress.set_value(pct)
+        self.songprogress.set_fraction(pct / 100.0)
 
     def on_stop(self, x):
         self.mpdclient.stop_playing()
+        self.songprogress.set_fraction(0)
 
 
 def each_cover(path):
