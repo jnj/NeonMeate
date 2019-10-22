@@ -1,7 +1,8 @@
 import mpd as mpd2
 import neonmeate.mpd.cache
+import threading
 
-from gi.repository import GObject, GLib
+from gi.repository import GObject, GLib, Gio
 
 
 class Mpd:
@@ -21,7 +22,8 @@ class Mpd:
         self.client.disconnect()
 
     def stop_playing(self):
-        self.client.stop()
+        t = threading.Thread(target=self.client.stop)
+        t.start()
 
     def next_song(self):
         self.client.next()
@@ -30,10 +32,13 @@ class Mpd:
         self.client.previous()
 
     def toggle_pause(self, should_pause):
+        target = None
         if should_pause:
-            self.client.pause(1)
+            target = lambda: self.client.pause(1)
         else:
-            self.client.play(0)
+            target = lambda: self.client.play(0)
+        t = threading.Thread(target=target)
+        t.start()
 
     def find_artists(self):
         return self.client.list('artist')
