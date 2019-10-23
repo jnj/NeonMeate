@@ -7,15 +7,6 @@ class ControlButton(Gtk.Button):
         self.icon_size = Gtk.IconSize.MENU
         self.icon = Gtk.Image.new_from_icon_name(icon_name, self.icon_size)
         self.add(self.icon)
-        self.connect('clicked', self._on_clicked)
-        self.click_handler = None
-
-    def _on_clicked(self, widget):
-        if self.click_handler:
-            self.click_handler(widget)
-
-    def set_click_handler(self, fn):
-        self.click_handler = fn
 
 
 class PlayPauseButton(ControlButton):
@@ -27,9 +18,9 @@ class PlayPauseButton(ControlButton):
         super(PlayPauseButton, self).__init__('media-playback-start')
         self.pause_icon = Gtk.Image.new_from_icon_name('media-playback-pause', self.icon_size)
         self.play_icon = self.icon
-        self.connect('clicked', self._on_clicked)
         self.paused = False
         self.set_paused(False)
+        self.connect('clicked', self._toggle_pause_state)
 
     def set_play_icon(self):
         child = self.get_child()
@@ -43,7 +34,7 @@ class PlayPauseButton(ControlButton):
         elif child == self.pause_icon and paused:
             self._swap_icons()
 
-    def _on_clicked(self, widget):
+    def _toggle_pause_state(self, button):
         self.set_paused(not self.paused)
         self.emit('neonmeate_playpause_toggled', self.paused)
 
@@ -71,12 +62,10 @@ class ControlButtons(Gtk.ButtonBox):
         self.prev_song_button = ControlButton('media-skip-backward')
         self.next_song_button = ControlButton('media-skip-forward')
 
-        self.stop_button.set_click_handler(self._on_stop_clicked)
-        # self.play_button.set_click_handler(self._on_stop_clicked)
-
         for btn in [self.play_pause_button, self.stop_button, self.prev_song_button, self.next_song_button]:
             self.add(btn)
 
+        self.stop_button.connect('clicked', self._on_stop_clicked)
         self.play_pause_button.connect('neonmeate_playpause_toggled', self._on_playpause)
 
     def set_paused(self, paused, stopped):
@@ -90,6 +79,7 @@ class ControlButtons(Gtk.ButtonBox):
             self.emit('neonmeate_toggle_pause')
         else:
             self.emit('neonmeate_start_playing')
+        return True
 
     def _on_stop_clicked(self, btn):
         self.emit('neonmeate_stop_playing')

@@ -37,13 +37,18 @@ class Mpd:
         self.executor.submit(self.client.previous)
 
     def toggle_pause(self, should_pause):
+        mpdstatus = self.status()
+        print(mpdstatus)
         if should_pause:
             def target():
                 self.client.pause(1)
             self.executor.submit(target)
         else:
             def target():
-                self.client.play(0)
+                if 'state' in mpdstatus and mpdstatus['state'] == 'pause':
+                    self.client.pause(0)
+                else:
+                    self.client.play(0)
             self.executor.submit(target)
 
     def find_artists(self):
@@ -102,7 +107,7 @@ class MpdState:
         if 'elapsed' in self.state_attrs:
             t = float(self.state_attrs['elapsed'])
             d = float(self.state_attrs['duration'])
-            return int(100.0 * t / d)
+            return 100.0 * t / d
         return 0
 
     def __str__(self):
