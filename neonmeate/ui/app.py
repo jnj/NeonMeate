@@ -124,14 +124,11 @@ class App(Gtk.ApplicationWindow):
         self.songprogress.set_fraction(pct / 100.0)
 
     def on_start(self, x):
-        print("start event")
         self.mpdclient.toggle_pause(0)
 
     def on_pause(self, x):
-        print("pause event")
         self.mpdclient.toggle_pause(1)
 
     def on_stop(self, x):
-        print("stop event")
         self.mpdclient.stop_playing()
         self.songprogress.set_fraction(0)

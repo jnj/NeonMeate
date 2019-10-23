@@ -38,7 +38,6 @@ class Mpd:
 
     def toggle_pause(self, should_pause):
         mpdstatus = self.status()
-        print(mpdstatus)
         if should_pause:
             def target():
                 self.client.pause(1)
