@@ -22,16 +22,26 @@ class App(Gtk.ApplicationWindow):
         self.set_titlebar(self.titlebar)
         self.titlebar_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.controlbuttons = ControlButtons()
-        self.titlebar_box.pack_start(self.controlbuttons, False, False, 0)
+        # self.titlebar_box.pack_start(self.controlbuttons, False, False, 0)
         self.songprogress = SongProgress()
-        self.songprogress.show()
         self.songprogress.set_fraction(0)
         # self.titlebar_box.pack_start(self.songprogress, False, False, 0)
         self.titlebar.pack_start(self.titlebar_box)
-        self.titlebar.add(self.songprogress)
+        # self.titlebar.add(self.songprogress)
+
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+
+        self.actionbar = Gtk.ActionBar()
+        self.actionbar.pack_start(self.controlbuttons)
+        self.actionbar.pack_start(self.songprogress)
+
+        self.add(self.main_box)
+
 
         self.panes = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
-        self.add(self.panes)
+        self.main_box.pack_start(self.panes, True, True, 0)
+        self.main_box.pack_end(self.actionbar, False, False, 0)
+        # self.add(self.panes)
 
         # artist_album_table = table.Table(['Artist', 'Album'], [str, str])
         # self.artist_list = artist_album_table
