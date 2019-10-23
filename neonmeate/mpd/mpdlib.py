@@ -1,6 +1,7 @@
 import mpd as mpd2
 import neonmeate.mpd.cache
-import threading
+
+from concurrent import futures
 
 from gi.repository import GObject, GLib, Gio
 
@@ -13,50 +14,66 @@ class Mpd:
         c.timeout = 10
         c.idletimeout = None
         self.client = c
+        self.executor = futures.ThreadPoolExecutor(max_workers=1)
 
     def connect(self):
+        if not self.executor:
+            self.executor = futures.ThreadPoolExecutor(max_workers=1)
         self.client.connect(self.host, self.port)
 
     def close(self):
         self.client.close()
         self.client.disconnect()
+        self.executor.shutdown()
+        self.executor = None
 
     def stop_playing(self):
-        t = threading.Thread(target=self.client.stop)
-        t.start()
+        self.executor.submit(self.client.stop)
 
     def next_song(self):
-        self.client.next()
+        self.executor.submit(self.client.next)
 
     def prev_song(self):
-        self.client.previous()
+        self.executor.submit(self.client.previous)
 
     def toggle_pause(self, should_pause):
-        target = None
         if should_pause:
-            target = lambda: self.client.pause(1)
+            def target():
+                self.client.pause(1)
+            self.executor.submit(target)
         else:
-            target = lambda: self.client.play(0)
-        t = threading.Thread(target=target)
-        t.start()
+            def target():
+                self.client.play(0)
+            self.executor.submit(target)
 
     def find_artists(self):
-        return self.client.list('artist')
+        def find():
+            return self.client.list('artist')
+        fut = self.executor.submit(find)
+        return fut.result(timeout=5)
 
     def find_albums(self, artist):
-        return self.client.list('album', 'albumartist', artist)
+        def find():
+            return self.client.list('album', 'albumartist', artist)
+        fut = self.executor.submit(find)
+        return fut.result(timeout=5)
 
     def status(self):
-        return self.client.status()
+        fut = self.executor.submit(self.client.status)
+        return fut.result(timeout=5)
 
     def clear_playlist(self):
-        self.client.playlistclear()
+        self.executor.submit(self.client.playlistclear)
 
     def playlistinfo(self):
-        return self.client.playlistinfo()
+        fut = self.executor.submit(self.client.playlistinfo)
+        return fut.result(timeout=5)
 
     def populate_cache(self, albumcache):
-        artists = self.client.list('artist')
+        def listartists():
+            return self.client.list('artist')
+        fut = self.executor.submit(listartists)
+        artists = fut.result(timeout=5)
         for artist in artists:
             albums = self.find_albums(artist)
             for album in albums:
