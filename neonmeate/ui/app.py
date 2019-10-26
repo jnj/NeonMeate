@@ -2,6 +2,7 @@ import neonmeate.ui.toolkit as tk
 
 from gi.repository import Gdk, GdkPixbuf, Gtk
 
+from .toolkit import Scrollable
 from .artists import Artists
 from .controls import ControlButtons
 from .songprogress import SongProgress
@@ -15,19 +16,17 @@ class App(Gtk.ApplicationWindow):
         self.heartbeat.start()
         self.mpdclient = mpdclient
         self.album_cache = cache
+
         self.set_default_size(4 * 200 + 3 * 5, 4 * 200 + 3 * 5)
+
         self.titlebar = Gtk.HeaderBar()
         self.titlebar.set_title("NeonMeate")
         self.titlebar.set_show_close_button(True)
         self.set_titlebar(self.titlebar)
-        self.titlebar_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+
         self.controlbuttons = ControlButtons()
-        # self.titlebar_box.pack_start(self.controlbuttons, False, False, 0)
         self.songprogress = SongProgress()
         self.songprogress.set_fraction(0)
-        # self.titlebar_box.pack_start(self.songprogress, False, False, 0)
-        self.titlebar.pack_start(self.titlebar_box)
-        # self.titlebar.add(self.songprogress)
 
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
 
@@ -38,27 +37,35 @@ class App(Gtk.ApplicationWindow):
         self.add(self.main_box)
 
         self.panes = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
-        self.main_box.pack_start(self.panes, True, True, 0)
-        self.main_box.pack_end(self.actionbar, False, False, 0)
-        # self.add(self.panes)
 
+        self.stack = Gtk.Stack()
+        self.main_box.pack_start(self.stack, True, True, 0)
+        self.main_box.pack_end(self.actionbar, False, False, 0)
+
+        # self.add(self.panes)
         # artist_album_table = table.Table(['Artist', 'Album'], [str, str])
         # self.artist_list = artist_album_table
         self.artists = Artists()
         for artist in self.album_cache.all_artists():
             self.artists.add_row(artist)
+        self.artists_window = Scrollable()
+        self.artists_window.add_content(self.artists)
 
-        # for artist, album in self.album_cache.all_artists_and_albums():
-        #     if artist != '' and album != '':
-        #         artist_album_table.add([artist, album])
+        self.playlist_window = Scrollable()
+        self.playlist = tk.Table(['Artist', 'Title'], [str, str])
+        current_queue = self.mpdclient.playlistinfo()
+        for i in current_queue:
+            self.playlist.add([i['artist'], i['title']])
+        self.playlist_window.add_content(self.playlist.as_widget())
 
-        self.artists_vp = Gtk.Viewport()
-        self.artists_window = Gtk.ScrolledWindow()
-        self.artists_vp.add(self.artists)
-        self.artists_window.add(self.artists_vp)
+        self.stack.add_titled(self.artists_window, 'artists', 'Artists')
+        self.stack.add_titled(self.playlist_window, 'playlist', 'Playlist')
+        self.stack_switcher = Gtk.StackSwitcher()
+        self.stack_switcher.set_stack(self.stack)
+        self.titlebar.pack_start(self.stack_switcher)
 
         # self.artists_window.add(self.artist_list.as_widget())
-        self.panes.pack1(self.artists_window)
+        # self.panes.pack1(self.artists_window)
 
         self.covers = covers
         self.grid = Gtk.Grid()
@@ -79,12 +86,6 @@ class App(Gtk.ApplicationWindow):
         self.scrolled.add(self.covers_and_playlist)
         self.panes.pack2(self.scrolled)
         self.panes.set_position(200)
-
-        self.queue_table = tk.Table(['Artist', 'Title'], [str, str])
-        current_queue = self.mpdclient.playlistinfo()
-        for i in current_queue:
-            self.queue_table.add([i['artist'], i['title']])
-        playlist_scrollable.add(self.queue_table.as_widget())
 
         attach_row = 0
         attach_col = 0

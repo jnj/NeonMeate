@@ -1,10 +1,21 @@
 from gi.repository import Gtk, Pango
 
 
+class Scrollable(Gtk.ScrolledWindow):
+    def __init__(self):
+        super(Scrollable, self).__init__()
+        self._vp = Gtk.Viewport()
+        self.add(self._vp)
+
+    def add_content(self, widget):
+        self._vp.add(widget)
+
+
 class Column(Gtk.ListBox):
     """
     Renders text items in a column using a Gtk.ListBox.
     """
+
     def __init__(self):
         super(Column, self).__init__()
 
