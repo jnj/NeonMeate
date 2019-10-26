@@ -1,7 +1,5 @@
-from concurrent import futures
-
 import mpd as mpd2
-from gi.repository import GObject, GLib
+from gi.repository import GObject
 
 import neonmeate.mpd.cache
 import neonmeate.nmasync as nmasync
@@ -12,7 +10,6 @@ class Mpd:
         self._host = host
         self._port = port
         self._client = mpd2.MPDClient()
-        #self._hb_client = mpd2.MPDClient()
         self._client.timeout = 10
         self._client.idletimeout = None
         self._status = {}
@@ -76,35 +73,6 @@ class Mpd:
                 albumcache.add(artist, album)
 
 
-class MpdState:
-    def __init__(self):
-        self.state_attrs = {}
-
-    def update(self, attrs):
-        self.state_attrs = attrs
-
-    def is_playing(self):
-        if 'state' in self.state_attrs:
-            return self.state_attrs['state'] == 'play'
-
-    def is_paused(self):
-        if 'state' in self.state_attrs:
-            return self.state_attrs['state'] == 'pause'
-
-    def playing_status(self):
-        return self.state_attrs.get('state', 'stop')
-
-    def elapsed_percent(self):
-        if 'elapsed' in self.state_attrs:
-            t = float(self.state_attrs['elapsed'])
-            d = float(self.state_attrs['duration'])
-            return 100.0 * t / d
-        return 0
-
-    def __str__(self):
-        return f'songid={self.song_id}, elapsed={self.elapsed}, duration={self.duration}'
-
-
 class MpdHeartbeat(GObject.GObject):
     __gsignals__ = {
         'song_played_percent': (GObject.SignalFlags.RUN_FIRST, None, (int,)),
@@ -114,13 +82,11 @@ class MpdHeartbeat(GObject.GObject):
     def __init__(self, client, millis_interval):
         GObject.GObject.__init__(self)
         self.millis_interval = millis_interval
-        self.client = client
-        self.source_id = -1
-        self.state = MpdState()
+        self._client = client
         self._thread = None
+        self._mpd_status = {}
 
     def start(self):
-        # self.source_id = GLib.timeout_add(self.millis_interval, self.on_sync)
         self._thread = nmasync.PeriodicTask(500, self._on_delay)
         self._thread.start()
 
@@ -128,21 +94,40 @@ class MpdHeartbeat(GObject.GObject):
         self._thread.stop()
 
     def _on_delay(self):
-        status = self.client.status()
-        self.state.update(status)
-        self.emit('song_playing_status', self.state.playing_status())
-        if self.state.playing_status() == 'stop':
+        self._mpd_status = self._client.status()
+        play_status = self._mpd_status.get('state', 'stop')
+        self.emit('song_playing_status', play_status)
+
+        if play_status == 'stop':
             self.emit('song_played_percent', 0)
-        if self.state.is_playing():
-            self.emit('song_played_percent', self.state.elapsed_percent())
+
+        if play_status == 'play':
+            self.emit('song_played_percent', self._elapsed_percent())
 
         return True
+
+    def _mpd_state(self):
+        return self._mpd_status.get('state', 'unknown')
+
+    def _state_is(self, state_value):
+        return self._mpd_state() == state_value
+
+    def _is_playing(self):
+        return self._state_is('play')
+
+    def _is_paused(self):
+        return self._state_is('pause')
+
+    def _elapsed_percent(self):
+        t = float(self._mpd_status.get('elapsed', 0))
+        d = float(self._mpd_status.get('duration', 1))
+        return 100.0 * t / d
 
 
 if __name__ == '__main__':
     client = Mpd('localhost', 6600)
     client.connect()
     client.idle()
-    # album_cache = neonmeate.mpd.cache.AlbumCache()
-    # client.populate_cache(album_cache)
-    # print(album_cache)
+    album_cache = neonmeate.mpd.cache.AlbumCache()
+    client.populate_cache(album_cache)
+    print(album_cache)
