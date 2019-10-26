@@ -22,6 +22,29 @@ def each_cover(path):
                 yield f
 
 
+# stack switcher example
+class Example(Gtk.Window):
+    def __init__(self):
+        Gtk.Window.__init__(self, title="NeonMeate")
+        self.stack = Gtk.Stack()
+        self.headerbar = Gtk.HeaderBar()
+        self.set_titlebar(self.headerbar)
+        self.stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
+        self.stack.set_transition_duration(200)
+        self.add(self.stack)
+
+        checkbutton = Gtk.CheckButton("Click me!")
+        self.stack.add_titled(checkbutton, "check", "Check Button")
+
+        label = Gtk.Label()
+        label.set_markup("<big>A fancy label</big>")
+        self.stack.add_titled(label, "label", "A label")
+
+        stack_switcher = Gtk.StackSwitcher()
+        stack_switcher.set_stack(self.stack)
+        self.headerbar.pack_start(stack_switcher)
+
+
 def main(args):
     num_covers = 1
 

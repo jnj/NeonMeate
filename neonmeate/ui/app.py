@@ -37,7 +37,6 @@ class App(Gtk.ApplicationWindow):
 
         self.add(self.main_box)
 
-
         self.panes = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
         self.main_box.pack_start(self.panes, True, True, 0)
         self.main_box.pack_end(self.actionbar, False, False, 0)

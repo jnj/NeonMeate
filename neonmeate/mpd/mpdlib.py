@@ -1,83 +1,75 @@
-import mpd as mpd2
-import neonmeate.mpd.cache
-
 from concurrent import futures
 
-from gi.repository import GObject, GLib, Gio
+import mpd as mpd2
+from gi.repository import GObject, GLib
+
+import neonmeate.mpd.cache
+import neonmeate.nmasync as nmasync
 
 
 class Mpd:
     def __init__(self, host, port):
-        self.host = host
-        self.port = port
-        c = mpd2.MPDClient()
-        c.timeout = 10
-        c.idletimeout = None
-        self.client = c
-        self.executor = futures.ThreadPoolExecutor(max_workers=1)
+        self._host = host
+        self._port = port
+        self._client = mpd2.MPDClient()
+        #self._hb_client = mpd2.MPDClient()
+        self._client.timeout = 10
+        self._client.idletimeout = None
+        self._status = {}
 
     def connect(self):
-        if not self.executor:
-            self.executor = futures.ThreadPoolExecutor(max_workers=1)
-        self.client.connect(self.host, self.port)
+        """
+        Connects to the MPD server, blocking until the server
+        status is obtained.
+        """
+        self._client.connect(self._host, self._port)
+        self._status = self.status()
 
     def close(self):
-        self.client.close()
-        self.client.disconnect()
-        self.executor.shutdown()
-        self.executor = None
+        self._client.close()
+        self._client.disconnect()
+
+    def idle(self):
+        while True:
+            changed = self._client.idle()
+            print(changed)
 
     def stop_playing(self):
-        self.executor.submit(self.client.stop)
+        self._client.send_stop()
 
     def next_song(self):
-        self.executor.submit(self.client.next)
+        self._client.send_next()
 
     def prev_song(self):
-        self.executor.submit(self.client.previous)
+        self._client.send_previous()
 
     def toggle_pause(self, should_pause):
         mpdstatus = self.status()
         if should_pause:
-            def target():
-                self.client.pause(1)
-            self.executor.submit(target)
+            self._client.send_pause(1)
         else:
-            def target():
-                if 'state' in mpdstatus and mpdstatus['state'] == 'pause':
-                    self.client.pause(0)
-                else:
-                    self.client.play(0)
-            self.executor.submit(target)
+            if 'state' in mpdstatus and mpdstatus['state'] == 'pause':
+                self._client.send_pause(0)
+            else:
+                self._client.send_play(0)
 
     def find_artists(self):
-        def find():
-            return self.client.list('artist')
-        fut = self.executor.submit(find)
-        return fut.result(timeout=5)
+        return self._client.list('artist')
 
     def find_albums(self, artist):
-        def find():
-            return self.client.list('album', 'albumartist', artist)
-        fut = self.executor.submit(find)
-        return fut.result(timeout=5)
+        return self._client.list('album', 'albumartist', artist)
 
     def status(self):
-        fut = self.executor.submit(self.client.status)
-        return fut.result(timeout=5)
+        return self._client.status()
 
     def clear_playlist(self):
-        self.executor.submit(self.client.playlistclear)
+        self._client.send_playlistclear()
 
     def playlistinfo(self):
-        fut = self.executor.submit(self.client.playlistinfo)
-        return fut.result(timeout=5)
+        return self._client.playlistinfo()
 
     def populate_cache(self, albumcache):
-        def listartists():
-            return self.client.list('artist')
-        fut = self.executor.submit(listartists)
-        artists = fut.result(timeout=5)
+        artists = self._client.list('artist')
         for artist in artists:
             albums = self.find_albums(artist)
             for album in albums:
@@ -125,16 +117,20 @@ class MpdHeartbeat(GObject.GObject):
         self.client = client
         self.source_id = -1
         self.state = MpdState()
+        self._thread = None
 
     def start(self):
-        self.source_id = GLib.timeout_add(self.millis_interval, self.on_sync)
+        # self.source_id = GLib.timeout_add(self.millis_interval, self.on_sync)
+        self._thread = nmasync.PeriodicTask(500, self._on_delay)
+        self._thread.start()
 
     def stop(self):
-        if self.source_id != -1:
-            GLib.source_remove(self.source_id)
+        self._thread.stop()
 
-    def on_sync(self):
+    def _on_delay(self):
+        print("checking status....")
         status = self.client.status()
+        print(status)
         self.state.update(status)
         self.emit('song_playing_status', self.state.playing_status())
         if self.state.playing_status() == 'stop':
@@ -148,6 +144,7 @@ class MpdHeartbeat(GObject.GObject):
 if __name__ == '__main__':
     client = Mpd('localhost', 6600)
     client.connect()
-    album_cache = neonmeate.mpd.cache.AlbumCache()
-    client.populate_cache(album_cache)
-    print(album_cache)
+    client.idle()
+    # album_cache = neonmeate.mpd.cache.AlbumCache()
+    # client.populate_cache(album_cache)
+    # print(album_cache)
