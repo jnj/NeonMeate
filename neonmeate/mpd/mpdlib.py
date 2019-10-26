@@ -81,19 +81,17 @@ class MpdHeartbeat(GObject.GObject):
 
     def __init__(self, client, millis_interval):
         GObject.GObject.__init__(self)
-        self.millis_interval = millis_interval
         self._client = client
-        self._thread = None
+        self._thread = nmasync.PeriodicTask(millis_interval, self._on_hb_interval)
         self._mpd_status = {}
 
     def start(self):
-        self._thread = nmasync.PeriodicTask(500, self._on_delay)
         self._thread.start()
 
     def stop(self):
         self._thread.stop()
 
-    def _on_delay(self):
+    def _on_hb_interval(self):
         self._mpd_status = self._client.status()
         play_status = self._mpd_status.get('state', 'stop')
         self.emit('song_playing_status', play_status)
