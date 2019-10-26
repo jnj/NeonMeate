@@ -119,8 +119,8 @@ class App(Gtk.ApplicationWindow):
         elif status == 'stop':
             self.controlbuttons.set_paused(False, True)
 
-    def _on_song_percent(self, hb, pct):
-        self.songprogress.set_fraction(pct / 100.0)
+    def _on_song_percent(self, hb, fraction):
+        self.songprogress.set_fraction(fraction)
 
     def on_start(self, x):
         self.mpdclient.toggle_pause(0)

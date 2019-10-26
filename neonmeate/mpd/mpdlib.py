@@ -119,7 +119,7 @@ class MpdHeartbeat(GObject.GObject):
     def _elapsed_percent(self):
         t = float(self._mpd_status.get('elapsed', 0))
         d = float(self._mpd_status.get('duration', 1))
-        return 100.0 * t / d
+        return t / d
 
 
 if __name__ == '__main__':
