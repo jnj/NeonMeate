@@ -26,6 +26,9 @@ class Mpd:
         self._client.close()
         self._client.disconnect()
 
+    def currentsong(self):
+        return self._client.currentsong()
+
     def idle(self):
         while True:
             changed = self._client.idle()
@@ -76,7 +79,8 @@ class Mpd:
 class MpdHeartbeat(GObject.GObject):
     __gsignals__ = {
         'song_played_percent': (GObject.SignalFlags.RUN_FIRST, None, (float,)),
-        'song_playing_status': (GObject.SignalFlags.RUN_FIRST, None, (str,))
+        'song_playing_status': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
+        'song_changed': (GObject.SignalFlags.RUN_FIRST, None, (str, str))
     }
 
     def __init__(self, client, millis_interval):
@@ -84,6 +88,7 @@ class MpdHeartbeat(GObject.GObject):
         self._client = client
         self._thread = nmasync.PeriodicTask(millis_interval, self._on_hb_interval)
         self._mpd_status = {}
+        self._song_id = '-1'
 
     def start(self):
         self._thread.start()
@@ -95,6 +100,7 @@ class MpdHeartbeat(GObject.GObject):
         self._mpd_status = self._client.status()
         play_status = self._mpd_status.get('state', 'stop')
         self.emit('song_playing_status', play_status)
+        self._check_song_changed()
 
         if play_status == 'stop':
             self.emit('song_played_percent', 0)
@@ -103,6 +109,12 @@ class MpdHeartbeat(GObject.GObject):
             self.emit('song_played_percent', self._elapsed_percent())
 
         return True
+
+    def _check_song_changed(self):
+        song_id = self._mpd_status.get('songid', '-1')
+        if song_id != self._song_id:
+            song_info = self._client.currentsong()
+            self.emit('song_changed', song_info['artist'], song_info['title'])
 
     def _mpd_state(self):
         return self._mpd_status.get('state', 'unknown')

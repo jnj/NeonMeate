@@ -110,6 +110,10 @@ class App(Gtk.ApplicationWindow):
         self.controlbuttons.connect('neonmeate_toggle_pause', self.on_pause)
         self.heartbeat.connect('song_played_percent', self._on_song_percent)
         self.heartbeat.connect('song_playing_status', self._on_song_playing_status)
+        self.heartbeat.connect('song_changed', self._on_song_changed)
+
+    def _on_song_changed(self, hb, artist, title):
+        self.titlebar.set_title(f'{artist} - {title}')
 
     def _on_song_playing_status(self, hb, status):
         if status == 'play':
