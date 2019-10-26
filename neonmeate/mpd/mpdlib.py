@@ -35,23 +35,23 @@ class Mpd:
             print(changed)
 
     def stop_playing(self):
-        self._client.send_stop()
+        nmasync.RunAsync(self._client.stop)
 
     def next_song(self):
-        self._client.send_next()
+        nmasync.RunAsync(self._client.next)
 
     def prev_song(self):
-        self._client.send_previous()
+        nmasync.RunAsync(self._client.previous)
 
     def toggle_pause(self, should_pause):
         mpdstatus = self.status()
         if should_pause:
-            self._client.send_pause(1)
+            nmasync.RunAsync(lambda: self._client.pause(1))
         else:
             if 'state' in mpdstatus and mpdstatus['state'] == 'pause':
-                self._client.send_pause(0)
+                nmasync.RunAsync(lambda: self._client.pause(0))
             else:
-                self._client.send_play(0)
+                nmasync.RunAsync(lambda: self._client.play(0))
 
     def find_artists(self):
         return self._client.list('artist')
