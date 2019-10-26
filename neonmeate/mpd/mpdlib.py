@@ -113,6 +113,7 @@ class MpdHeartbeat(GObject.GObject):
     def _check_song_changed(self):
         song_id = self._mpd_status.get('songid', '-1')
         if song_id != self._song_id:
+            self._song_id = song_id
             song_info = self._client.currentsong()
             self.emit('song_changed', song_info['artist'], song_info['title'])
 
