@@ -80,7 +80,8 @@ class MpdHeartbeat(GObject.GObject):
     __gsignals__ = {
         'song_played_percent': (GObject.SignalFlags.RUN_FIRST, None, (float,)),
         'song_playing_status': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
-        'song_changed': (GObject.SignalFlags.RUN_FIRST, None, (str, str))
+        'song_changed': (GObject.SignalFlags.RUN_FIRST, None, (str, str)),
+        'no_song': (GObject.SignalFlags.RUN_FIRST, None, ())
     }
 
     def __init__(self, client, millis_interval):
@@ -112,8 +113,14 @@ class MpdHeartbeat(GObject.GObject):
 
     def _check_song_changed(self):
         song_id = self._mpd_status.get('songid', '-1')
+
         if song_id != self._song_id:
             self._song_id = song_id
+
+            if self._song_id == '-1':
+                self.emit('no_song')
+                return
+
             song_info = self._client.currentsong()
             self.emit('song_changed', song_info['artist'], song_info['title'])
 

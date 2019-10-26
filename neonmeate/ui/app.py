@@ -111,9 +111,13 @@ class App(Gtk.ApplicationWindow):
         self.heartbeat.connect('song_played_percent', self._on_song_percent)
         self.heartbeat.connect('song_playing_status', self._on_song_playing_status)
         self.heartbeat.connect('song_changed', self._on_song_changed)
+        self.heartbeat.connect('no_song', lambda hb: self._on_song_changed(hb, None, None))
 
     def _on_song_changed(self, hb, artist, title):
-        self.titlebar.set_title(f'{artist} - {title}')
+        title_text = 'NeonMeate'
+        if artist and title:
+            title_text = f'{artist} - {title}'
+        self.titlebar.set_title(title_text)
 
     def _on_song_playing_status(self, hb, status):
         if status == 'play':
