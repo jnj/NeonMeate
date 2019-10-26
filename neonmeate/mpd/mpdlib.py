@@ -128,9 +128,7 @@ class MpdHeartbeat(GObject.GObject):
         self._thread.stop()
 
     def _on_delay(self):
-        print("checking status....")
         status = self.client.status()
-        print(status)
         self.state.update(status)
         self.emit('song_playing_status', self.state.playing_status())
         if self.state.playing_status() == 'stop':
