@@ -75,7 +75,7 @@ class Mpd:
 
 class MpdHeartbeat(GObject.GObject):
     __gsignals__ = {
-        'song_played_percent': (GObject.SignalFlags.RUN_FIRST, None, (int,)),
+        'song_played_percent': (GObject.SignalFlags.RUN_FIRST, None, (float,)),
         'song_playing_status': (GObject.SignalFlags.RUN_FIRST, None, (str,))
     }
 
