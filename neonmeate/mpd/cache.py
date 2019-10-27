@@ -21,7 +21,7 @@ class AlbumCache:
         return self.artists
 
     def get_albums(self, artist):
-        return self.albums_by_artist[artist]
+        return self.albums_by_artist.get(artist, [])
 
     def __str__(self):
         return str(self.artists)
