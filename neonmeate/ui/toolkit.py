@@ -1,4 +1,4 @@
-from gi.repository import Gtk, Pango
+from gi.repository import GObject, Gtk, Pango
 
 
 class Scrollable(Gtk.ScrolledWindow):
@@ -15,15 +15,24 @@ class Column(Gtk.ListBox):
     """
     Renders text items in a column using a Gtk.ListBox.
     """
+    __gsignals__ = {
+        'value-selected': (GObject.SignalFlags.RUN_FIRST, None, (str,))
+    }
 
     def __init__(self):
         super(Column, self).__init__()
+        super(Column, self).connect('row-selected', self._on_row_selected)
 
     def add_row(self, text):
         label = Gtk.Label(text, xalign=0)
         label.set_justify(Gtk.Justification.LEFT)
         label.set_ellipsize(Pango.EllipsizeMode.END)
         self.add(label)
+
+    def _on_row_selected(self, box, row):
+        child = row.get_child()
+        self.emit('value-selected', child.get_text())
+        return True
 
 
 class Table:

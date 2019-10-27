@@ -28,15 +28,12 @@ class App(Gtk.ApplicationWindow):
         self.songprogress = SongProgress()
         self.songprogress.set_fraction(0)
 
-        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-
         self.actionbar = Gtk.ActionBar()
         self.actionbar.pack_start(self.controlbuttons)
         self.actionbar.pack_start(self.songprogress)
 
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.add(self.main_box)
-
-        self.panes = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
 
         self.stack = Gtk.Stack()
         self.main_box.pack_start(self.stack, True, True, 0)
@@ -45,20 +42,16 @@ class App(Gtk.ApplicationWindow):
         # self.add(self.panes)
         # artist_album_table = table.Table(['Artist', 'Album'], [str, str])
         # self.artist_list = artist_album_table
-        self.artists = Artists()
-        for artist in self.album_cache.all_artists():
-            self.artists.add_row(artist)
-        self.artists_window = Scrollable()
-        self.artists_window.add_content(self.artists)
-
-        self.playlist_window = Scrollable()
+        self.artists = Artists(self.album_cache)
         self.playlist = tk.Table(['Artist', 'Title'], [str, str])
         current_queue = self.mpdclient.playlistinfo()
         for i in current_queue:
             self.playlist.add([i['artist'], i['title']])
+
+        self.playlist_window = Scrollable()
         self.playlist_window.add_content(self.playlist.as_widget())
 
-        self.stack.add_titled(self.artists_window, 'artists', 'Artists')
+        self.stack.add_titled(self.artists, 'artists', 'Artists')
         self.stack.add_titled(self.playlist_window, 'playlist', 'Playlist')
         self.stack_switcher = Gtk.StackSwitcher()
         self.stack_switcher.set_stack(self.stack)
@@ -73,19 +66,6 @@ class App(Gtk.ApplicationWindow):
         self.grid.set_column_homogeneous(True)
         self.grid.set_column_spacing(5)
         self.grid.set_row_spacing(5)
-
-        self.scrolled = Gtk.ScrolledWindow()
-        self.covers_and_playlist = Gtk.VPaned()
-
-        covers_scrollable = Gtk.ScrolledWindow()
-        covers_scrollable.add(self.grid)
-        self.covers_and_playlist.pack2(covers_scrollable)
-
-        playlist_scrollable = Gtk.ScrolledWindow()
-        self.covers_and_playlist.pack1(playlist_scrollable)
-        self.scrolled.add(self.covers_and_playlist)
-        self.panes.pack2(self.scrolled)
-        self.panes.set_position(200)
 
         attach_row = 0
         attach_col = 0
