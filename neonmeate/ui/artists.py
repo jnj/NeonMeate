@@ -47,7 +47,6 @@ class Albums(toolkit.Scrollable):
         img.show()
         self._albums.add(img)
         artist, album = user_data
-        print(f"{album} ready")
         #self._albums.add_row(f"{album}")
 
     def _on_stream_ready(self, src_object, result, user_data):
@@ -56,7 +55,6 @@ class Albums(toolkit.Scrollable):
         except GLib.GError as e:
             print(e)
         else:
-            print("Loaded!")
             GdkPixbuf.Pixbuf.new_from_stream_async(stream, None, self._on_pixbuf_ready, user_data)
         finally:
             pass
@@ -72,7 +70,6 @@ class Albums(toolkit.Scrollable):
             folder = os.path.join('/media/josh/Music', artist_name, album)
             art = os.path.join(folder, 'cover.jpg')
             if os.path.exists(art):
-                print(f"Cover art: {art}")
                 gio_file = Gio.File.new_for_path(art)
                 gio_file.read_async(GLib.PRIORITY_DEFAULT, None, self._on_stream_ready, (artist_name, album))
             else:
