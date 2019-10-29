@@ -27,6 +27,7 @@ class Column(Gtk.ListBox):
         label = Gtk.Label(text, xalign=0)
         label.set_justify(Gtk.Justification.LEFT)
         label.set_ellipsize(Pango.EllipsizeMode.END)
+        label.show()
         self.add(label)
 
     def _on_row_selected(self, box, row):

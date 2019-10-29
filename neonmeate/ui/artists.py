@@ -16,8 +16,8 @@ class Artists(Gtk.Frame):
         self._artist_list = toolkit.Column()
         self._artists_scrollable = toolkit.Scrollable()
         self._artists_scrollable.add_content(self._artist_list)
-        self._panes.pack1(self._artists_scrollable)
         self._albums = Albums(self._album_cache)
+        self._panes.pack1(self._artists_scrollable)
         self._panes.pack2(self._albums)
         self._panes.set_position(400)
         self.add(self._panes)
@@ -31,27 +31,24 @@ class Artists(Gtk.Frame):
 
     def _on_artist_clicked(self, column_widget, selected_value):
         self._albums.on_artist_selected(selected_value)
-        return True
 
 
-class Albums(Gtk.Frame):
+class Albums(toolkit.Scrollable):
     def __init__(self, album_cache):
         super(Albums, self).__init__()
         self._album_cache = album_cache
-        self._albums_scrollable = toolkit.Scrollable()
-        self._albumlistbox = toolkit.Column()
-        self._albums_scrollable.add_content(self._albumlistbox)
-        for i in range(10):
-            self._albumlistbox.add(Gtk.Label("Hello"))
+        self._albums = toolkit.Column()
+        self.add_content(self._albums)
 
     def _on_pixbuf_ready(self, src_object, result, user_data):
         pixbuf = GdkPixbuf.Pixbuf.new_from_stream_finish(result)
         pixbuf = pixbuf.scale_simple(400, 400, GdkPixbuf.InterpType.BILINEAR)
         img = Gtk.Image.new_from_pixbuf(pixbuf)
-        self._albumlistbox.add(img)
+        img.show()
+        self._albums.add(img)
         artist, album = user_data
-        self._albumlistbox.add(Gtk.Label(f"{album}"))
-        self._albumlistbox.show()
+        print(f"{album} ready")
+        #self._albums.add_row(f"{album}")
 
     def _on_stream_ready(self, src_object, result, user_data):
         try:
@@ -64,7 +61,12 @@ class Albums(Gtk.Frame):
         finally:
             pass
 
+    def _clear_albums(self):
+        for c in self._albums.get_children():
+            self._albums.remove(c)
+
     def on_artist_selected(self, artist_name):
+        self._clear_albums()
         albums = self._album_cache.get_albums(artist_name)
         for album in albums:
             folder = os.path.join('/media/josh/Music', artist_name, album)
