@@ -1,5 +1,7 @@
+import os
+
 from neonmeate.ui import toolkit
-from gi.repository import GObject, Gtk
+from gi.repository import GdkPixbuf, Gio, GLib, GObject, Gtk
 
 
 class Artists(Gtk.Frame):
@@ -37,9 +39,39 @@ class Albums(Gtk.Frame):
         super(Albums, self).__init__()
         self._album_cache = album_cache
         self._albums_scrollable = toolkit.Scrollable()
-        self._flow = Gtk.FlowBox()
-        self._albums_scrollable.add_content(self._flow)
+        self._albumlistbox = toolkit.Column()
+        self._albums_scrollable.add_content(self._albumlistbox)
+        for i in range(10):
+            self._albumlistbox.add(Gtk.Label("Hello"))
+
+    def _on_pixbuf_ready(self, src_object, result, user_data):
+        pixbuf = GdkPixbuf.Pixbuf.new_from_stream_finish(result)
+        pixbuf = pixbuf.scale_simple(400, 400, GdkPixbuf.InterpType.BILINEAR)
+        img = Gtk.Image.new_from_pixbuf(pixbuf)
+        self._albumlistbox.add(img)
+        artist, album = user_data
+        self._albumlistbox.add(Gtk.Label(f"{album}"))
+        self._albumlistbox.show()
+
+    def _on_stream_ready(self, src_object, result, user_data):
+        try:
+            stream = src_object.read_finish(result)
+        except GLib.GError as e:
+            print(e)
+        else:
+            print("Loaded!")
+            GdkPixbuf.Pixbuf.new_from_stream_async(stream, None, self._on_pixbuf_ready, user_data)
+        finally:
+            pass
 
     def on_artist_selected(self, artist_name):
         albums = self._album_cache.get_albums(artist_name)
-        # todo load covers into flowbox...
+        for album in albums:
+            folder = os.path.join('/media/josh/Music', artist_name, album)
+            art = os.path.join(folder, 'cover.jpg')
+            if os.path.exists(art):
+                print(f"Cover art: {art}")
+                gio_file = Gio.File.new_for_path(art)
+                gio_file.read_async(GLib.PRIORITY_DEFAULT, None, self._on_stream_ready, (artist_name, album))
+            else:
+                print(f"No art! {artist_name} {album}")

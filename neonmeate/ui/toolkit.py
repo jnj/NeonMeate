@@ -13,7 +13,7 @@ class Scrollable(Gtk.ScrolledWindow):
 
 class Column(Gtk.ListBox):
     """
-    Renders text items in a column using a Gtk.ListBox.
+    Renders items in a column using a Gtk.ListBox.
     """
     __gsignals__ = {
         'value-selected': (GObject.SignalFlags.RUN_FIRST, None, (str,))
