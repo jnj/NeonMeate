@@ -4,6 +4,7 @@ import gi
 
 import neonmeate.mpd.cache as nmcache
 import neonmeate.mpd.mpdlib as nmpd
+import neonmeate.artcache as artcache
 import neonmeate.ui.app as app
 
 gi.require_version('Gtk', '3.0')
@@ -18,7 +19,8 @@ def main(args):
     album_cache = nmcache.AlbumCache()
     mpdclient.populate_cache(album_cache)
 
-    main_window = app.App(mpdclient, [], album_cache)
+    art_cache = artcache.ArtCache()
+    main_window = app.App(mpdclient, [], album_cache, art_cache)
     main_window.connect('destroy', Gtk.main_quit)
     main_window.show_all()
     Gtk.main()

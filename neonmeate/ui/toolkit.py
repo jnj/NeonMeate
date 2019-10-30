@@ -32,7 +32,8 @@ class Column(Gtk.ListBox):
 
     def _on_row_selected(self, box, row):
         child = row.get_child()
-        self.emit('value-selected', child.get_text())
+        if child and isinstance(child, Gtk.Label):
+            self.emit('value-selected', child.get_text())
         return True
 
 

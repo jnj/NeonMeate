@@ -1,7 +1,8 @@
 import os
 
+from gi.repository import GdkPixbuf, GObject, Gtk
+
 from neonmeate.ui import toolkit
-from gi.repository import GdkPixbuf, Gio, GLib, GObject, Gtk
 
 
 class Artists(Gtk.Frame):
@@ -9,14 +10,15 @@ class Artists(Gtk.Frame):
         'artist-selected': (GObject.SignalFlags.RUN_FIRST, None, (str,))
     }
 
-    def __init__(self, album_cache):
+    def __init__(self, album_cache, art_cache):
         super(Artists, self).__init__()
         self._album_cache = album_cache
+        self._art_cache = art_cache
         self._panes = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
         self._artist_list = toolkit.Column()
         self._artists_scrollable = toolkit.Scrollable()
         self._artists_scrollable.add_content(self._artist_list)
-        self._albums = Albums(self._album_cache)
+        self._albums = Albums(self._album_cache, self._art_cache)
         self._panes.pack1(self._artists_scrollable)
         self._panes.pack2(self._albums)
         self._panes.set_position(400)
@@ -34,30 +36,18 @@ class Artists(Gtk.Frame):
 
 
 class Albums(toolkit.Scrollable):
-    def __init__(self, album_cache):
+    def __init__(self, album_cache, art_cache):
         super(Albums, self).__init__()
+        self._art_cache = art_cache
         self._album_cache = album_cache
         self._albums = toolkit.Column()
         self.add_content(self._albums)
 
-    def _on_pixbuf_ready(self, src_object, result, user_data):
-        pixbuf = GdkPixbuf.Pixbuf.new_from_stream_finish(result)
+    def _on_art_ready(self, pixbuf):
         pixbuf = pixbuf.scale_simple(400, 400, GdkPixbuf.InterpType.BILINEAR)
         img = Gtk.Image.new_from_pixbuf(pixbuf)
         img.show()
         self._albums.add(img)
-        artist, album = user_data
-        #self._albums.add_row(f"{album}")
-
-    def _on_stream_ready(self, src_object, result, user_data):
-        try:
-            stream = src_object.read_finish(result)
-        except GLib.GError as e:
-            print(e)
-        else:
-            GdkPixbuf.Pixbuf.new_from_stream_async(stream, None, self._on_pixbuf_ready, user_data)
-        finally:
-            pass
 
     def _clear_albums(self):
         for c in self._albums.get_children():
@@ -68,9 +58,6 @@ class Albums(toolkit.Scrollable):
         albums = self._album_cache.get_albums(artist_name)
         for album in albums:
             folder = os.path.join('/media/josh/Music', artist_name, album)
-            art = os.path.join(folder, 'cover.jpg')
-            if os.path.exists(art):
-                gio_file = Gio.File.new_for_path(art)
-                gio_file.read_async(GLib.PRIORITY_DEFAULT, None, self._on_stream_ready, (artist_name, album))
-            else:
-                print(f"No art! {artist_name} {album}")
+            cover_path = os.path.join(folder, 'cover.jpg')
+            if os.path.exists(cover_path):
+                self._art_cache.fetch(cover_path, self._on_art_ready, (artist_name, album))
