@@ -1,3 +1,7 @@
+import gi
+
+gi.require_version('GdkPixbuf', '2.0')
+
 from gi.repository import GdkPixbuf, Gio, GLib, GObject
 
 

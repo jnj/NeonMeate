@@ -1,5 +1,6 @@
 import mpd as mpd2
 from gi.repository import GObject
+from pygments.styles import default
 
 import neonmeate.mpd.cache
 import neonmeate.nmasync as nmasync
@@ -76,6 +77,37 @@ class Mpd:
                 albumcache.add(artist, album)
 
 
+class MpdState(GObject.GObject):
+    songid = GObject.Property(type=str, default='-1')
+    consume = GObject.Property(type=str, default='0')
+    repeat = GObject.Property(type=str, default='0')
+    random = GObject.Property(type=str, default='0')
+    playlist = GObject.Property(type=str, default='-1')
+    playlistlength = GObject.Property(type=str, default='0')
+    status = GObject.Property(type=str, default='stop')
+
+    def __init__(self):
+        GObject.GObject.__init__(self)
+        self._props_with_defaults = {
+            'songid': '-1',
+            'playlist': '-1',
+            'playlistlength': '0',
+            'consume': '0',
+            'random': '0',
+            'repeat': '0'
+        }
+
+    def update(self, status):
+        for k, v in self._props_with_defaults.items():
+            self._update_if_changed(status, k, v)
+
+    def _update_if_changed(self, status, key, defaultvalue):
+        current = self.get_property(key)
+        updated = status.get(key, defaultvalue)
+        if current != updated:
+            self.set_property(key, updated)
+
+
 class MpdHeartbeat(GObject.GObject):
     __gsignals__ = {
         'song_played_percent': (GObject.SignalFlags.RUN_FIRST, None, (float,)),
@@ -89,7 +121,17 @@ class MpdHeartbeat(GObject.GObject):
         self._client = client
         self._thread = nmasync.PeriodicTask(millis_interval, self._on_hb_interval)
         self._mpd_status = {}
-        self._song_id = '-1'
+        self._state = MpdState()
+
+        for prop, fn in {
+            'songid': self._on_song_change,
+            'playlist': self._on_playlist_change,
+            'playlistlength': self._on_playlistlength_change,
+            'consume': self._on_consume_change,
+            'random': self._on_random_change,
+            'repeat': self._on_repeat_change
+        }.items():
+            self._state.connect(f'notify::{prop}', fn)
 
     def start(self):
         self._thread.start()
@@ -99,9 +141,11 @@ class MpdHeartbeat(GObject.GObject):
 
     def _on_hb_interval(self):
         self._mpd_status = self._client.status()
+        self._state.update(self._mpd_status)
+
         play_status = self._mpd_status.get('state', 'stop')
         self.emit('song_playing_status', play_status)
-        self._check_song_changed()
+        # self._check_song_changed()
 
         if play_status == 'stop':
             self.emit('song_played_percent', 0)
@@ -110,6 +154,30 @@ class MpdHeartbeat(GObject.GObject):
             self.emit('song_played_percent', self._elapsed_percent())
 
         return True
+
+    def _on_song_change(self, obj, spec):
+        songid = self._state.get_property('songid')
+        if songid == '-1':
+            self.emit('no_song')
+            return
+        print(f"song id is {songid}")
+        song_info = self._client.currentsong()
+        self.emit('song_changed', song_info['artist'], song_info['title'])
+
+    def _on_playlist_change(self, obj, spec):
+        print("playlist changed")
+
+    def _on_playlistlength_change(self, obj, spec):
+        print("playlist length changed")
+
+    def _on_consume_change(self, obj, spec):
+        print("consume changed")
+
+    def _on_repeat_change(self, obj, spec):
+        print("repeat changed")
+
+    def _on_random_change(self, obj, spec):
+        print("random changed")
 
     def _check_song_changed(self):
         song_id = self._mpd_status.get('songid', '-1')
