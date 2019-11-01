@@ -10,6 +10,12 @@ from ..mpd import mpdlib as nmpd
 
 
 class App(Gtk.ApplicationWindow):
+    PlayStatus = {
+        'play': (False, False),
+        'pause': (True, False),
+        'stop': (False, True)
+    }
+
     def __init__(self, mpdclient, covers, cache, art_cache):
         Gtk.Window.__init__(self, title="NeonMeate")
         self._heartbeat = nmpd.MpdHeartbeat(mpdclient, 200)
@@ -90,13 +96,8 @@ class App(Gtk.ApplicationWindow):
         self._titlebar.set_title(title_text)
 
     def _on_song_playing_status(self, hb, status):
-        print(f"got status={status}")
-        if status == 'play':
-            self._controlbuttons.set_paused(False, False)
-        elif status == 'pause':
-            self._controlbuttons.set_paused(True, False)
-        elif status == 'stop':
-            self._controlbuttons.set_paused(False, True)
+        paused, stopped = App.PlayStatus.get(status, (False, False))
+        self._controlbuttons.set_paused(paused, stopped)
 
     def _on_song_percent(self, hb, fraction):
         self._songprogress.set_fraction(fraction)

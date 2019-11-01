@@ -149,11 +149,10 @@ class MpdHeartbeat(GObject.GObject):
         return True
 
     def _on_state_change(self, obj, spec):
-        prop_val = self._state.get_property(spec.name)
-        self.emit('song_playing_status', prop_val)
+        self.emit('song_playing_status', self._state.get_property(spec.name))
 
     def _on_song_change(self, obj, spec):
-        songid = self._state.get_property('songid')
+        songid = self._state.get_property(spec.name)
         if songid == '-1':
             self.emit('no_song')
             return
@@ -176,7 +175,7 @@ class MpdHeartbeat(GObject.GObject):
         pass
 
     def _on_elapsed_change(self, obj, spec):
-        self.emit('song_played_percent', self._state.get_property('elapsedtime'))
+        self.emit('song_played_percent', self._state.get_property(spec.name))
 
     def _mpd_state(self):
         return self._mpd_status.get('state', 'unknown')
