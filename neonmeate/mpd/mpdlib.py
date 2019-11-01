@@ -31,7 +31,7 @@ class Mpd:
     def idle(self):
         while True:
             changed = self._client.idle()
-            print(changed)
+            #print(changed)
 
     def stop_playing(self):
         nmasync.RunAsync(self._client.stop)
@@ -82,7 +82,7 @@ class MpdState(GObject.GObject):
     elapsed = GObject.Property(type=str, default='0')
     songid = GObject.Property(type=str, default='-1')
     consume = GObject.Property(type=str, default='0')
-    status = GObject.Property(type=str, default='stop')
+    state = GObject.Property(type=str, default='stop')
     playlist = GObject.Property(type=str, default='-1')
     playlistlength = GObject.Property(type=str, default='0')
     elapsedtime = GObject.Property(type=float, default=0.0)
@@ -101,6 +101,7 @@ class MpdState(GObject.GObject):
     def _update_if_changed(self, name, newval):
         current = self.get_property(name)
         if current != newval:
+            # print(f"updating property {name} from {current} to {newval}")
             self.set_property(name, newval)
 
     def _update_elapsed_time(self):
@@ -131,7 +132,8 @@ class MpdHeartbeat(GObject.GObject):
             'consume': self._on_consume_change,
             'random': self._on_random_change,
             'repeat': self._on_repeat_change,
-            'elapsedtime': self._on_elapsed_change
+            'elapsedtime': self._on_elapsed_change,
+            'state': self._on_state_change
         }.items():
             self._state.connect(f'notify::{prop}', fn)
 
@@ -144,58 +146,37 @@ class MpdHeartbeat(GObject.GObject):
     def _on_hb_interval(self):
         self._mpd_status = self._client.status()
         self._state.update(self._mpd_status)
-
-        play_status = self._mpd_status.get('state', 'stop')
-        self.emit('song_playing_status', play_status)
-        # self._check_song_changed()
-
-        if play_status == 'stop':
-            self.emit('song_played_percent', 0)
-
-        # if play_status == 'play':
-        #     self.emit('song_played_percent', self._elapsed_percent())
-
         return True
+
+    def _on_state_change(self, obj, spec):
+        prop_val = self._state.get_property(spec.name)
+        self.emit('song_playing_status', prop_val)
 
     def _on_song_change(self, obj, spec):
         songid = self._state.get_property('songid')
         if songid == '-1':
             self.emit('no_song')
             return
-        print(f"song id is {songid}")
         song_info = self._client.currentsong()
         self.emit('song_changed', song_info['artist'], song_info['title'])
 
     def _on_playlist_change(self, obj, spec):
-        print("playlist changed")
+        pass
 
     def _on_playlistlength_change(self, obj, spec):
-        print("playlist length changed")
+        pass
 
     def _on_consume_change(self, obj, spec):
-        print("consume changed")
+        pass
 
     def _on_repeat_change(self, obj, spec):
-        print("repeat changed")
+        pass
 
     def _on_random_change(self, obj, spec):
-        print("random changed")
+        pass
 
     def _on_elapsed_change(self, obj, spec):
         self.emit('song_played_percent', self._state.get_property('elapsedtime'))
-
-    def _check_song_changed(self):
-        song_id = self._mpd_status.get('songid', '-1')
-
-        if song_id != self._song_id:
-            self._song_id = song_id
-
-            if self._song_id == '-1':
-                self.emit('no_song')
-                return
-
-            song_info = self._client.currentsong()
-            self.emit('song_changed', song_info['artist'], song_info['title'])
 
     def _mpd_state(self):
         return self._mpd_status.get('state', 'unknown')

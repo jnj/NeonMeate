@@ -90,6 +90,7 @@ class App(Gtk.ApplicationWindow):
         self._titlebar.set_title(title_text)
 
     def _on_song_playing_status(self, hb, status):
+        print(f"got status={status}")
         if status == 'play':
             self._controlbuttons.set_paused(False, False)
         elif status == 'pause':
