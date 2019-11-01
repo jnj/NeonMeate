@@ -1,13 +1,11 @@
 import mpd as mpd2
 from gi.repository import GObject
-from pygments.styles import default
 
-import neonmeate.mpd.cache
 import neonmeate.nmasync as nmasync
 
 
 class Mpd:
-    def __init__(self, host, port):
+    def __init__(self, host='localhost', port=6600):
         self._host = host
         self._port = port
         self._client = mpd2.MPDClient()
@@ -78,34 +76,37 @@ class Mpd:
 
 
 class MpdState(GObject.GObject):
-    songid = GObject.Property(type=str, default='-1')
-    consume = GObject.Property(type=str, default='0')
+    duration = GObject.Property(type=str, default='1')
     repeat = GObject.Property(type=str, default='0')
     random = GObject.Property(type=str, default='0')
+    elapsed = GObject.Property(type=str, default='0')
+    songid = GObject.Property(type=str, default='-1')
+    consume = GObject.Property(type=str, default='0')
+    status = GObject.Property(type=str, default='stop')
     playlist = GObject.Property(type=str, default='-1')
     playlistlength = GObject.Property(type=str, default='0')
-    status = GObject.Property(type=str, default='stop')
+    elapsedtime = GObject.Property(type=float, default=0.0)
+    synth_props = {'elapsedtime'}
 
     def __init__(self):
         GObject.GObject.__init__(self)
-        self._props_with_defaults = {
-            'songid': '-1',
-            'playlist': '-1',
-            'playlistlength': '0',
-            'consume': '0',
-            'random': '0',
-            'repeat': '0'
-        }
 
     def update(self, status):
-        for k, v in self._props_with_defaults.items():
-            self._update_if_changed(status, k, v)
+        for p in self.list_properties():
+            if p.name not in self.synth_props:
+                new_val = status.get(p.name, p.default_value)
+                self._update_if_changed(p.name, new_val)
+        self._update_elapsed_time()
 
-    def _update_if_changed(self, status, key, defaultvalue):
-        current = self.get_property(key)
-        updated = status.get(key, defaultvalue)
-        if current != updated:
-            self.set_property(key, updated)
+    def _update_if_changed(self, name, newval):
+        current = self.get_property(name)
+        if current != newval:
+            self.set_property(name, newval)
+
+    def _update_elapsed_time(self):
+        e = float(self.get_property('elapsed'))
+        t = float(self.get_property('duration'))
+        self._update_if_changed('elapsedtime', round(e / t, 3))
 
 
 class MpdHeartbeat(GObject.GObject):
@@ -129,7 +130,8 @@ class MpdHeartbeat(GObject.GObject):
             'playlistlength': self._on_playlistlength_change,
             'consume': self._on_consume_change,
             'random': self._on_random_change,
-            'repeat': self._on_repeat_change
+            'repeat': self._on_repeat_change,
+            'elapsedtime': self._on_elapsed_change
         }.items():
             self._state.connect(f'notify::{prop}', fn)
 
@@ -150,8 +152,8 @@ class MpdHeartbeat(GObject.GObject):
         if play_status == 'stop':
             self.emit('song_played_percent', 0)
 
-        if play_status == 'play':
-            self.emit('song_played_percent', self._elapsed_percent())
+        # if play_status == 'play':
+        #     self.emit('song_played_percent', self._elapsed_percent())
 
         return True
 
@@ -179,6 +181,9 @@ class MpdHeartbeat(GObject.GObject):
     def _on_random_change(self, obj, spec):
         print("random changed")
 
+    def _on_elapsed_change(self, obj, spec):
+        self.emit('song_played_percent', self._state.get_property('elapsedtime'))
+
     def _check_song_changed(self):
         song_id = self._mpd_status.get('songid', '-1')
 
@@ -204,16 +209,12 @@ class MpdHeartbeat(GObject.GObject):
     def _is_paused(self):
         return self._state_is('pause')
 
-    def _elapsed_percent(self):
-        t = float(self._mpd_status.get('elapsed', 0))
-        d = float(self._mpd_status.get('duration', 1))
-        return t / d
-
 
 if __name__ == '__main__':
     client = Mpd('localhost', 6600)
     client.connect()
-    client.idle()
-    album_cache = neonmeate.mpd.cache.AlbumCache()
-    client.populate_cache(album_cache)
-    print(album_cache)
+    print(client.status())
+    # client.idle()
+    # album_cache = neonmeate.mpd.cache.AlbumCache()
+    # client.populate_cache(album_cache)
+    # print(album_cache)
