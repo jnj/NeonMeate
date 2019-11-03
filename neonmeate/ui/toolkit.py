@@ -45,6 +45,9 @@ class Table:
         self.tree = None
         self.selection_handler = None
 
+    def clear(self):
+        self.model.clear()
+
     def add(self, col_values):
         self.model.append(col_values)
 

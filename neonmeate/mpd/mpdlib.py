@@ -144,6 +144,7 @@ class MpdState(GObject.GObject):
 
 class MpdHeartbeat(GObject.GObject):
     __gsignals__ = {
+        'playlist_changed': (GObject.SignalFlags.RUN_FIRST, None, ()),
         'song_played_percent': (GObject.SignalFlags.RUN_FIRST, None, (float,)),
         'song_playing_status': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
         'song_changed': (GObject.SignalFlags.RUN_FIRST, None, (str, str)),
@@ -196,10 +197,10 @@ class MpdHeartbeat(GObject.GObject):
         self.emit('song_changed', song_info['artist'], song_info['title'])
 
     def _on_playlist_change(self, obj, spec):
-        pass
+        self.emit('playlist-changed')
 
     def _on_playlistlength_change(self, obj, spec):
-        pass
+        self.emit('playlist-changed')
 
     def _on_consume_change(self, obj, spec):
         pass

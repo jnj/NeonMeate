@@ -41,11 +41,8 @@ class App(Gtk.ApplicationWindow):
         self._main_box.pack_end(self._actionbar, False, False, 0)
 
         self._artists = Artists(self._album_cache, self._art_cache)
-        self._playlist = tk.Table(['Artist', 'Title'], [str, str])
-        current_queue = self._mpdclient.playlistinfo()
-        for i in current_queue:
-            self._playlist.add([i['artist'], i['title']])
-
+        self._playlist = tk.Table(['Artist', 'Album', 'Track', 'Title'], [str, str, int, str])
+        self._update_playlist(None)
         self.playlist_window = Scrollable()
         self.playlist_window.add_content(self._playlist.as_widget())
 
@@ -88,6 +85,13 @@ class App(Gtk.ApplicationWindow):
         self._heartbeat.connect('song_playing_status', self._on_song_playing_status)
         self._heartbeat.connect('song_changed', self._on_song_changed)
         self._heartbeat.connect('no_song', lambda hb: self._on_song_changed(hb, None, None))
+        self._heartbeat.connect('playlist-changed', self._update_playlist)
+
+    def _update_playlist(self, obj):
+        self._playlist.clear()
+        current_queue = self._mpdclient.playlistinfo()
+        for i in current_queue:
+            self._playlist.add([i['artist'], i['album'], int(i['track']), i['title']])
 
     def _on_song_changed(self, hb, artist, title):
         title_text = 'NeonMeate'
