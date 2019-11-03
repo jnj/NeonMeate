@@ -16,7 +16,7 @@ def main(args):
     mpdclient = nmpd.Mpd('localhost', 6600)
     mpdclient.connect()
 
-    album_cache = nmcache.AlbumCache()
+    album_cache = nmcache.AlbumCache('/media/josh/Music')
     mpdclient.populate_cache(album_cache)
 
     art_cache = artcache.ArtCache()

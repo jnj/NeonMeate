@@ -48,6 +48,7 @@ class Albums(toolkit.Scrollable):
         img = Gtk.Image.new_from_pixbuf(pixbuf)
         img.show()
         self._albums.add(img)
+        self.queue_draw()
 
     def _clear_albums(self):
         for c in self._albums.get_children():
@@ -57,7 +58,6 @@ class Albums(toolkit.Scrollable):
         self._clear_albums()
         albums = self._album_cache.get_albums(artist_name)
         for album in albums:
-            folder = os.path.join('/media/josh/Music', artist_name, album)
-            cover_path = os.path.join(folder, 'cover.jpg')
-            if os.path.exists(cover_path):
+            cover_path = self._album_cache.cover_art_path(artist_name, album)
+            if cover_path and os.path.exists(cover_path):
                 self._art_cache.fetch(cover_path, self._on_art_ready, (artist_name, album))

@@ -101,6 +101,7 @@ class App(Gtk.ApplicationWindow):
 
     def _on_song_percent(self, hb, fraction):
         self._songprogress.set_fraction(fraction)
+        self._songprogress.queue_draw()
 
     def on_start(self, x):
         self._mpdclient.toggle_pause(0)

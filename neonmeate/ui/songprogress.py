@@ -11,5 +11,4 @@ class SongProgress(Gtk.ProgressBar):
     def set_fraction(self, frac):
         super(SongProgress, self).set_fraction(frac)
         self.set_tooltip_text(f'{frac}')
-        self.show()
 

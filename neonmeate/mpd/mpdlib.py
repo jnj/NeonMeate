@@ -31,7 +31,22 @@ class Mpd:
     def idle(self):
         while True:
             changed = self._client.idle()
-            #print(changed)
+            # print(changed)
+
+    def playlist(self):
+        """
+        Returns the songs in the current playlist.
+        :return: a list of filenames.
+        """
+        return self._client.playlist()
+
+    def playlistinfo(self):
+        """
+        Returns the songs in the current playlist. This
+        gives the filepath, several of the song's tags.
+        :return: a list of dictionaries, one per song
+        """
+        return self._client.playlistinfo()
 
     def stop_playing(self):
         nmasync.RunAsync(self._client.stop)
@@ -45,18 +60,37 @@ class Mpd:
     def toggle_pause(self, should_pause):
         mpdstatus = self.status()
         if should_pause:
-            nmasync.RunAsync(lambda: self._client.pause(1))
+            task = self._pause
         else:
-            if 'state' in mpdstatus and mpdstatus['state'] == 'pause':
-                nmasync.RunAsync(lambda: self._client.pause(0))
-            else:
-                nmasync.RunAsync(lambda: self._client.play(0))
+            task = self._play_first_song
+            if 'pause' == mpdstatus.get('state', 'stop'):
+                task = self._unpause
+        nmasync.RunAsync(task)
+
+    def _pause(self):
+        self._client.pause(1)
+
+    def _play_first_song(self):
+        self._client.play(0)
+
+    def _unpause(self):
+        self._client.pause(0)
 
     def find_artists(self):
         return self._client.list('artist')
 
     def find_albums(self, artist):
-        return self._client.list('album', 'albumartist', artist)
+        songs = self._client.find('artist', artist)
+        songs_by_album = {}
+
+        for song in songs:
+            if 'album' in song:
+                album = song['album']
+                songlist = songs_by_album.get(album, [])
+                songlist.append(song)
+                songs_by_album[album] = songlist
+
+        return songs_by_album
 
     def status(self):
         return self._client.status()
@@ -64,15 +98,12 @@ class Mpd:
     def clear_playlist(self):
         self._client.send_playlistclear()
 
-    def playlistinfo(self):
-        return self._client.playlistinfo()
-
     def populate_cache(self, albumcache):
         artists = self._client.list('artist')
         for artist in artists:
             albums = self.find_albums(artist)
-            for album in albums:
-                albumcache.add(artist, album)
+            for album, songlist in albums.items():
+                albumcache.add(artist, album, songlist)
 
 
 class MpdState(GObject.GObject):
@@ -82,6 +113,7 @@ class MpdState(GObject.GObject):
     elapsed = GObject.Property(type=str, default='0')
     songid = GObject.Property(type=str, default='-1')
     consume = GObject.Property(type=str, default='0')
+    single = GObject.Property(type=str, default='0')
     state = GObject.Property(type=str, default='stop')
     playlist = GObject.Property(type=str, default='-1')
     playlistlength = GObject.Property(type=str, default='0')
@@ -132,6 +164,7 @@ class MpdHeartbeat(GObject.GObject):
             'consume': self._on_consume_change,
             'random': self._on_random_change,
             'repeat': self._on_repeat_change,
+            'single': self._on_single_change,
             'elapsedtime': self._on_elapsed_change,
             'state': self._on_state_change
         }.items():
@@ -147,6 +180,9 @@ class MpdHeartbeat(GObject.GObject):
         self._mpd_status = self._client.status()
         self._state.update(self._mpd_status)
         return True
+
+    def _on_single_change(self, obj, spec):
+        pass
 
     def _on_state_change(self, obj, spec):
         self.emit('song_playing_status', self._state.get_property(spec.name))
