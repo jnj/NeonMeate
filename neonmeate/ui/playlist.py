@@ -12,3 +12,4 @@ class Playlist(tk.Scrollable):
 
     def add_playlist_item(self, item):
         self._playlist_table.add(item)
+

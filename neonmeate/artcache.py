@@ -11,7 +11,7 @@ class ArtCache(GObject.GObject):
 
     def fetch(self, file_path, callback, user_data):
         if file_path in self._cache:
-            callback(self._cache[file_path])
+            callback(self._cache[file_path], (None, user_data))
             return
         req = ArtRequest(file_path, callback)
         gio_file = Gio.File.new_for_path(file_path)
@@ -31,7 +31,7 @@ class ArtCache(GObject.GObject):
         pixbuf = GdkPixbuf.Pixbuf.new_from_stream_finish(result)
         req, other = user_data
         self._cache[req.file_path] = pixbuf
-        req.on_completion(pixbuf)
+        req.on_completion(pixbuf, user_data)
 
 
 class ArtRequest:
@@ -39,5 +39,5 @@ class ArtRequest:
         self.file_path = file_path
         self.callback = callback
 
-    def on_completion(self, art):
-        self.callback(art)
+    def on_completion(self, art, user_data):
+        self.callback(art, user_data)

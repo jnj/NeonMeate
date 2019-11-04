@@ -19,9 +19,13 @@ class Column(Gtk.ListBox):
         'value-selected': (GObject.SignalFlags.RUN_FIRST, None, (str,))
     }
 
-    def __init__(self):
+    def __init__(self, selectable_rows=True):
         super(Column, self).__init__()
-        super(Column, self).connect('row-selected', self._on_row_selected)
+        if selectable_rows:
+            self.set_selection_mode(Gtk.SelectionMode.SINGLE)
+            super(Column, self).connect('row-selected', self._on_row_selected)
+        else:
+            self.set_selection_mode(Gtk.SelectionMode.NONE)
 
     def add_row(self, text):
         label = Gtk.Label(text, xalign=0)

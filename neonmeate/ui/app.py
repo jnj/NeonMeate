@@ -40,6 +40,7 @@ class App(Gtk.ApplicationWindow):
 
         self._artists = ArtistsAlbums(self._album_cache, self._art_cache)
         self._playlist = Playlist()
+        self._playlist.connect('key-press-event', self._on_playlist_key)
         self._update_playlist(None)
 
         self._stack.add_titled(self._artists, 'artists', 'Artists')
@@ -82,6 +83,9 @@ class App(Gtk.ApplicationWindow):
         self._heartbeat.connect('song_changed', self._on_song_changed)
         self._heartbeat.connect('no_song', lambda hb: self._on_song_changed(hb, None, None))
         self._heartbeat.connect('playlist-changed', self._update_playlist)
+
+    def _on_playlist_key(self, obj, key):
+        print(f"playlist key pressed {key}")
 
     def _update_playlist(self, obj):
         self._playlist.clear()

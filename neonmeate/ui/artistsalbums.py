@@ -30,7 +30,7 @@ class Artists(toolkit.Scrollable):
 
     def __init__(self, album_cache, art_cache):
         super(Artists, self).__init__()
-        self._artist_column = toolkit.Column()
+        self._artist_column = toolkit.Column(True)
         self.add_content(self._artist_column)
         for artist in album_cache.all_artists():
             self._artist_column.add_row(artist)
@@ -45,14 +45,15 @@ class Albums(toolkit.Scrollable):
         super(Albums, self).__init__()
         self._art_cache = art_cache
         self._album_cache = album_cache
-        self._albums = toolkit.Column()
+        self._albums = toolkit.Column(False)
         self.add_content(self._albums)
 
-    def _on_art_ready(self, pixbuf):
-        pixbuf = pixbuf.scale_simple(400, 400, GdkPixbuf.InterpType.BILINEAR)
-        img = Gtk.Image.new_from_pixbuf(pixbuf)
-        img.show()
-        self._albums.add(img)
+    def _on_art_ready(self, pixbuf, user_data):
+        artist, album = user_data[1]
+        songs = self._album_cache.get_albums(artist)[album]
+        album_entry = AlbumEntry(artist, album, songs, pixbuf)
+        album_entry.show()
+        self._albums.add(album_entry)
         self.queue_draw()
 
     def _clear_albums(self):
@@ -66,3 +67,21 @@ class Albums(toolkit.Scrollable):
             cover_path = self._album_cache.cover_art_path(artist_name, album)
             if cover_path and os.path.exists(cover_path):
                 self._art_cache.fetch(cover_path, self._on_art_ready, (artist_name, album))
+
+
+class AlbumEntry(Gtk.Grid):
+    def __init__(self, artist, album, songs, pixbuf):
+        super(AlbumEntry, self).__init__()
+        self.set_column_spacing(10)
+        pixbuf = pixbuf.scale_simple(200, 200, GdkPixbuf.InterpType.BILINEAR)
+        img = Gtk.Image.new_from_pixbuf(pixbuf)
+        img.show()
+        self.attach(img, 0, 0, 1, 1)
+        label_txt = f"{album}\n"
+        for s in songs:
+            label_txt += f"{s['track']}. {s['title']}\n"
+        label = Gtk.Label(label_txt)
+        label.show()
+        self.attach(label, 1, 0, 1, 1)
+        self.set_row_baseline_position(0, Gtk.BaselinePosition.TOP)
+
