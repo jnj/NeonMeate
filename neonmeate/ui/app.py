@@ -1,11 +1,10 @@
-import neonmeate.ui.toolkit as tk
+from gi.repository import GdkPixbuf, Gtk
 
-from gi.repository import Gdk, GdkPixbuf, Gtk
-
-from .toolkit import Scrollable
 from .artistsalbums import ArtistsAlbums
 from .controls import ControlButtons
 from .songprogress import SongProgress
+from .toolkit import Scrollable
+from .playlist import Playlist
 from ..mpd import mpdlib as nmpd
 
 
@@ -41,13 +40,11 @@ class App(Gtk.ApplicationWindow):
         self._main_box.pack_end(self._actionbar, False, False, 0)
 
         self._artists = ArtistsAlbums(self._album_cache, self._art_cache)
-        self._playlist = tk.Table(['Artist', 'Album', 'Track', 'Title'], [str, str, int, str])
+        self._playlist = Playlist()
         self._update_playlist(None)
-        self.playlist_window = Scrollable()
-        self.playlist_window.add_content(self._playlist.as_widget())
 
         self._stack.add_titled(self._artists, 'artists', 'Artists')
-        self._stack.add_titled(self.playlist_window, 'playlist', 'Playlist')
+        self._stack.add_titled(self._playlist, 'playlist', 'Playlist')
         self._stack_switcher = Gtk.StackSwitcher()
         self._stack_switcher.set_stack(self._stack)
         self._titlebar.pack_start(self._stack_switcher)
@@ -91,7 +88,7 @@ class App(Gtk.ApplicationWindow):
         self._playlist.clear()
         current_queue = self._mpdclient.playlistinfo()
         for i in current_queue:
-            self._playlist.add([i['artist'], i['album'], int(i['track']), i['title']])
+            self._playlist.add_playlist_item([i['artist'], i['album'], int(i['track']), i['title']])
 
     def _on_song_changed(self, hb, artist, title):
         title_text = 'NeonMeate'
