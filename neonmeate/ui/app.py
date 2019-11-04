@@ -14,7 +14,7 @@ class App(Gtk.ApplicationWindow):
         'stop': (False, True)
     }
 
-    def __init__(self, mpdclient, covers, cache, art_cache):
+    def __init__(self, mpdclient, cache, art_cache):
         Gtk.Window.__init__(self, title="NeonMeate")
         self._heartbeat = nmpd.MpdHeartbeat(mpdclient, 200)
         self._heartbeat.start()
