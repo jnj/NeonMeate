@@ -50,7 +50,8 @@ class Albums(toolkit.Scrollable):
 
     def _on_art_ready(self, pixbuf, user_data):
         artist, album = user_data[1]
-        songs = self._album_cache.get_albums(artist)[album]
+        albuminfo = self._album_cache.get_albums(artist)[album]
+        songs = albuminfo.songs
         album_entry = AlbumEntry(artist, album, songs, pixbuf)
         album_entry.show()
         self._albums.add(album_entry)

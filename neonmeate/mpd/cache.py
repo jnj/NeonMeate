@@ -11,12 +11,16 @@ class AlbumCache:
     def add(self, artist, album, songs):
         if artist not in self._albums_by_artist:
             self._artists.append(artist)
-        self._albums_by_artist[artist][album] = songs
+        albums = self._albums_by_artist[artist]
+        if album not in albums:
+            year = int(songs[0]['date'])
+            albums[album] = AlbumInfo(artist, album, year, songs)
 
     def cover_art_path(self, artist, album):
         albums = self._albums_by_artist[artist]
         if album in albums:
-            songs = albums[album]
+            albuminfo = albums[album]
+            songs = albuminfo.songs
             if songs:
                 song_path = songs[0]['file']
                 return os.path.join(self._root_music_dir, os.path.dirname(song_path), 'cover.jpg')
@@ -26,7 +30,7 @@ class AlbumCache:
         for artist in self._artists:
             albums = sorted(self.get_albums(artist))
             for album in albums:
-                yield artist, album
+                yield artist, album.title
 
     def all_artists(self):
         return self._artists
@@ -36,3 +40,11 @@ class AlbumCache:
 
     def __str__(self):
         return str(self._artists)
+
+
+class AlbumInfo:
+    def __init__(self, artist, title, year, songs):
+        self.title = title
+        self.artist = artist
+        self.year = year
+        self.songs = songs
