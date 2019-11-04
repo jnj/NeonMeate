@@ -59,7 +59,6 @@ class Table:
             column = Gtk.TreeViewColumn(col_header, renderer, text=i)
             column.set_sort_column_id(i)
             column.set_resizable(True)
-
             self.tree.append_column(column)
 
         select = self.tree.get_selection()
@@ -76,6 +75,7 @@ class Table:
 
 
 if __name__ == "__main__":
+    l = [True]
     t = Table(['foo', 'bar'], [str, str])
 
     t.add(['1', '2'])
@@ -83,13 +83,25 @@ if __name__ == "__main__":
     t.add(['5', '6'])
 
     win = Gtk.Window()
+    box = Gtk.FlowBox()
+    win.add(box)
     win.connect('destroy', Gtk.main_quit)
-    win.add(t.as_widget())
+    box.add(t.as_widget())
+    button = Gtk.Button(label="clear")
 
+    def toggle(x):
+        if l[0]:
+            l[0] = False
+            t.clear()
+        else:
+            l[0] = True
+            t.add(['1', '2'])
+
+    button.connect('clicked', toggle)
+    box.add(button)
 
     def on_select(row):
         print(f"You selected {row[0]} {row[1]}")
-
 
     t.set_selection_handler(on_select)
     win.show_all()

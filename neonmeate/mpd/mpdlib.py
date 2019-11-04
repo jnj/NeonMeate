@@ -1,5 +1,5 @@
 import mpd as mpd2
-from gi.repository import GObject
+from gi.repository import GLib, GObject
 
 import neonmeate.nmasync as nmasync
 
@@ -176,6 +176,11 @@ class MpdHeartbeat(GObject.GObject):
 
     def stop(self):
         self._thread.stop()
+
+    def connect(self, signal_name, handler, *args):
+        def wrapped_handler(obj, *a):
+            GLib.idle_add(handler, obj, *a)
+        super(MpdHeartbeat, self).connect(signal_name, wrapped_handler, *args)
 
     def _on_hb_interval(self):
         self._mpd_status = self._client.status()
