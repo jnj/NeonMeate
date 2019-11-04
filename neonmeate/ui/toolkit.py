@@ -57,12 +57,13 @@ class Table:
         for i, col_header in enumerate(self.column_names):
             renderer = Gtk.CellRendererText()
             column = Gtk.TreeViewColumn(col_header, renderer, text=i)
-            column.set_sort_column_id(i)
+            #column.set_sort_column_id(i)
             column.set_resizable(True)
             self.tree.append_column(column)
 
         select = self.tree.get_selection()
         select.connect('changed', self._on_selection_changed)
+        self.tree.set_property('fixed_height_mode', True)
         return self.tree
 
     def _on_selection_changed(self, select):

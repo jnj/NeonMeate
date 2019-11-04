@@ -2,9 +2,8 @@ from gi.repository import GdkPixbuf, Gtk
 
 from .artistsalbums import ArtistsAlbums
 from .controls import ControlButtons
-from .songprogress import SongProgress
-from .toolkit import Scrollable
 from .playlist import Playlist
+from .songprogress import SongProgress
 from ..mpd import mpdlib as nmpd
 
 

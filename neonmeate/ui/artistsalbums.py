@@ -15,7 +15,7 @@ class ArtistsAlbums(Gtk.Frame):
         self._albums = Albums(self._album_cache, self._art_cache)
         self._panes.pack1(self._artists_scrollable)
         self._panes.pack2(self._albums)
-        self._panes.set_position(400)
+        self._panes.set_position(280)
         self.add(self._panes)
         self._artists_scrollable.connect('artist-selected', self._on_artist_clicked)
 
