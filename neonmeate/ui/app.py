@@ -49,32 +49,6 @@ class App(Gtk.ApplicationWindow):
         self._stack_switcher.set_stack(self._stack)
         self._titlebar.pack_start(self._stack_switcher)
 
-        self.covers = covers
-        self.grid = Gtk.Grid()
-        self.grid.set_row_homogeneous(True)
-        self.grid.set_column_homogeneous(True)
-        self.grid.set_column_spacing(5)
-        self.grid.set_row_spacing(5)
-
-        attach_row = 0
-        attach_col = 0
-        count = 0
-        width = 10
-
-        for cover in self.covers:
-            pixbuf = GdkPixbuf.Pixbuf.new_from_file(cover)
-            pixbuf = pixbuf.scale_simple(200, 200, GdkPixbuf.InterpType.BILINEAR)
-            img = Gtk.Image.new_from_pixbuf(pixbuf)
-
-            if count == width:
-                attach_row += 1
-                attach_col = 0
-                count = 0
-
-            self.grid.attach(img, attach_col, attach_row, 1, 1)
-            attach_col += 1
-            count += 1
-
         self._controlbuttons.connect('neonmeate_stop_playing', self.on_stop)
         self._controlbuttons.connect('neonmeate_start_playing', self.on_start)
         self._controlbuttons.connect('neonmeate_toggle_pause', self.on_pause)
