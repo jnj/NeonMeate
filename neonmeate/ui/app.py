@@ -3,7 +3,7 @@ import neonmeate.ui.toolkit as tk
 from gi.repository import Gdk, GdkPixbuf, Gtk
 
 from .toolkit import Scrollable
-from .artists import Artists
+from .artistsalbums import ArtistsAlbums
 from .controls import ControlButtons
 from .songprogress import SongProgress
 from ..mpd import mpdlib as nmpd
@@ -40,7 +40,7 @@ class App(Gtk.ApplicationWindow):
         self._main_box.pack_start(self._stack, True, True, 0)
         self._main_box.pack_end(self._actionbar, False, False, 0)
 
-        self._artists = Artists(self._album_cache, self._art_cache)
+        self._artists = ArtistsAlbums(self._album_cache, self._art_cache)
         self._playlist = tk.Table(['Artist', 'Album', 'Track', 'Title'], [str, str, int, str])
         self._update_playlist(None)
         self.playlist_window = Scrollable()

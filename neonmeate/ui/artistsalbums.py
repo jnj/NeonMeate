@@ -5,34 +5,39 @@ from gi.repository import GdkPixbuf, GObject, Gtk
 from neonmeate.ui import toolkit
 
 
-class Artists(Gtk.Frame):
+class ArtistsAlbums(Gtk.Frame):
+    def __init__(self, album_cache, art_cache):
+        super(ArtistsAlbums, self).__init__()
+        self._album_cache = album_cache
+        self._art_cache = art_cache
+        self._panes = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
+        self._artists_scrollable = Artists(album_cache, art_cache)
+        self._albums = Albums(self._album_cache, self._art_cache)
+        self._panes.pack1(self._artists_scrollable)
+        self._panes.pack2(self._albums)
+        self._panes.set_position(400)
+        self.add(self._panes)
+        self._artists_scrollable.connect('artist-selected', self._on_artist_clicked)
+
+    def _on_artist_clicked(self, column_widget, selected_value):
+        self._albums.on_artist_selected(selected_value)
+
+
+class Artists(toolkit.Scrollable):
     __gsignals__ = {
         'artist-selected': (GObject.SignalFlags.RUN_FIRST, None, (str,))
     }
 
     def __init__(self, album_cache, art_cache):
         super(Artists, self).__init__()
-        self._album_cache = album_cache
-        self._art_cache = art_cache
-        self._panes = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
-        self._artist_list = toolkit.Column()
-        self._artists_scrollable = toolkit.Scrollable()
-        self._artists_scrollable.add_content(self._artist_list)
-        self._albums = Albums(self._album_cache, self._art_cache)
-        self._panes.pack1(self._artists_scrollable)
-        self._panes.pack2(self._albums)
-        self._panes.set_position(400)
-        self.add(self._panes)
-        self._artist_list.connect('value-selected', self._on_artist_clicked)
+        self._artist_column = toolkit.Column()
+        self.add_content(self._artist_column)
+        for artist in album_cache.all_artists():
+            self._artist_column.add_row(artist)
+        self._artist_column.connect('value-selected', self._on_artist_clicked)
 
-        for artist in self._album_cache.all_artists():
-            self._add_artist(artist)
-
-    def _add_artist(self, name):
-        self._artist_list.add_row(name)
-
-    def _on_artist_clicked(self, column_widget, selected_value):
-        self._albums.on_artist_selected(selected_value)
+    def _on_artist_clicked(self, obj, value):
+        self.emit('artist-selected', value)
 
 
 class Albums(toolkit.Scrollable):
