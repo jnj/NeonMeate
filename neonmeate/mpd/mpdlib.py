@@ -123,7 +123,7 @@ class MpdState(GObject.GObject):
 
     def __init__(self):
         GObject.GObject.__init__(self)
-        self._time_pattern = re.compile(r'\d+(\.\d+)?')
+        self._time_pattern = re.compile(r'^\d+(\.\d+)?$')
 
     def update(self, status):
         for p in self.list_properties():
