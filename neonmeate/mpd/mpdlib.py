@@ -1,4 +1,5 @@
 import mpd as mpd2
+import re
 from gi.repository import GLib, GObject
 
 import neonmeate.nmasync as nmasync
@@ -122,6 +123,7 @@ class MpdState(GObject.GObject):
 
     def __init__(self):
         GObject.GObject.__init__(self)
+        self._time_pattern = re.compile(r'\d+(\.\d+)?')
 
     def update(self, status):
         for p in self.list_properties():
@@ -138,8 +140,10 @@ class MpdState(GObject.GObject):
 
     def _update_elapsed_time(self):
         e = float(self.get_property('elapsed'))
-        t = float(self.get_property('duration'))
-        self._update_if_changed('elapsedtime', round(e / t, 3))
+        duration = self.get_property('duration')
+        if self._time_pattern.search(duration):
+            t = float(duration)
+            self._update_if_changed('elapsedtime', round(e / t, 3))
 
 
 class MpdHeartbeat(GObject.GObject):
