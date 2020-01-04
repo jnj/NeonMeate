@@ -47,9 +47,12 @@ class Albums(toolkit.Scrollable):
         self._album_cache = album_cache
         self._albums = toolkit.Column(False)
         self.add_content(self._albums)
+        self._selected_artist = None
 
     def _on_art_ready(self, pixbuf, user_data):
         artist, album = user_data[1]
+        if self._selected_artist != artist:
+            return
         albuminfo = self._album_cache.get_albums(artist)[album]
         songs = albuminfo.songs
         album_entry = AlbumEntry(artist, album, songs, pixbuf)
@@ -63,6 +66,7 @@ class Albums(toolkit.Scrollable):
 
     def on_artist_selected(self, artist_name):
         self._clear_albums()
+        self._selected_artist = artist_name
         albums = self._album_cache.get_albums(artist_name)
         for album in albums:
             cover_path = self._album_cache.cover_art_path(artist_name, album)
