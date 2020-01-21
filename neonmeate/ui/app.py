@@ -1,6 +1,7 @@
 from gi.repository import GdkPixbuf, Gtk
 
 from .artistsalbums import ArtistsAlbums
+from .nowplaying import NowPlaying
 from .controls import ControlButtons
 from .playlist import Playlist
 from .songprogress import SongProgress
@@ -43,8 +44,10 @@ class App(Gtk.ApplicationWindow):
         self._playlist.connect('key-press-event', self._on_playlist_key)
         self._update_playlist(None)
 
+        self._now_playing = NowPlaying(self._album_cache, self._art_cache)
         self._stack.add_titled(self._artists, 'artists', 'Artists')
         self._stack.add_titled(self._playlist, 'playlist', 'Playlist')
+        self._stack.add_titled(self._now_playing, 'now_playing', 'Playing')
         self._stack_switcher = Gtk.StackSwitcher()
         self._stack_switcher.set_stack(self._stack)
         self._titlebar.pack_start(self._stack_switcher)
@@ -52,6 +55,7 @@ class App(Gtk.ApplicationWindow):
         self._controlbuttons.connect('neonmeate_stop_playing', self.on_stop)
         self._controlbuttons.connect('neonmeate_start_playing', self.on_start)
         self._controlbuttons.connect('neonmeate_toggle_pause', self.on_pause)
+
         self._heartbeat.connect('song_played_percent', self._on_song_percent)
         self._heartbeat.connect('song_playing_status', self._on_song_playing_status)
         self._heartbeat.connect('song_changed', self._on_song_changed)
@@ -65,7 +69,11 @@ class App(Gtk.ApplicationWindow):
         self._playlist.clear()
         current_queue = self._mpdclient.playlistinfo()
         for i in current_queue:
-            self._playlist.add_playlist_item([i['artist'], i['album'], int(i['track']), i['title']])
+            try:
+                self._playlist.add_playlist_item([i['artist'], i['album'], int(i['track']), i['title']])
+            except KeyError as e:
+                print(f"Failed to find key in {i}")
+                raise e
 
     def _on_song_changed(self, hb, artist, title):
         title_text = 'NeonMeate'
