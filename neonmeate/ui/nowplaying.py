@@ -10,3 +10,5 @@ class NowPlaying(Gtk.Frame):
         super(Gtk.Frame, self).__init__()
         self._album_cache = album_cache
         self._art_cache = art_cache
+        print(f"window has dimensions {self.get_allocated_width()} by {self.get_allocated_height()}")
+

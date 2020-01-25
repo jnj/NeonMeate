@@ -1,6 +1,7 @@
 import gi
 
 gi.require_version('Gtk', '3.0')
+gi.require_foreign('cairo')
 
 from gi.repository import GdkPixbuf, Gtk, Gdk, GLib
 import cairo
@@ -9,6 +10,10 @@ import cairo
 def pixbuf_from_file(fileobj):
     pixbuf = GdkPixbuf.Pixbuf.new_from_file(fileobj.name)
     return pixbuf
+
+
+def scale_pixbuf(pixbuf, window):
+    return pixbuf.scale_simple(window.get_width(), window.get_height(), GdkPixbuf.InterpType.BILINEAR)
 
 
 class App(Gtk.ApplicationWindow):
@@ -24,19 +29,36 @@ class App(Gtk.ApplicationWindow):
 class CoverImage(Gtk.Grid):
     def __init__(self, pixbuf):
         super(CoverImage, self).__init__()
-        pixbuf = pixbuf.scale_simple(200, 200, GdkPixbuf.InterpType.BILINEAR)
+        pixbuf = pixbuf.scale_simple(400, 400, GdkPixbuf.InterpType.BILINEAR)
         img = Gtk.Image.new_from_pixbuf(pixbuf)
         img.show()
         self.attach(img, 0, 0, 1, 1)
 
 
-coverpath='/media/josh/Music/Autopsy/Mental Funeral/cover.jpg'
+def draw(da, ctx):
+    # grad = cairo.LinearGradient(0, 0, 0, 400)
+    grad = cairo.LinearGradient(0, 0, 0, 600)
+    # red-to-black linear gradient
+    grad.add_color_stop_rgba(0, 1, 0, 0, 1)
+    grad.add_color_stop_rgba(1, 0, 0, 0, 1)
+    ctx.set_source(grad)
+    #ctx.set_source_rgba(0, 0, 0, 0.5)
+    ctx.rectangle(0, 0, 600, 600)
+    ctx.fill()
+    print('draw complete!')
+    return False
+
+coverpath = '/media/josh/Music/Autopsy/Mental Funeral/cover.jpg'
 
 with open(coverpath, 'br') as f:
     p = pixbuf_from_file(f)
 
 main_window = App()
-main_window.add(CoverImage(p))
+# main_window.add(CoverImage(p))
+drawing_area = Gtk.DrawingArea()
+main_window.add(drawing_area)
+drawing_area.set_size_request(600, 600)
+drawing_area.connect('draw', draw)
 main_window.connect('destroy', Gtk.main_quit)
 main_window.show_all()
 
