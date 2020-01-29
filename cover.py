@@ -52,7 +52,8 @@ class CoverWithGradient(Gtk.DrawingArea):
         # ctx.set_source_rgba(0, 0, 0, 0.5)
         ctx.rectangle(0, 0, 600, 600)
         ctx.fill()
-        
+        Gdk.cairo_set_source_pixbuf(ctx, self.pixbuf, 100, 100)
+        ctx.paint()
         print('draw complete!')
         return False
 
