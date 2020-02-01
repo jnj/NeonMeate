@@ -39,22 +39,21 @@ class CoverWithGradient(Gtk.DrawingArea):
     def __init__(self, pixbuf):
         super(CoverWithGradient, self).__init__()
         self.set_size_request(600, 600)
-        self.pixbuf = pixbuf
+        self.pixbuf = pixbuf.scale_simple(400, 400, GdkPixbuf.InterpType.BILINEAR)
         self.connect('draw', self.draw)
 
     def draw(self, da, ctx):
         # grad = cairo.LinearGradient(0, 0, 0, 400)
         grad = cairo.LinearGradient(0, 0, 0, 600)
         # red-to-black linear gradient
-        grad.add_color_stop_rgba(0, 0.2, 0.01, 0.01, 1)
-        grad.add_color_stop_rgba(1, 0.3, 0.2, 0.2, 1)
+        grad.add_color_stop_rgb(0, 0.2, 0.01, 0.01)
+        grad.add_color_stop_rgb(1, 0.3, 0.2, 0.2)
         ctx.set_source(grad)
         # ctx.set_source_rgba(0, 0, 0, 0.5)
         ctx.rectangle(0, 0, 600, 600)
         ctx.fill()
         Gdk.cairo_set_source_pixbuf(ctx, self.pixbuf, 100, 100)
         ctx.paint()
-        print('draw complete!')
         return False
 
 
