@@ -135,10 +135,10 @@ def kmeans(k, cluster_threshold, img):
     dist_thresh = 1
     dist = dist_thresh
     clusters = initialize_clusters(k, cluster_threshold, img)
-    print(f"{len(clusters)} clusters.")
+    #print(f"{len(clusters)} clusters.")
     while dist >= dist_thresh:
         i += 1
-        print(f"Pass {i}")
+        #print(f"Pass {i}")
 
         for c in clusters:
             c.recenter()
@@ -179,15 +179,30 @@ def output(imgpath, clusters):
         f.write(s)
 
 
-def main(args):
-    filepath = args[0]
-    with open(filepath, 'rb') as f:
-        pixbuf = pixbuf_from_file(f, maxedge=100)
+def clusterize(pixbuf):
+    maxedge = 150
+    if pixbuf.get_height() > maxedge and pixbuf.get_width() > maxedge:
+        pixbuf = pixbuf.scale_simple(maxedge, maxedge, GdkPixbuf.InterpType.BILINEAR)
     assert pixbuf.get_bits_per_sample() == 8
     assert pixbuf.get_colorspace() == GdkPixbuf.Colorspace.RGB
     img = Image(pixbuf)
     clusters = sorted(kmeans(6, 60, img), key=lambda c: c.count)
+    white = Cluster('white', 255, 255, 255)
+    black = Cluster('white', 0, 0, 0)
+    thresh = 50
 
+    def black_or_white(c):
+        return c.distance(white) < thresh or c.distance(black) < thresh
+
+    clusters = [c for c in clusters if not black_or_white(c)]
+    return clusters
+
+
+def main(args):
+    filepath = args[0]
+    with open(filepath, 'rb') as f:
+        pixbuf = pixbuf_from_file(f, maxedge=100)
+    clusters = clusterize(pixbuf)
     for c in clusters:
         dist_dict = {}
         for d in clusters:

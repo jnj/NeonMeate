@@ -5,6 +5,7 @@ gi.require_foreign('cairo')
 
 from gi.repository import GdkPixbuf, Gtk, Gdk, GLib
 import cairo
+from neonmeate import cluster
 
 
 def pixbuf_from_file(fileobj):
@@ -38,26 +39,36 @@ class CoverImage(Gtk.Grid):
 class CoverWithGradient(Gtk.DrawingArea):
     def __init__(self, pixbuf):
         super(CoverWithGradient, self).__init__()
-        self.set_size_request(600, 600)
-        self.pixbuf = pixbuf.scale_simple(400, 400, GdkPixbuf.InterpType.BILINEAR)
+        self.w = 600
+        self.h = 600
+        self.set_size_request(self.h, self.w)
+        self.pixbuf = pixbuf
         self.connect('draw', self.draw)
+        self.connect('size-allocate', self.alloc)
+        self.clusters = cluster.clusterize(pixbuf)
+        self.start = self.clusters[-1].mean
+
+    def alloc(self, widget, allocation):
+        self.h = allocation.height
+        self.w = allocation.width
 
     def draw(self, da, ctx):
-        # grad = cairo.LinearGradient(0, 0, 0, 400)
-        grad = cairo.LinearGradient(0, 0, 0, 600)
+        grad = cairo.LinearGradient(0, 0, 0, self.h)
         # red-to-black linear gradient
-        grad.add_color_stop_rgb(0, 0.2, 0.01, 0.01)
-        grad.add_color_stop_rgb(1, 0.3, 0.2, 0.2)
+        l = [x / 255 for x in self.start]
+        m = [x * 0.6 for x in l]
+        grad.add_color_stop_rgb(0, l[0], l[1], l[2])
+        grad.add_color_stop_rgb(1, m[0], m[1], m[2])
         ctx.set_source(grad)
-        # ctx.set_source_rgba(0, 0, 0, 0.5)
-        ctx.rectangle(0, 0, 600, 600)
+        ctx.rectangle(0, 0, self.w, self.h)
         ctx.fill()
-        Gdk.cairo_set_source_pixbuf(ctx, self.pixbuf, 100, 100)
+        p = self.pixbuf.scale_simple(self.w - 200, self.h - 200, GdkPixbuf.InterpType.BILINEAR)
+        Gdk.cairo_set_source_pixbuf(ctx, p, (self.w - p.get_width()) / 2, (self.h - p.get_height()) / 2)
         ctx.paint()
         return False
 
 
-coverpath = '/media/josh/Music/Autopsy/Mental Funeral/cover.jpg'
+coverpath = '/media/josh/Music/Death/Individual Thought Patterns/cover.jpg'
 
 with open(coverpath, 'br') as f:
     p = pixbuf_from_file(f)
