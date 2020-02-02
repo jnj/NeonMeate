@@ -1,7 +1,42 @@
 import math
 import random
+import string
 import sys
 from gi.repository import GdkPixbuf
+
+
+class SamplerStrategy:
+    """
+    Randomly samples.
+    """
+
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+
+    def take(self, n):
+        return [(random.randrange(0, self.width), random.randrange(0, self.height)) for i in range(n)]
+
+
+class GridSampler(SamplerStrategy):
+    """
+    Subsample by 1/10 factor.
+    """
+
+    def __init__(self, width, height):
+        super(GridSampler, self).__init__(width, height)
+        self.x_stride = int(width / 10.0)
+        self.y_stride = int(height / 10.0)
+        self.x = 0
+        self.y = 0
+
+    def take(self, n):
+        a = []
+        for x in range(0, self.width, self.x_stride):
+            for y in range(0, self.height, self.y_stride):
+                a.append((x, y))
+        random.shuffle(a)
+        return a
 
 
 class Image:
@@ -12,16 +47,14 @@ class Image:
         self.stride = pixbuf.get_rowstride()
         self.bytes = pixbuf.get_pixels()
 
-    def initial_sample_count(self):
-        return int(0.05 * self.height * self.width)
-
     def color(self, row, col):
         p = row * self.stride + col * 3
         return self.bytes[p], self.bytes[p + 1], self.bytes[p + 2]
 
 
 class Cluster:
-    def __init__(self, r, g, b):
+    def __init__(self, label, r, g, b):
+        self.label = label
         self.count = 1
         self.mean = [r, g, b]
         self.initial_mean = [r, g, b]
@@ -29,6 +62,9 @@ class Cluster:
     @staticmethod
     def color_dist(r1, g1, b1, r2, g2, b2):
         return math.sqrt((r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2)
+
+    def distance(self, other):
+        return self.dist(other.initial_mean[0], other.initial_mean[1], other.initial_mean[2])
 
     def color_as_hex(self):
         a = [int(round(n)) for n in self.mean]
@@ -58,47 +94,69 @@ class Cluster:
         self.recalc_means(r, g, b)
 
 
-def pixbuf_from_file(fileobj):
-    maxedge = 100
+def pixbuf_from_file(fileobj, maxedge=100):
     pixbuf = GdkPixbuf.Pixbuf.new_from_file(fileobj.name)
     if pixbuf.get_height() > maxedge and pixbuf.get_width() > maxedge:
         pixbuf = pixbuf.scale_simple(maxedge, maxedge, GdkPixbuf.InterpType.BILINEAR)
     return pixbuf
 
 
-def kmeans(k, img):
-    # populate initial clusters
-    coords = [(r, c) for r in list(range(img.height)) for c in list(range(img.width))]
-    initial = random.sample(coords, k)
+def initialize_clusters(k, cluster_min_distance, img):
     clusters = []
+    max_samples = int(0.6 * img.height * img.width)
+    grid_sampler = GridSampler(img.width, img.height)
+    rand_sampler = SamplerStrategy(img.width, img.height)
 
-    for row, col in initial:
-        r, g, b = img.color(row, col)
-        clusters.append(Cluster(r, g, b))
+    def different_enough(r, g, b):
+        return all(c.dist(r, g, b) > cluster_min_distance for c in clusters)
 
+    def add_if(r, g, b):
+        if different_enough(r, g, b) and len(clusters) < k:
+            label = ''.join(random.sample(string.ascii_uppercase, 6))
+            clusters.append(Cluster(label, r, g, b))
+
+    for x, y in grid_sampler.take(100):  # the n param is ignored by grid sampler
+        r, g, b = img.color(y, x)
+        add_if(r, g, b)
+
+    if len(clusters) == k:
+        return clusters
+
+    # try with random sampling
+    for x, y in rand_sampler.take(max_samples):
+        r, g, b = img.color(y, x)
+        add_if(r, g, b)
+
+    return clusters
+
+
+def kmeans(k, cluster_threshold, img):
     i = 0
-    dist = 1
-
-    while dist >= 1:
+    dist_thresh = 1
+    dist = dist_thresh
+    clusters = initialize_clusters(k, cluster_threshold, img)
+    print(f"{len(clusters)} clusters.")
+    while dist >= dist_thresh:
         i += 1
         print(f"Pass {i}")
 
         for c in clusters:
             c.recenter()
 
-        for row, col in coords:
-            r, g, b = img.color(row, col)
-            closest = None
-            closest_dist = float('Inf')
+        for x in range(img.width):
+            for y in range(img.height):
+                r, g, b = img.color(y, x)
+                closest = None
+                closest_dist = float('Inf')
 
-            for c in clusters:
-                d = c.dist(r, g, b)
+                for c in clusters:
+                    d = c.dist(r, g, b)
 
-                if d < closest_dist:
-                    closest = c
-                    closest_dist = d
+                    if d < closest_dist:
+                        closest = c
+                        closest_dist = d
 
-            closest.add(r, g, b)
+                closest.add(r, g, b)
 
         dist = 0
         for c in clusters:
@@ -107,16 +165,16 @@ def kmeans(k, img):
     return clusters
 
 
-def output(imgpath, colors):
+def output(imgpath, clusters):
     s = "<!doctype html>"
-    s += "<html>"
-    s += '<head><style>div { margin: 1em; }</style></head>'
-    s += '<body>'
-    s += f'<div><img src="file://{imgpath}"></div>'
-    for color in colors:
-        s += f'<div style="background-color: #{color}; min-height: 200px; width=100%; border: 1px solid black;">&nbsp;</div>'
-    s += '</body>'
-    s += "</html>"
+    s += "\n<html>"
+    s += '\n\t<head><style>div { margin: 1em; }</style></head>'
+    s += '\n\t<body>'
+    s += f'\n\t\t<div><img src="file://{imgpath}"></div>'
+    for cluster in clusters:
+        s += f'\n\t\t<div style="background-color: #{cluster.color_as_hex()}; min-height: 200px; width=100%; border: 1px solid black;">{cluster.label} {cluster.count} {str(cluster.dist_dict)}</div>'
+    s += '\n\t</body>'
+    s += "\n</html>"
     with open("/tmp/clusters.html", 'w') as f:
         f.write(s)
 
@@ -124,12 +182,21 @@ def output(imgpath, colors):
 def main(args):
     filepath = args[0]
     with open(filepath, 'rb') as f:
-        pixbuf = pixbuf_from_file(f)
+        pixbuf = pixbuf_from_file(f, maxedge=100)
     assert pixbuf.get_bits_per_sample() == 8
     assert pixbuf.get_colorspace() == GdkPixbuf.Colorspace.RGB
     img = Image(pixbuf)
-    clusters = kmeans(5, img)
-    output(filepath, [c.color_as_hex() for c in clusters])
+    clusters = sorted(kmeans(6, 60, img), key=lambda c: c.count)
+
+    for c in clusters:
+        dist_dict = {}
+        for d in clusters:
+            if c is d:
+                continue
+            dist_dict[d.label] = c.dist(d.mean[0], d.mean[1], d.mean[2])
+        c.dist_dict = dist_dict
+
+    output(filepath, clusters)
 
 
 if __name__ == '__main__':
