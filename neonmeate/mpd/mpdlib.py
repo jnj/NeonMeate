@@ -125,6 +125,13 @@ class MpdState(GObject.GObject):
         GObject.GObject.__init__(self)
         self._time_pattern = re.compile(r'^\d+(\.\d+)?$')
 
+    def __str__(self):
+        s = ''
+        for p in self.list_properties():
+            if p.name not in self.synth_props:
+                s += f'{p.name}={self.get_property(p.name)}\n'
+        return s
+
     def update(self, status):
         for p in self.list_properties():
             if p.name not in self.synth_props:
@@ -184,6 +191,7 @@ class MpdHeartbeat(GObject.GObject):
     def connect(self, signal_name, handler, *args):
         def wrapped_handler(obj, *a):
             GLib.idle_add(handler, obj, *a)
+
         super(MpdHeartbeat, self).connect(signal_name, wrapped_handler, *args)
 
     def _on_hb_interval(self):
@@ -239,7 +247,11 @@ class MpdHeartbeat(GObject.GObject):
 if __name__ == '__main__':
     client = Mpd('localhost', 6600)
     client.connect()
-    print(client.status())
+    hb = MpdHeartbeat(client, 900)
+    hb.start()
+    while True:
+        pass
+    # print(client.status())
     # client.idle()
     # album_cache = neonmeate.mpd.cache.AlbumCache()
     # client.populate_cache(album_cache)

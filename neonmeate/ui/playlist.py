@@ -16,9 +16,9 @@ class Playlist(tk.Scrollable):
         if eventkey.keyval == Gdk.KEY_c:
             print("User pressed 'c'")
         elif eventkey.keyval == Gdk.KEY_Down or \
-             eventkey.keyval == Gdk.KEY_Up or \
-             eventkey.keyval == Gdk.KEY_Left or \
-             eventkey.keyval == Gdk.KEY_Right:
+                eventkey.keyval == Gdk.KEY_Up or \
+                eventkey.keyval == Gdk.KEY_Left or \
+                eventkey.keyval == Gdk.KEY_Right:
             return False
         return True
 

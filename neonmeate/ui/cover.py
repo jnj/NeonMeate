@@ -41,46 +41,54 @@ class CoverWithGradient(Gtk.DrawingArea):
         super(CoverWithGradient, self).__init__()
         self.w = 600
         self.h = 600
+        self.edge_size = self.w
         self.set_size_request(self.h, self.w)
         self.pixbuf = pixbuf
         self.connect('draw', self.draw)
         self.connect('size-allocate', self.alloc)
-        self.clusters = cluster.clusterize(pixbuf)
-        self.start = self.clusters[-1].mean
+        self.default_start_color = [0.2, 0.2, 0.2]
+        self.default_stop_color = [x * 0.6 for x in self.default_start_color]
+        # self.clusters = cluster.clusterize(pixbuf)
+        # self.start = self.clusters[-1].mean
 
     def alloc(self, widget, allocation):
         self.h = allocation.height
         self.w = allocation.width
+        self.edge_size = min(self.w, self.h)
 
     def draw(self, da, ctx):
         grad = cairo.LinearGradient(0, 0, 0, self.h)
         # red-to-black linear gradient
-        l = [x / 255 for x in self.start]
-        m = [x * 0.6 for x in l]
+        # l = [x / 255 for x in self.start]
+        # m = [x * 0.6 for x in l]
+        l = self.default_start_color
+        m = self.default_stop_color
         grad.add_color_stop_rgb(0, l[0], l[1], l[2])
         grad.add_color_stop_rgb(1, m[0], m[1], m[2])
         ctx.set_source(grad)
         ctx.rectangle(0, 0, self.w, self.h)
         ctx.fill()
-        p = self.pixbuf.scale_simple(self.w - 200, self.h - 200, GdkPixbuf.InterpType.BILINEAR)
+        edge_size = self.edge_size - 200
+        p = self.pixbuf.scale_simple(edge_size, edge_size, GdkPixbuf.InterpType.BILINEAR)
         Gdk.cairo_set_source_pixbuf(ctx, p, (self.w - p.get_width()) / 2, (self.h - p.get_height()) / 2)
         ctx.paint()
         return False
 
 
-coverpath = '/media/josh/Music/Death/Individual Thought Patterns/cover.jpg'
+if __name__ == '__main__':
+    coverpath = '/media/josh/Music/Death/Individual Thought Patterns/cover.jpg'
 
-with open(coverpath, 'br') as f:
-    p = pixbuf_from_file(f)
+    with open(coverpath, 'br') as f:
+        p = pixbuf_from_file(f)
 
-main_window = App()
-# main_window.add(CoverImage(p))
-drawing_area = CoverWithGradient(p)
-main_window.add(drawing_area)
+    main_window = App()
+    # main_window.add(CoverImage(p))
+    drawing_area = CoverWithGradient(p)
+    main_window.add(drawing_area)
 
-main_window.connect('destroy', Gtk.main_quit)
-main_window.show_all()
+    main_window.connect('destroy', Gtk.main_quit)
+    main_window.show_all()
 
-Gtk.main()
+    Gtk.main()
 
-print('done')
+    print('done')

@@ -50,7 +50,7 @@ class Albums(toolkit.Scrollable):
         self._selected_artist = None
 
     def _on_art_ready(self, pixbuf, user_data):
-        artist, album = user_data[1]
+        artist, album = user_data
         if self._selected_artist != artist:
             return
         albuminfo = self._album_cache.get_albums(artist)[album]

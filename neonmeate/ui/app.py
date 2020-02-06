@@ -2,6 +2,7 @@ from gi.repository import GdkPixbuf, Gtk
 
 from .artistsalbums import ArtistsAlbums
 from .nowplaying import NowPlaying
+from .cover import CoverWithGradient
 from .controls import ControlButtons
 from .playlist import Playlist
 from .songprogress import SongProgress
@@ -70,7 +71,11 @@ class App(Gtk.ApplicationWindow):
         current_queue = self._mpdclient.playlistinfo()
         for i in current_queue:
             try:
-                self._playlist.add_playlist_item([i['artist'], i['album'], int(i['track']), i['title']])
+                artist = i['artist']
+                album = i['album']
+                self._playlist.add_playlist_item([artist, album, int(i['track']), i['title']])
+                cover_path = self._album_cache.cover_art_path(artist, album)
+                self._art_cache.fetch(cover_path, None, None)
             except KeyError as e:
                 print(f"Failed to find key in {i}")
                 raise e

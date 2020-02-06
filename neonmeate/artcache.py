@@ -8,36 +8,55 @@ from gi.repository import GdkPixbuf, Gio, GLib, GObject
 class ArtCache(GObject.GObject):
     def __init__(self):
         self._cache = {}
+        self._pending_requests = {}
 
     def fetch(self, file_path, callback, user_data):
         if file_path in self._cache:
-            callback(self._cache[file_path], (None, user_data))
+            if callback is not None:
+                callback(self._cache[file_path], user_data)
             return
-        req = ArtRequest(file_path, callback)
+        req = self._get_pending_or_create(file_path, callback, user_data)
         gio_file = Gio.File.new_for_path(file_path)
-        gio_file.read_async(GLib.PRIORITY_DEFAULT, None, self._on_stream_ready, (req, user_data))
+        gio_file.read_async(GLib.PRIORITY_DEFAULT, None, self._on_stream_ready, req)
 
-    def _on_stream_ready(self, src_object, result, user_data):
+    def _get_pending_or_create(self, file_path, callback, user_data):
+        if file_path in self._pending_requests:
+            r = self._pending_requests[file_path]
+            r.add_callback(callback, user_data)
+        else:
+            r = ArtRequest(file_path, callback, user_data)
+            self._pending_requests[file_path] = r
+        return r
+
+    def _on_stream_ready(self, src_object, result, art_request):
         try:
             stream = src_object.read_finish(result)
         except GLib.GError as e:
+            # todo handle better
             print(e)
         else:
-            GdkPixbuf.Pixbuf.new_from_stream_async(stream, None, self._on_pixbuf_ready, user_data)
+            GdkPixbuf.Pixbuf.new_from_stream_async(stream, None, self._on_pixbuf_ready, art_request)
         finally:
             pass
 
-    def _on_pixbuf_ready(self, src_object, result, user_data):
+    def _on_pixbuf_ready(self, src_object, result, art_request):
         pixbuf = GdkPixbuf.Pixbuf.new_from_stream_finish(result)
-        req, other = user_data
-        self._cache[req.file_path] = pixbuf
-        req.on_completion(pixbuf, user_data)
+        self._cache[art_request.file_path] = pixbuf
+        art_request.on_completion(pixbuf)
+        if art_request.file_path in self._pending_requests:
+            del self._pending_requests[art_request.file_path]
 
 
 class ArtRequest:
-    def __init__(self, file_path, callback):
+    def __init__(self, file_path, callback, user_data):
         self.file_path = file_path
-        self.callback = callback
+        self._callbacks = []
+        self.add_callback(callback, user_data)
 
-    def on_completion(self, art, user_data):
-        self.callback(art, user_data)
+    def add_callback(self, callback, user_data):
+        if callback is not None:
+            self._callbacks.append((callback, user_data))
+
+    def on_completion(self, art):
+        for callback, user_data in self._callbacks:
+            callback(art, user_data)
