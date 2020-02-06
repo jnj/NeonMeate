@@ -80,11 +80,14 @@ class App(Gtk.ApplicationWindow):
                 print(f"Failed to find key in {i}")
                 raise e
 
-    def _on_song_changed(self, hb, artist, title):
+    def _on_song_changed(self, hb, artist, title, album):
         title_text = 'NeonMeate'
         if artist and title:
             title_text = f'{artist} - {title}'
         self._titlebar.set_title(title_text)
+        covpath = self._album_cache.cover_art_path(artist, album)
+        self._art_cache.fetch(covpath, None, None)
+        self._now_playing.on_playing(artist, album, covpath)
 
     def _on_song_playing_status(self, hb, status):
         paused, stopped = App.PlayStatus.get(status, (False, False))

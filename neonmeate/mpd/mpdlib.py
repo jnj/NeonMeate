@@ -158,7 +158,7 @@ class MpdHeartbeat(GObject.GObject):
         'playlist_changed': (GObject.SignalFlags.RUN_FIRST, None, ()),
         'song_played_percent': (GObject.SignalFlags.RUN_FIRST, None, (float,)),
         'song_playing_status': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
-        'song_changed': (GObject.SignalFlags.RUN_FIRST, None, (str, str)),
+        'song_changed': (GObject.SignalFlags.RUN_FIRST, None, (str, str, str)),
         'no_song': (GObject.SignalFlags.RUN_FIRST, None, ())
     }
 
@@ -211,7 +211,7 @@ class MpdHeartbeat(GObject.GObject):
             self.emit('no_song')
             return
         song_info = self._client.currentsong()
-        self.emit('song_changed', song_info['artist'], song_info['title'])
+        self.emit('song_changed', song_info['artist'], song_info['title'], song_info['album'])
 
     def _on_playlist_change(self, obj, spec):
         self.emit('playlist-changed')
