@@ -18,7 +18,7 @@ class NowPlaying(Gtk.Frame):
         if self._current == (artist, album):
             return
         if self._cover_art is not None:
-            self._remove(self._cover_art)
+            self.remove(self._cover_art)
         self._current = (artist, album)
         self._art_cache.fetch(covpath, self._on_art_ready, (artist, album))
 
