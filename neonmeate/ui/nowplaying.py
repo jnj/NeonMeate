@@ -28,6 +28,7 @@ class NowPlaying(Gtk.Frame):
     def _clear_art(self):
         if self._cover_art is not None:
             self.remove(self._cover_art)
+            self._cover_art = None
 
     def _on_art_ready(self, pixbuf, album_artist):
         if self._current == album_artist:
