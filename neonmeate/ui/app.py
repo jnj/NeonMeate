@@ -60,7 +60,7 @@ class App(Gtk.ApplicationWindow):
         self._heartbeat.connect('song_played_percent', self._on_song_percent)
         self._heartbeat.connect('song_playing_status', self._on_song_playing_status)
         self._heartbeat.connect('song_changed', self._on_song_changed)
-        self._heartbeat.connect('no_song', lambda hb: self._on_song_changed(hb, None, None))
+        self._heartbeat.connect('no_song', lambda hb: self._on_song_changed(hb, None, None, None))
         self._heartbeat.connect('playlist-changed', self._update_playlist)
 
     def _on_playlist_key(self, obj, key):
@@ -85,6 +85,9 @@ class App(Gtk.ApplicationWindow):
         if artist and title:
             title_text = f'{artist} - {title}'
         self._titlebar.set_title(title_text)
+        if artist is None:
+            self._now_playing.clear()
+            return
         covpath = self._album_cache.cover_art_path(artist, album)
         self._art_cache.fetch(covpath, None, None)
         self._now_playing.on_playing(artist, album, covpath)
