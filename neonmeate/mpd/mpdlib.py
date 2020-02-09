@@ -7,7 +7,8 @@ import neonmeate.nmasync as nmasync
 
 
 class Mpd:
-    def __init__(self, host='localhost', port=6600):
+    def __init__(self, executor, host='localhost', port=6600):
+        self._exec = executor
         self._host = host
         self._port = port
         self._client = mpd2.MPDClient()
@@ -33,7 +34,6 @@ class Mpd:
     def idle(self):
         while True:
             changed = self._client.idle()
-            # print(changed)
 
     def playlist(self):
         """
@@ -51,13 +51,13 @@ class Mpd:
         return self._client.playlistinfo()
 
     def stop_playing(self):
-        nmasync.RunAsync(self._client.stop)
+        self._exec.submit(self._client.stop)
 
     def next_song(self):
-        nmasync.RunAsync(self._client.next)
+        self._exec.submit(self._client.next)
 
     def prev_song(self):
-        nmasync.RunAsync(self._client.previous)
+        self._exec.submit(self._client.previous)
 
     def toggle_pause(self, should_pause):
         mpdstatus = self.status()
@@ -67,7 +67,7 @@ class Mpd:
             task = self._play_first_song
             if 'pause' == mpdstatus.get('state', 'stop'):
                 task = self._unpause
-        nmasync.RunAsync(task)
+        self._exec.submit(task)
 
     def _pause(self):
         self._client.pause(1)

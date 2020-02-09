@@ -36,6 +36,23 @@ class CoverImage(Gtk.Grid):
         self.attach(img, 0, 0, 1, 1)
 
 
+class Gradient:
+    """
+    Linear gradient descriptor. Start and stop are lists
+    with the three R, G, B values, each in [0..1].
+    """
+
+    @staticmethod
+    def gray():
+        start = [0.2] * 3
+        stop = [0.6 * x for x in start]
+        return Gradient(start, stop)
+
+    def __init__(self, start, stop):
+        self.start = list(start)
+        self.stop = list(stop)
+
+
 class CoverWithGradient(Gtk.DrawingArea):
     def __init__(self, pixbuf):
         super(CoverWithGradient, self).__init__()
@@ -46,8 +63,8 @@ class CoverWithGradient(Gtk.DrawingArea):
         self.pixbuf = pixbuf
         self.connect('draw', self.draw)
         self.connect('size-allocate', self.alloc)
-        self.default_start_color = [0.2, 0.2, 0.2]
-        self.default_stop_color = [x * 0.6 for x in self.default_start_color]
+        self._grad = Gradient.gray()
+        self._is_default_grad = True
         # self.clusters = cluster.clusterize(pixbuf)
         # self.start = self.clusters[-1].mean
 
@@ -56,15 +73,11 @@ class CoverWithGradient(Gtk.DrawingArea):
         self.w = allocation.width
         self.edge_size = min(self.w, self.h)
 
-    def draw(self, da, ctx):
+    def draw(self, draw_area_obj, ctx):
         grad = cairo.LinearGradient(0, 0, 0, self.h)
-        # red-to-black linear gradient
-        # l = [x / 255 for x in self.start]
-        # m = [x * 0.6 for x in l]
-        l = self.default_start_color
-        m = self.default_stop_color
-        grad.add_color_stop_rgb(0, l[0], l[1], l[2])
-        grad.add_color_stop_rgb(1, m[0], m[1], m[2])
+        grad.add_color_stop_rgb(0, *self._grad.start)
+        grad.add_color_stop_rgb(1, *self._grad.stop)
+
         ctx.set_source(grad)
         ctx.rectangle(0, 0, self.w, self.h)
         ctx.fill()

@@ -14,21 +14,6 @@ def signal_subcribe_on_main(connect_fn, signal_name, callback, *args):
     connect_fn(signal_name, run_on_main_thread, *args)
 
 
-class RunAsync(threading.Thread):
-    """
-    A one-shot asynchronous operation. Runs the runnable on a
-    new thread.
-    """
-
-    def __init__(self, runnable):
-        super(RunAsync, self).__init__(group=None, target=self._exec_runnable, daemon=True)
-        self._runnable = runnable
-        self.start()
-
-    def _exec_runnable(self):
-        self._runnable()
-
-
 class PeriodicTask(threading.Thread):
     """
     Thread that will execute its action repeatedly on a fixed interval.
