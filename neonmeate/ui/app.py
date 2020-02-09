@@ -1,9 +1,8 @@
-from gi.repository import GdkPixbuf, Gtk
+from gi.repository import Gtk
 
 from .artistsalbums import ArtistsAlbums
-from .nowplaying import NowPlaying
-from .cover import CoverWithGradient
 from .controls import ControlButtons
+from .nowplaying import NowPlaying
 from .playlist import Playlist
 from .songprogress import SongProgress
 from ..mpd import mpdlib as nmpd
@@ -16,8 +15,9 @@ class App(Gtk.ApplicationWindow):
         'stop': (False, True)
     }
 
+    # noinspection PyUnresolvedReferences
     def __init__(self, mpdclient, cache, art_cache):
-        Gtk.Window.__init__(self, title="NeonMeate")
+        Gtk.ApplicationWindow.__init__(self, title="NeonMeate")
         self._heartbeat = nmpd.MpdHeartbeat(mpdclient, 200)
         self._heartbeat.start()
         self._mpdclient = mpdclient

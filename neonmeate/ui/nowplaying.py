@@ -1,11 +1,9 @@
-import os
+from gi.repository import Gtk
 
-from gi.repository import GdkPixbuf, GObject, Gtk
-
-from neonmeate.ui import toolkit
 from .cover import CoverWithGradient
 
 
+# noinspection PyUnresolvedReferences
 class NowPlaying(Gtk.Frame):
     def __init__(self, album_cache, art_cache):
         super(Gtk.Frame, self).__init__()
@@ -13,6 +11,8 @@ class NowPlaying(Gtk.Frame):
         self._art_cache = art_cache
         self._cover_art = None
         self._current = (None, None)
+        self._box = Gtk.VBox()
+        self.add(self._box)
 
     def clear(self):
         self._current = (None, None)
@@ -27,12 +27,13 @@ class NowPlaying(Gtk.Frame):
 
     def _clear_art(self):
         if self._cover_art is not None:
-            self.remove(self._cover_art)
+            self._cover_art.destroy()
             self._cover_art = None
 
     def _on_art_ready(self, pixbuf, album_artist):
-        if self._current == album_artist:
+        if self._current == album_artist and self._cover_art is None:
             self._cover_art = CoverWithGradient(pixbuf)
+            self._box.pack_start(self._cover_art, True, True, 0)
+            self._box.show()
             self._cover_art.show()
-            self.add(self._cover_art)
             self.queue_draw()
