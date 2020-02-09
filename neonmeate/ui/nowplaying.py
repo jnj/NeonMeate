@@ -5,8 +5,9 @@ from .cover import CoverWithGradient
 
 # noinspection PyUnresolvedReferences
 class NowPlaying(Gtk.Frame):
-    def __init__(self, album_cache, art_cache):
+    def __init__(self, album_cache, art_cache, executor):
         super(Gtk.Frame, self).__init__()
+        self._executor = executor
         self._album_cache = album_cache
         self._art_cache = art_cache
         self._cover_art = None
@@ -32,7 +33,7 @@ class NowPlaying(Gtk.Frame):
 
     def _on_art_ready(self, pixbuf, album_artist):
         if self._current == album_artist and self._cover_art is None:
-            self._cover_art = CoverWithGradient(pixbuf)
+            self._cover_art = CoverWithGradient(pixbuf, self._executor)
             self._box.pack_start(self._cover_art, True, True, 0)
             self._box.show()
             self._cover_art.show()

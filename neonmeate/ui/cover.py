@@ -4,8 +4,8 @@ gi.require_version('Gtk', '3.0')
 gi.require_foreign('cairo')
 
 from gi.repository import GdkPixbuf, Gtk, Gdk, GLib
-import cairo
 from neonmeate import cluster
+import cairo
 
 
 def pixbuf_from_file(fileobj):
@@ -44,17 +44,20 @@ class Gradient:
 
     @staticmethod
     def gray():
-        start = [0.2] * 3
+        start = [0.2 * 255] * 3
         stop = [0.6 * x for x in start]
         return Gradient(start, stop)
 
     def __init__(self, start, stop):
-        self.start = list(start)
-        self.stop = list(stop)
+        self.start = [x / 255.0 for x in start]
+        self.stop = [x / 255.0 for x in stop]
+
+    def __str__(self):
+        return str(self.start)
 
 
 class CoverWithGradient(Gtk.DrawingArea):
-    def __init__(self, pixbuf):
+    def __init__(self, pixbuf, executor):
         super(CoverWithGradient, self).__init__()
         self.w = 600
         self.h = 600
@@ -65,8 +68,21 @@ class CoverWithGradient(Gtk.DrawingArea):
         self.connect('size-allocate', self.alloc)
         self._grad = Gradient.gray()
         self._is_default_grad = True
-        # self.clusters = cluster.clusterize(pixbuf)
-        # self.start = self.clusters[-1].mean
+
+        def on_gradient_ready(fut):
+            if not fut.cancelled() and fut.exception(timeout=1) is None:
+                clusters = fut.result()
+                rgb = list(clusters[-1].mean)
+                GLib.idle_add(self._update_grad, rgb)
+
+        cluster_result = executor.submit(cluster.clusterize, pixbuf)
+        cluster_result.add_done_callback(on_gradient_ready)
+
+    def _update_grad(self, rgb):
+        if self._is_default_grad:
+            self._is_default_grad = False
+            self._grad = Gradient(rgb, [0.6 * x for x in rgb])
+            self.queue_draw()
 
     def alloc(self, widget, allocation):
         self.h = allocation.height
