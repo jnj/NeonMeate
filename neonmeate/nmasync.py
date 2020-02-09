@@ -2,12 +2,24 @@ import sched
 import threading
 import time
 
+from gi.repository import GLib
+
+
+def signal_subcribe_on_main(connect_fn, signal_name, callback, *args):
+    """Connects a signal handler so that it will be run on the main GTK thread"""
+
+    def run_on_main_thread(obj, *a):
+        GLib.idle_add(callback, obj, *a)
+
+    connect_fn(signal_name, run_on_main_thread, *args)
+
 
 class RunAsync(threading.Thread):
     """
     A one-shot asynchronous operation. Runs the runnable on a
     new thread.
     """
+
     def __init__(self, runnable):
         super(RunAsync, self).__init__(group=None, target=self._exec_runnable, daemon=True)
         self._runnable = runnable
