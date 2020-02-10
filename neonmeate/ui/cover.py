@@ -1,11 +1,12 @@
+import cairo
 import gi
+from gi.repository import GdkPixbuf, Gtk, Gdk, GLib
+
+from neonmeate import cluster
+from neonmeate.color import RGBColor
 
 gi.require_version('Gtk', '3.0')
 gi.require_foreign('cairo')
-
-from gi.repository import GdkPixbuf, Gtk, Gdk, GLib
-from neonmeate import cluster
-import cairo
 
 
 def pixbuf_from_file(fileobj):
@@ -38,19 +39,18 @@ class CoverImage(Gtk.Grid):
 
 class Gradient:
     """
-    Linear gradient descriptor. Start and stop are lists
-    with the three R, G, B values, each in [0..1].
+    Linear gradient descriptor. Start and stop are RGBColor instances.
     """
 
     @staticmethod
     def gray():
-        start = [0.2 * 255] * 3
-        stop = [0.6 * x for x in start]
+        start = RGBColor(*([0.2] * 3))
+        stop = start.darken(15)
         return Gradient(start, stop)
 
     def __init__(self, start, stop):
-        self.start = [x / 255.0 for x in start]
-        self.stop = [x / 255.0 for x in stop]
+        self.start = start
+        self.stop = stop
 
     def __str__(self):
         return str(self.start)
@@ -72,8 +72,11 @@ class CoverWithGradient(Gtk.DrawingArea):
         def on_gradient_ready(fut):
             if not fut.cancelled() and fut.exception(timeout=1) is None:
                 clusters = fut.result()
-                rgb = list(clusters[-1].mean)
-                GLib.idle_add(self._update_grad, rgb)
+                #newline = '\n'
+                #print(f"clusters: {newline.join([str(c) for c in clusters])}")
+                if len(clusters) > 0:
+                    c = clusters[0]
+                    GLib.idle_add(self._update_grad, c.mean_as_rgbcolor())
 
         cluster_result = executor.submit(cluster.clusterize, pixbuf)
         cluster_result.add_done_callback(on_gradient_ready)
@@ -81,7 +84,9 @@ class CoverWithGradient(Gtk.DrawingArea):
     def _update_grad(self, rgb):
         if self._is_default_grad:
             self._is_default_grad = False
-            self._grad = Gradient(rgb, [0.6 * x for x in rgb])
+            start_rgb = rgb
+            stop_rgb = start_rgb.darken(15)
+            self._grad = Gradient(start_rgb.rgb, stop_rgb.rgb)
             self.queue_draw()
 
     def alloc(self, widget, allocation):
@@ -102,22 +107,3 @@ class CoverWithGradient(Gtk.DrawingArea):
         Gdk.cairo_set_source_pixbuf(ctx, p, (self.w - p.get_width()) / 2, (self.h - p.get_height()) / 2)
         ctx.paint()
         return False
-
-
-if __name__ == '__main__':
-    coverpath = '/media/josh/Music/Death/Individual Thought Patterns/cover.jpg'
-
-    with open(coverpath, 'br') as f:
-        p = pixbuf_from_file(f)
-
-    main_window = App()
-    # main_window.add(CoverImage(p))
-    drawing_area = CoverWithGradient(p)
-    main_window.add(drawing_area)
-
-    main_window.connect('destroy', Gtk.main_quit)
-    main_window.show_all()
-
-    Gtk.main()
-
-    print('done')

@@ -1,3 +1,4 @@
+import random
 import sys
 
 import gi
@@ -14,6 +15,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 
 def main(args):
+    random.seed(39334)
     with ThreadPoolExecutor(2) as executor:
         mpdclient = nmpd.Mpd(executor, 'localhost', 6600)
         mpdclient.connect()

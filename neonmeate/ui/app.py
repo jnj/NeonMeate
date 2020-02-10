@@ -72,6 +72,8 @@ class App(Gtk.ApplicationWindow):
         current_queue = self._mpdclient.playlistinfo()
         for i in current_queue:
             try:
+                if 'artist' not in i:
+                    continue
                 artist = i['artist']
                 album = i['album']
                 self._playlist.add_playlist_item([artist, album, int(i['track']), i['title']])
