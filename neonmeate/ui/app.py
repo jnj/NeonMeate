@@ -57,6 +57,8 @@ class App(Gtk.ApplicationWindow):
         self._controlbuttons.connect('neonmeate_stop_playing', self.on_stop)
         self._controlbuttons.connect('neonmeate_start_playing', self.on_start)
         self._controlbuttons.connect('neonmeate_toggle_pause', self.on_pause)
+        self._controlbuttons.connect('neonmeate_prev_song', self.on_prev_song)
+        self._controlbuttons.connect('neonmeate_next_song', self.on_next_song)
 
         self._heartbeat.connect('song_played_percent', self._on_song_percent)
         self._heartbeat.connect('song_playing_status', self._on_song_playing_status)
@@ -112,3 +114,9 @@ class App(Gtk.ApplicationWindow):
     def on_stop(self, x):
         self._mpdclient.stop_playing()
         self._songprogress.set_fraction(0)
+
+    def on_prev_song(self, x):
+        self._mpdclient.prev_song()
+
+    def on_next_song(self, x):
+        self._mpdclient.next_song()

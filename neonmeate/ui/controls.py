@@ -47,32 +47,53 @@ class PlayPauseButton(ControlButton):
         self.paused = not self.paused
 
 
+# noinspection PyUnresolvedReferences
 class ControlButtons(Gtk.ButtonBox):
     __gsignals__ = {
         'neonmeate_stop_playing': (GObject.SignalFlags.RUN_FIRST, None, ()),
         'neonmeate_start_playing': (GObject.SignalFlags.RUN_FIRST, None, ()),
-        'neonmeate_toggle_pause': (GObject.SignalFlags.RUN_FIRST, None, ())
+        'neonmeate_toggle_pause': (GObject.SignalFlags.RUN_FIRST, None, ()),
+        'neonmeate_prev_song': (GObject.SignalFlags.RUN_FIRST, None, ()),
+        'neonmeate_next_song': (GObject.SignalFlags.RUN_FIRST, None, ())
     }
 
     def __init__(self):
         super(ControlButtons, self).__init__(Gtk.Orientation.HORIZONTAL)
         self.set_layout(Gtk.ButtonBoxStyle.EXPAND)
-        self.play_pause_button = PlayPauseButton()
-        self.stop_button = ControlButton('media-playback-stop')
-        self.prev_song_button = ControlButton('media-skip-backward')
-        self.next_song_button = ControlButton('media-skip-forward')
+        self._play_pause_button = PlayPauseButton()
+        self._stop_button = ControlButton('media-playback-stop')
+        self._prev_song_button = ControlButton('media-skip-backward')
+        self._next_song_button = ControlButton('media-skip-forward')
 
-        for btn in [self.play_pause_button, self.stop_button, self.prev_song_button, self.next_song_button]:
+        for btn in [
+            self._play_pause_button,
+            self._stop_button,
+            self._prev_song_button,
+            self._next_song_button
+        ]:
             self.add(btn)
 
-        self.stop_button.connect('clicked', self._on_stop_clicked)
-        self.play_pause_button.connect('neonmeate_playpause_toggled', self._on_playpause)
+        button_signals = {
+            'neonmeate_next_song': self._next_song_button,
+            'neonmeate_prev_song': self._prev_song_button,
+            'neonmeate_stop_playing': self._stop_button
+        }
+
+        for signal_name, btn in button_signals.items():
+            self._emit_on_click(btn, signal_name)
+
+        self._play_pause_button.connect('neonmeate_playpause_toggled', self._on_playpause)
+
+    def _emit_on_click(self, button, signal_name):
+        def click_handler(_):
+            self.emit(signal_name)
+        button.connect('clicked', click_handler)
 
     def set_paused(self, paused, stopped):
         if stopped:
-            self.play_pause_button.set_play_icon()
+            self._play_pause_button.set_play_icon()
         else:
-            self.play_pause_button.set_paused(paused)
+            self._play_pause_button.set_paused(paused)
 
     def _on_playpause(self, btn, is_paused):
         if is_paused:
@@ -80,6 +101,3 @@ class ControlButtons(Gtk.ButtonBox):
         else:
             self.emit('neonmeate_start_playing')
         return True
-
-    def _on_stop_clicked(self, btn):
-        self.emit('neonmeate_stop_playing')
