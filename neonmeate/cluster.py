@@ -188,14 +188,14 @@ def output(imgpath, clusters):
 
 
 def clusterize(pixbuf):
-    maxedge = 60
+    maxedge = 150
     assert pixbuf.get_bits_per_sample() == 8
     assert pixbuf.get_colorspace() == GdkPixbuf.Colorspace.RGB
     if pixbuf.get_height() > maxedge and pixbuf.get_width() > maxedge:
         pixbuf = pixbuf.scale_simple(maxedge, maxedge, GdkPixbuf.InterpType.BILINEAR)
 
     img = Image(pixbuf)
-    clusters = sorted(kmeans(4, 0.05, img), key=lambda c: c.count)
+    clusters = sorted(kmeans(6, 0.0075, img), key=lambda c: c.count)
 
     white = Cluster('white', RGBColor(1, 1, 1))
     black = Cluster('white', RGBColor(0, 0, 0))

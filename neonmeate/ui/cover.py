@@ -86,7 +86,7 @@ class CoverWithGradient(Gtk.DrawingArea):
             self._is_default_grad = False
             start_rgb = rgb
             stop_rgb = start_rgb.darken(15)
-            self._grad = Gradient(start_rgb.rgb, stop_rgb.rgb)
+            self._grad = Gradient(start_rgb, stop_rgb)
             self.queue_draw()
 
     def alloc(self, widget, allocation):
@@ -96,8 +96,8 @@ class CoverWithGradient(Gtk.DrawingArea):
 
     def draw(self, draw_area_obj, ctx):
         grad = cairo.LinearGradient(0, 0, 0, self.h)
-        grad.add_color_stop_rgb(0, *self._grad.start)
-        grad.add_color_stop_rgb(1, *self._grad.stop)
+        grad.add_color_stop_rgb(0, *self._grad.start.rgb)
+        grad.add_color_stop_rgb(1, *self._grad.stop.rgb)
 
         ctx.set_source(grad)
         ctx.rectangle(0, 0, self.w, self.h)
