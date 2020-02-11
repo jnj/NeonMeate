@@ -103,11 +103,13 @@ def pixbuf_from_file(fileobj, maxedge=100):
 
 def initialize_clusters(k, cluster_min_distance, img):
     clusters = []
+    maxiters = 10
+    itercount = 0
     max_samples = int(0.75 * img.height * img.width)
     grid_sampler = GridSampler(img.width, img.height)
     rand_sampler = SamplerStrategy(img.width, img.height)
 
-    while len(clusters) < k:
+    while len(clusters) < k and itercount < maxiters:
         def different_enough(col):
             return all(c.dist(col) > cluster_min_distance for c in clusters)
 
@@ -133,6 +135,8 @@ def initialize_clusters(k, cluster_min_distance, img):
             if add_if(rgbcol) and len(clusters) >= k:
                 break
 
+        itercount += 1
+
     return clusters
 
 
@@ -141,8 +145,12 @@ def kmeans(k, cluster_threshold, img):
     dist_thresh = 1
     dist = dist_thresh
     clusters = initialize_clusters(k, cluster_threshold, img)
-    while dist >= dist_thresh:
+    maxiters = 50
+    itercount = 0
+
+    while dist >= dist_thresh and itercount < maxiters:
         i += 1
+        itercount += 1
 
         for c in clusters:
             c.recenter()
