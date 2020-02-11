@@ -4,7 +4,7 @@ import os
 
 def resolve_art(directory):
     for basename in ['cover', 'folder', 'artwork']:
-        for extension in ['.jpg', '.jpeg', '.png', '.gif']:
+        for extension in ['jpg', 'jpeg', 'png', 'gif']:
             path = os.path.join(directory, f'{basename}.{extension}')
             if os.path.exists(path):
                 return path
