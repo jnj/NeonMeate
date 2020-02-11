@@ -112,8 +112,10 @@ class ControlButtons(NeonMeateButtonBox):
         return True
 
 
+# noinspection PyUnresolvedReferences
 class PlayModeButtons(NeonMeateButtonBox):
     __gsignals__ = {
+        'neonmeate_playmode_toggle': (GObject.SignalFlags.RUN_FIRST, None, (str, bool))
     }
 
     def __init__(self):
@@ -122,6 +124,15 @@ class PlayModeButtons(NeonMeateButtonBox):
         self._single = self._add_button(PlayModeButton('zoom-original', '1'), 'single', None)
         self._random = self._add_button(PlayModeButton('media-playlist-shuffle'), 'random', None)
         self._repeat = self._add_button(PlayModeButton('media-playlist-repeat'), 'repeat', None)
+
+        for name, btn in self._byname.items():
+            btn.connect('clicked', self._on_click(name, btn))
+
+    def _on_click(self, name, btn):
+        def handler(_):
+            self.emit('neonmeate_playmode_toggle', name, btn.get_active())
+
+        return handler
 
     def on_mode_change(self, name, is_on):
         if name in self._byname:

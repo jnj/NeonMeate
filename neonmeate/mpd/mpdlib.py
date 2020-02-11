@@ -28,6 +28,11 @@ class Mpd:
         self._client.close()
         self._client.disconnect()
 
+    def toggle_play_mode(self, name, active):
+        state = 1 if active else 0
+        fn = getattr(self._client, name)
+        self._exec.submit(fn, state)
+
     def currentsong(self):
         return self._client.currentsong()
 
@@ -108,6 +113,7 @@ class Mpd:
                 albumcache.add(artist, album, songlist)
 
 
+# noinspection PyUnresolvedReferences
 class MpdState(GObject.GObject):
     duration = GObject.Property(type=str, default='1')
     repeat = GObject.Property(type=str, default='0')
@@ -154,6 +160,7 @@ class MpdState(GObject.GObject):
             self._update_if_changed('elapsedtime', round(e / t, 3))
 
 
+# noinspection PyUnresolvedReferences
 class MpdHeartbeat(GObject.GObject):
     __gsignals__ = {
         'playlist_changed': (GObject.SignalFlags.RUN_FIRST, None, ()),
@@ -236,12 +243,13 @@ class MpdHeartbeat(GObject.GObject):
 
 
 if __name__ == '__main__':
-    client = Mpd('localhost', 6600)
-    client.connect()
-    hb = MpdHeartbeat(client, 900)
-    hb.start()
-    while True:
-        pass
+    pass
+    # client = Mpd('localhost', 6600)
+    # client.connect()
+    # hb = MpdHeartbeat(client, 900)
+    # hb.start()
+    # while True:
+    #     pass
     # print(client.status())
     # client.idle()
     # album_cache = neonmeate.mpd.cache.AlbumCache()

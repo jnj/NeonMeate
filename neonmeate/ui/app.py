@@ -61,13 +61,16 @@ class App(Gtk.ApplicationWindow):
         self._controlbuttons.connect('neonmeate_toggle_pause', self.on_pause)
         self._controlbuttons.connect('neonmeate_prev_song', self.on_prev_song)
         self._controlbuttons.connect('neonmeate_next_song', self.on_next_song)
-
+        self._playmodebuttons.connect('neonmeate_playmode_toggle', self._on_user_mode_toggle)
         self._heartbeat.connect('song_played_percent', self._on_song_percent)
         self._heartbeat.connect('song_playing_status', self._on_song_playing_status)
         self._heartbeat.connect('song_changed', self._on_song_changed)
         self._heartbeat.connect('no_song', lambda hb: self._on_song_changed(hb, None, None, None))
         self._heartbeat.connect('playlist-changed', self._update_playlist)
         self._heartbeat.connect('playback-mode-toggled', self._on_mode_change())
+
+    def _on_user_mode_toggle(self, _, name, is_active):
+        self._mpdclient.toggle_play_mode(name, is_active)
 
     def _on_mode_change(self):
         def handler(_, name, is_active):
