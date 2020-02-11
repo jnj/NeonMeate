@@ -2,6 +2,15 @@ import collections
 import os
 
 
+def resolve_art(directory):
+    for basename in ['cover', 'folder', 'artwork']:
+        for extension in ['.jpg', '.jpeg', '.png', '.gif']:
+            path = os.path.join(directory, f'{basename}.{extension}')
+            if os.path.exists(path):
+                return path
+    return None
+
+
 class AlbumCache:
     def __init__(self, root_music_dir):
         self._artists = []
@@ -17,13 +26,20 @@ class AlbumCache:
             albums[album] = AlbumInfo(artist, album, year, songs)
 
     def cover_art_path(self, artist, album):
+        # TODO Pass in date as well
+        # TODO Resolve png, etc.
         albums = self._albums_by_artist[artist]
         if album in albums:
             albuminfo = albums[album]
+            if albuminfo.art_path is not None:
+                return albuminfo.art_path
             songs = albuminfo.songs
             if songs:
                 song_path = songs[0]['file']
-                return os.path.join(self._root_music_dir, os.path.dirname(song_path), 'cover.jpg')
+                artpath = resolve_art(os.path.join(self._root_music_dir, os.path.dirname(song_path)))
+                if artpath is not None:
+                    albuminfo.art_path = artpath
+                return artpath
         return None
 
     def all_artists_and_albums(self):
@@ -48,3 +64,4 @@ class AlbumInfo:
         self.artist = artist
         self.year = year
         self.songs = songs
+        self.art_path = None
