@@ -90,7 +90,10 @@ class App(Gtk.ApplicationWindow):
                     continue
                 artist = i['artist']
                 album = i['album']
-                self._playlist.add_playlist_item([artist, album, int(i['track']), i['title']])
+                title = i['title']
+                if isinstance(title, list):
+                    title = ' - '.join(title)
+                self._playlist.add_playlist_item([artist, album, int(i['track']), title])
                 cover_path = self._album_cache.cover_art_path(artist, album)
                 if cover_path is None:
                     print(f"Cover not found for {artist} {album}")
