@@ -1,7 +1,7 @@
 from gi.repository import Gtk
 
 from .artistsalbums import ArtistsAlbums
-from .controls import ControlButtons
+from .controls import ControlButtons, PlayModeButtons
 from .nowplaying import NowPlaying
 from .playlist import Playlist
 from .songprogress import SongProgress
@@ -30,11 +30,13 @@ class App(Gtk.ApplicationWindow):
         self._titlebar.set_show_close_button(True)
         self.set_titlebar(self._titlebar)
         self._controlbuttons = ControlButtons()
+        self._playmodebuttons = PlayModeButtons()
         self._songprogress = SongProgress()
         self._songprogress.set_fraction(0)
         self._actionbar = Gtk.ActionBar()
         self._actionbar.pack_start(self._controlbuttons)
         self._actionbar.pack_start(self._songprogress)
+        self._actionbar.pack_start(self._playmodebuttons)
         self._main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.add(self._main_box)
         self._stack = Gtk.Stack()
@@ -65,6 +67,13 @@ class App(Gtk.ApplicationWindow):
         self._heartbeat.connect('song_changed', self._on_song_changed)
         self._heartbeat.connect('no_song', lambda hb: self._on_song_changed(hb, None, None, None))
         self._heartbeat.connect('playlist-changed', self._update_playlist)
+        self._heartbeat.connect('playback-mode-toggled', self._on_mode_change())
+
+    def _on_mode_change(self):
+        def handler(_, name, is_active):
+            self._playmodebuttons.on_mode_change(name, is_active)
+
+        return handler
 
     def _on_playlist_key(self, obj, key):
         print(f"playlist key pressed {key}")
@@ -80,7 +89,10 @@ class App(Gtk.ApplicationWindow):
                 album = i['album']
                 self._playlist.add_playlist_item([artist, album, int(i['track']), i['title']])
                 cover_path = self._album_cache.cover_art_path(artist, album)
-                self._art_cache.fetch(cover_path, None, None)
+                if cover_path is None:
+                    print(f"Cover not found for {artist} {album}")
+                else:
+                    self._art_cache.fetch(cover_path, None, None)
             except KeyError as e:
                 print(f"Failed to find key in {i}")
                 raise e

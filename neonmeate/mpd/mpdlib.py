@@ -160,7 +160,8 @@ class MpdHeartbeat(GObject.GObject):
         'song_played_percent': (GObject.SignalFlags.RUN_FIRST, None, (float,)),
         'song_playing_status': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
         'song_changed': (GObject.SignalFlags.RUN_FIRST, None, (str, str, str)),
-        'no_song': (GObject.SignalFlags.RUN_FIRST, None, ())
+        'no_song': (GObject.SignalFlags.RUN_FIRST, None, ()),
+        'playback_mode_toggled': (GObject.SignalFlags.RUN_FIRST, None, (str, bool))
     }
 
     def __init__(self, client, millis_interval):
@@ -174,10 +175,10 @@ class MpdHeartbeat(GObject.GObject):
             'songid': self._on_song_change,
             'playlist': self._on_playlist_change,
             'playlistlength': self._on_playlistlength_change,
-            'consume': self._on_consume_change,
-            'random': self._on_random_change,
-            'repeat': self._on_repeat_change,
-            'single': self._on_single_change,
+            'consume': self._on_mode_change,
+            'random': self._on_mode_change,
+            'repeat': self._on_mode_change,
+            'single': self._on_mode_change,
             'elapsedtime': self._on_elapsed_change,
             'state': self._on_state_change
         }.items():
@@ -197,9 +198,6 @@ class MpdHeartbeat(GObject.GObject):
         self._state.update(self._mpd_status)
         return True
 
-    def _on_single_change(self, obj, spec):
-        pass
-
     def _on_state_change(self, obj, spec):
         self.emit('song_playing_status', self._state.get_property(spec.name))
 
@@ -217,14 +215,9 @@ class MpdHeartbeat(GObject.GObject):
     def _on_playlistlength_change(self, obj, spec):
         self.emit('playlist-changed')
 
-    def _on_consume_change(self, obj, spec):
-        pass
-
-    def _on_repeat_change(self, obj, spec):
-        pass
-
-    def _on_random_change(self, obj, spec):
-        pass
+    def _on_mode_change(self, obj, spec):
+        propval = self._state.get_property(spec.name)
+        self.emit('playback-mode-toggled', spec.name, propval != '0')
 
     def _on_elapsed_change(self, obj, spec):
         self.emit('song_played_percent', self._state.get_property(spec.name))

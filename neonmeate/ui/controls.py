@@ -9,6 +9,17 @@ class ControlButton(Gtk.Button):
         self.add(self.icon)
 
 
+class PlayModeButton(Gtk.ToggleButton):
+    def __init__(self, icon_name, label=None):
+        super(PlayModeButton, self).__init__()
+        if icon_name is not None:
+            self._icon_size = Gtk.IconSize.MENU
+            self._icon = Gtk.Image.new_from_icon_name(icon_name, self._icon_size)
+            self.add(self._icon)
+        else:
+            self.add(Gtk.Label(label))
+
+
 class PlayPauseButton(ControlButton):
     __gsignals__ = {
         'neonmeate_playpause_toggled': (GObject.SignalFlags.RUN_FIRST, None, (bool,))
@@ -47,8 +58,30 @@ class PlayPauseButton(ControlButton):
         self.paused = not self.paused
 
 
+class NeonMeateButtonBox(Gtk.ButtonBox):
+    def __init__(self):
+        super(NeonMeateButtonBox, self).__init__(Gtk.Orientation.HORIZONTAL)
+        self.set_layout(Gtk.ButtonBoxStyle.EXPAND)
+        self._buttons = []
+        self._byname = {}
+
+    def _add_button(self, button, name, click_signal_name):
+        self._buttons.append(button)
+        self._byname[name] = button
+        self.add(button)
+        if click_signal_name is not None:
+            self._emit_on_click(button, click_signal_name)
+        return button
+
+    def _emit_on_click(self, button, signal_name):
+        def click_handler(_):
+            self.emit(signal_name)
+
+        button.connect('clicked', click_handler)
+
+
 # noinspection PyUnresolvedReferences
-class ControlButtons(Gtk.ButtonBox):
+class ControlButtons(NeonMeateButtonBox):
     __gsignals__ = {
         'neonmeate_stop_playing': (GObject.SignalFlags.RUN_FIRST, None, ()),
         'neonmeate_start_playing': (GObject.SignalFlags.RUN_FIRST, None, ()),
@@ -58,36 +91,12 @@ class ControlButtons(Gtk.ButtonBox):
     }
 
     def __init__(self):
-        super(ControlButtons, self).__init__(Gtk.Orientation.HORIZONTAL)
-        self.set_layout(Gtk.ButtonBoxStyle.EXPAND)
-        self._play_pause_button = PlayPauseButton()
-        self._stop_button = ControlButton('media-playback-stop')
-        self._prev_song_button = ControlButton('media-skip-backward')
-        self._next_song_button = ControlButton('media-skip-forward')
-
-        for btn in [
-            self._play_pause_button,
-            self._stop_button,
-            self._prev_song_button,
-            self._next_song_button
-        ]:
-            self.add(btn)
-
-        button_signals = {
-            'neonmeate_next_song': self._next_song_button,
-            'neonmeate_prev_song': self._prev_song_button,
-            'neonmeate_stop_playing': self._stop_button
-        }
-
-        for signal_name, btn in button_signals.items():
-            self._emit_on_click(btn, signal_name)
-
+        super(ControlButtons, self).__init__()
+        self._play_pause_button = self._add_button(PlayPauseButton(), 'play_pause', None)
+        self._stop = self._add_button(ControlButton('media-playback-stop'), 'stop', 'neonmeate_stop_playing')
+        self._prev = self._add_button(ControlButton('media-skip-backward'), 'prev', 'neonmeate_prev_song')
+        self._next = self._add_button(ControlButton('media-skip-forward'), 'next', 'neonmeate-next-song')
         self._play_pause_button.connect('neonmeate_playpause_toggled', self._on_playpause)
-
-    def _emit_on_click(self, button, signal_name):
-        def click_handler(_):
-            self.emit(signal_name)
-        button.connect('clicked', click_handler)
 
     def set_paused(self, paused, stopped):
         if stopped:
@@ -101,3 +110,21 @@ class ControlButtons(Gtk.ButtonBox):
         else:
             self.emit('neonmeate_start_playing')
         return True
+
+
+class PlayModeButtons(NeonMeateButtonBox):
+    __gsignals__ = {
+    }
+
+    def __init__(self):
+        super(PlayModeButtons, self).__init__()
+        self._consume = self._add_button(PlayModeButton('view-refresh'), 'consume', None)
+        self._single = self._add_button(PlayModeButton('zoom-original', '1'), 'single', None)
+        self._random = self._add_button(PlayModeButton('media-playlist-shuffle'), 'random', None)
+        self._repeat = self._add_button(PlayModeButton('media-playlist-repeat'), 'repeat', None)
+
+    def on_mode_change(self, name, is_on):
+        if name in self._byname:
+            btn = self._byname[name]
+            if btn.get_active() != is_on:
+                btn.set_active(is_on)
