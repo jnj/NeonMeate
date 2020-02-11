@@ -103,7 +103,7 @@ def pixbuf_from_file(fileobj, maxedge=100):
 
 def initialize_clusters(k, cluster_min_distance, img):
     clusters = []
-    maxiters = 10
+    maxiters = 50
     itercount = 0
     max_samples = int(0.75 * img.height * img.width)
     grid_sampler = GridSampler(img.width, img.height)
