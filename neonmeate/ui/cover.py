@@ -9,15 +9,6 @@ gi.require_version('Gtk', '3.0')
 gi.require_foreign('cairo')
 
 
-def pixbuf_from_file(fileobj):
-    pixbuf = GdkPixbuf.Pixbuf.new_from_file(fileobj.name)
-    return pixbuf
-
-
-def scale_pixbuf(pixbuf, window):
-    return pixbuf.scale_simple(window.get_width(), window.get_height(), GdkPixbuf.InterpType.BILINEAR)
-
-
 class App(Gtk.ApplicationWindow):
     def __init__(self):
         Gtk.Window.__init__(self, title="Cover")
