@@ -72,8 +72,6 @@ class CoverWithGradient(Gtk.DrawingArea):
         def on_gradient_ready(fut):
             if not fut.cancelled() and fut.exception(timeout=1) is None:
                 clusters = fut.result()
-                #newline = '\n'
-                #print(f"clusters: {newline.join([str(c) for c in clusters])}")
                 if len(clusters) > 0:
                     c = clusters[0]
                     GLib.idle_add(self._update_grad, c.mean_as_rgbcolor())
