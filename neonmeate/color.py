@@ -20,6 +20,11 @@ class RGBColor:
         h, s, v = colorsys.rgb_to_hsv(*self.rgb)
         return RGBColor(*colorsys.hsv_to_rgb(h, s, max(0, v - change)))
 
+    def saturate(self, percent):
+        change = percent * 0.01
+        h, s, v = colorsys.rgb_to_hsv(*self.rgb)
+        return RGBColor(*colorsys.hsv_to_rgb(h, min(1, s + change), v))
+
     def euclidean_rgb_distance(self, other):
         return math.sqrt(sum([(self.rgb[i] - other.rgb[i]) ** 2 for i in range(3)]))
 
