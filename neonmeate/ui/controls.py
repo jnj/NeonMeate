@@ -124,9 +124,15 @@ class PlayModeButtons(NeonMeateButtonBox):
         self._single = self._add_button(PlayModeButton('zoom-original', '1'), 'single', None)
         self._random = self._add_button(PlayModeButton('media-playlist-shuffle'), 'random', None)
         self._repeat = self._add_button(PlayModeButton('media-playlist-repeat'), 'repeat', None)
-
+        self._subscribers_by_signal = {}
         for name, btn in self._byname.items():
             btn.connect('clicked', self._on_click(name, btn))
+
+    def subscribe_to_signal(self, signal, handler):
+        handler_id = self.connect(signal, handler)
+        handlers = self._subscribers_by_signal.get(signal, [])
+        handlers.append(handler_id)
+        self._subscribers_by_signal[signal] = handlers
 
     def _on_click(self, name, btn):
         def handler(_):
@@ -134,8 +140,20 @@ class PlayModeButtons(NeonMeateButtonBox):
 
         return handler
 
-    def on_mode_change(self, name, is_on):
-        if name in self._byname:
-            btn = self._byname[name]
-            if btn.get_active() != is_on:
-                btn.set_active(is_on)
+    def _disable_emission(self, signal_name):
+        for handler_id in self._subscribers_by_signal.get(signal_name, []):
+            self.handler_block(handler_id)
+
+    def _enable_emission(self, signal_name):
+        for handler_id in self._subscribers_by_signal.get(signal_name, []):
+            self.handler_unblock(handler_id)
+
+    def on_mode_change(self, name, active):
+        btn = self._byname.get(name, None)
+        if btn is not None and btn.get_active() != active:
+            signal_name = 'neonmeate_playmode_toggle'
+            try:
+                self._disable_emission(signal_name)
+                btn.set_active(active)
+            finally:
+                self._enable_emission(signal_name)
