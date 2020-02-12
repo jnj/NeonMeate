@@ -9,25 +9,6 @@ gi.require_version('Gtk', '3.0')
 gi.require_foreign('cairo')
 
 
-class App(Gtk.ApplicationWindow):
-    def __init__(self):
-        Gtk.Window.__init__(self, title="Cover")
-        self.set_default_size(600, 600)
-        self._titlebar = Gtk.HeaderBar()
-        self._titlebar.set_title("Cover")
-        self._titlebar.set_show_close_button(True)
-        self.set_titlebar(self._titlebar)
-
-
-class CoverImage(Gtk.Grid):
-    def __init__(self, pixbuf):
-        super(CoverImage, self).__init__()
-        pixbuf = pixbuf.scale_simple(400, 400, GdkPixbuf.InterpType.BILINEAR)
-        img = Gtk.Image.new_from_pixbuf(pixbuf)
-        img.show()
-        self.attach(img, 0, 0, 1, 1)
-
-
 class Gradient:
     """
     Linear gradient descriptor. Start and stop are RGBColor instances.
