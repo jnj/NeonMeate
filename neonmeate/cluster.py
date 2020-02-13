@@ -94,7 +94,7 @@ class ColorClusterer:
     def __init__(self, num_clusters, cluster_threshold, rng):
         self._desired_clusters = num_clusters
         self._cluster_threshold = cluster_threshold
-        self._cluster_distance_threshold = 1
+        self._cluster_distance_threshold = 0.0001
         self._max_init_cluster_iterations = 50
         self._rng = rng
         self.clusters = []
@@ -106,7 +106,7 @@ class ColorClusterer:
     def _different_enough(self, col):
         for c in self.clusters:
             m = c.cached_mean
-            if self.dist_fn(col[0], col[1], col[2], m[0], m[1], m[2]) >= self._cluster_threshold:
+            if self.dist_fn(col[0], col[1], col[2], m[0], m[1], m[2]) >= self._cluster_distance_threshold:
                 return False
         return True
 
@@ -201,14 +201,14 @@ def clusterize(pixbuf, rng):
         pixbuf = pixbuf.scale_simple(maxedge, maxedge, GdkPixbuf.InterpType.BILINEAR)
 
     img = Image(pixbuf)
-    clusterer = ColorClusterer(8, 0.0025, rng)
+    clusterer = ColorClusterer(4, 0.0025, rng)
     clusterer.cluster(img)
     clusters = clusterer.clusters
 
     dist = RGBColor.norm_hsv_dist
     white = Cluster('white', RGBColor(1, 1, 1).to_norm_hsv(), dist)
     black = Cluster('white', RGBColor(0, 0, 0).to_norm_hsv(), dist)
-    bw_thresh = 0.0002
+    bw_thresh = 0.0001
 
     def black_or_white(c):
         w = white.cached_mean
@@ -228,7 +228,10 @@ def main(args):
     filepath = args[0]
     with open(filepath, 'rb') as f:
         pixbuf = pixbuf_from_file(f)
-    clusters = clusterize(pixbuf)
+    rng = random.Random()
+    rng.seed(4232323)
+
+    clusters = clusterize(pixbuf, rng)
     for c in clusters:
         dist_dict = {}
         for d in clusters:
