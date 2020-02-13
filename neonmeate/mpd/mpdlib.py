@@ -214,7 +214,10 @@ class MpdHeartbeat(GObject.GObject):
             self.emit('no_song')
             return
         song_info = self._client.currentsong()
-        self.emit('song_changed', song_info['artist'], song_info['title'], song_info['album'])
+        try:
+            self.emit('song_changed', song_info['artist'], song_info['title'], song_info['album'])
+        except KeyError:
+            print(f'failed on {str(song_info)}')
 
     def _on_playlist_change(self, obj, spec):
         self.emit('playlist-changed')

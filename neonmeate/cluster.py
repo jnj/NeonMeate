@@ -208,15 +208,21 @@ def clusterize(pixbuf, rng):
     dist = RGBColor.norm_hsv_dist
     white = Cluster('white', RGBColor(1, 1, 1).to_norm_hsv(), dist)
     black = Cluster('white', RGBColor(0, 0, 0).to_norm_hsv(), dist)
-    bw_thresh = 0.0001
+    bw_thresh = 0.0008
+    #print("\nChecking clusters...\n")
 
     def black_or_white(c):
         w = white.cached_mean
         b = black.cached_mean
         m = c.cached_mean
-        if dist(m[0], m[1], m[2], w[0], w[1], w[2]) < bw_thresh:
+        dw = dist(m[0], m[1], m[2], w[0], w[1], w[2])
+        # print(f'color is {c.asRGB()}')
+        # print(f'distance from white {dw}')
+        if dw < bw_thresh:
             return True
-        if dist(m[0], m[1], m[2], b[0], b[1], b[2]) < bw_thresh:
+        db = dist(m[0], m[1], m[2], b[0], b[1], b[2])
+        # print(f'distance from black {db}')
+        if db < bw_thresh:
             return True
         return False
 

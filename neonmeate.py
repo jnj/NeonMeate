@@ -1,3 +1,4 @@
+import logging
 import random
 import sys
 
@@ -17,6 +18,7 @@ from concurrent.futures import ThreadPoolExecutor
 def main(args):
     rng = random.Random()
     rng.seed(39334)
+    logging.basicConfig(level=logging.DEBUG)
 
     with ThreadPoolExecutor(2) as executor:
         mpdclient = nmpd.Mpd(executor, 'localhost', 6600)
