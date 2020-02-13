@@ -18,6 +18,7 @@ class App(Gtk.ApplicationWindow):
     # noinspection PyUnresolvedReferences
     def __init__(self, rng, mpdclient, executor, cache, art_cache):
         Gtk.ApplicationWindow.__init__(self, title="NeonMeate")
+        self.set_icon_name('mpd')
         self._executor = executor
         self._heartbeat = nmpd.MpdHeartbeat(mpdclient, 200)
         self._heartbeat.start()
