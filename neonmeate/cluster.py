@@ -1,8 +1,10 @@
+import math
 import random
 import string
 import sys
 
 from gi.repository import GdkPixbuf
+
 from neonmeate.color import RGBColor
 
 
@@ -11,12 +13,13 @@ class SamplerStrategy:
     Randomly samples.
     """
 
-    def __init__(self, width, height):
+    def __init__(self, width, height, rng):
         self.width = width
         self.height = height
+        self.rng = rng
 
     def take(self, n):
-        return [(random.randrange(0, self.width), random.randrange(0, self.height)) for i in range(n)]
+        return [(self.rng.randrange(0, self.width), self.rng.randrange(0, self.height)) for i in range(n)]
 
 
 class GridSampler(SamplerStrategy):
@@ -24,8 +27,8 @@ class GridSampler(SamplerStrategy):
     Subsample in a grid pattern.
     """
 
-    def __init__(self, width, height):
-        super(GridSampler, self).__init__(width, height)
+    def __init__(self, width, height, rng):
+        super(GridSampler, self).__init__(width, height, rng)
         self.x_stride = max(int(width / 5.0), 5)
         self.y_stride = max(int(height / 5.0), 5)
         self.x = 0
@@ -36,7 +39,7 @@ class GridSampler(SamplerStrategy):
         for x in range(0, self.width, self.x_stride):
             for y in range(0, self.height, self.y_stride):
                 a.append((x, y))
-        random.shuffle(a)
+        self.rng.shuffle(a)
         return a
 
 
@@ -54,128 +57,121 @@ class Image:
 
 
 class Cluster:
-    def __init__(self, label, rgbcolor):
-        self.rgbcolor = rgbcolor
+    def __init__(self, label, color, dist_fn):
         self.label = label
-        self.count = 1
-        self.mean = list(rgbcolor.rgb)
-        self.initial_mean = list(self.mean)
+        self.dist_fn = dist_fn
+        self.colors = [color]
+        self.cached_mean = self.mean()
 
-    def __str__(self):
-        return f'Cluster[count={self.count}, rgb={self.mean_as_rgbcolor()}]'
+    def update_cached_mean(self, mean_color):
+        self.colors = [mean_color]
+        self.cached_mean = self.mean()
 
-    def distance(self, other):
-        a = RGBColor(*self.initial_mean)
-        b = RGBColor(*other.initial_mean)
-        return a.hsv_distance(b)
+    def mean(self):
+        n = len(self.colors)
+        if n == 0:
+            return 0, 0, 0
+        a = sum(x for x, _, _ in self.colors)
+        b = sum(y for _, y, _ in self.colors)
+        c = sum(z for _, _, z in self.colors)
+        # todo subtract self.color because it was counted twice
+        return a / n, b / n, c / n
 
-    def mean_as_rgbcolor(self):
-        return RGBColor(*self.mean)
+    def asRGB(self):
+        h, s, v = self.mean()
+        return RGBColor.from_hsv(h / (2 * math.pi), s, v)
 
-    def recalc_means(self, r, g, b):
-        n = self.count
-        m = n - 1
-        self.mean[0] = (self.mean[0] * m + r) / n
-        self.mean[1] = (self.mean[1] * m + g) / n
-        self.mean[2] = (self.mean[2] * m + b) / n
-
-    def recenter(self):
-        self.count = 1
-        self.initial_mean = list(self.mean)
-
-    def mean_dist(self):
-        return self.dist(RGBColor(self.mean[0], self.mean[1], self.mean[2]))
-
-    def dist(self, col):
-        return self.rgbcolor.hsv_distance(col)
-
-    def add(self, r, g, b):
-        self.count += 1
-        self.recalc_means(r, g, b)
+    def add(self, color):
+        self.colors.append(color)
 
 
-def pixbuf_from_file(fileobj, maxedge=100):
+def pixbuf_from_file(fileobj):
     pixbuf = GdkPixbuf.Pixbuf.new_from_file(fileobj.name)
-    if pixbuf.get_height() > maxedge and pixbuf.get_width() > maxedge:
-        pixbuf = pixbuf.scale_simple(maxedge, maxedge, GdkPixbuf.InterpType.BILINEAR)
     return pixbuf
 
 
-def initialize_clusters(k, cluster_min_distance, img):
-    clusters = []
-    maxiters = 50
-    itercount = 0
-    max_samples = int(0.75 * img.height * img.width)
-    grid_sampler = GridSampler(img.width, img.height)
-    rand_sampler = SamplerStrategy(img.width, img.height)
+class ColorClusterer:
+    def __init__(self, num_clusters, cluster_threshold, rng):
+        self._desired_clusters = num_clusters
+        self._cluster_threshold = cluster_threshold
+        self._cluster_distance_threshold = 1
+        self._max_init_cluster_iterations = 50
+        self._rng = rng
+        self.clusters = []
+        self.dist_fn = RGBColor.norm_hsv_dist
 
-    while len(clusters) < k and itercount < maxiters:
-        def different_enough(col):
-            return all(c.dist(col) > cluster_min_distance for c in clusters)
+    def reset(self):
+        self.clusters = []
 
-        def add_if(c):
-            if different_enough(c) and len(clusters) < k:
-                label = ''.join(random.sample(string.ascii_uppercase, 6))
-                clusters.append(Cluster(label, c))
-                return True
-            return False
+    def _different_enough(self, col):
+        for c in self.clusters:
+            m = c.cached_mean
+            if self.dist_fn(col[0], col[1], col[2], m[0], m[1], m[2]) >= self._cluster_threshold:
+                return False
+        return True
 
-        for x, y in grid_sampler.take(100):  # the n param is ignored by grid sampler
-            r, g, b = img.color(y, x)
-            rgbcol = RGBColor.from_256(r, g, b)
-            if add_if(rgbcol):
-                pass
-        if len(clusters) == k:
-            return clusters
+    def _init_clusters(self, img):
+        i = 0
+        k = self._desired_clusters
+        max_samples = int(0.6 * img.height * img.width)
+        rand_sampler = SamplerStrategy(img.width, img.height, self._rng)
 
-        # try with random sampling
-        for x, y in rand_sampler.take(max_samples):
-            r, g, b = img.color(y, x)
-            rgbcol = RGBColor.from_256(r, g, b)
-            if add_if(rgbcol) and len(clusters) >= k:
-                break
+        while len(self.clusters) < k and i < self._max_init_cluster_iterations:
+            for x, y in rand_sampler.take(max_samples):
+                col = RGBColor.from_256(*img.color(y, x)).to_norm_hsv()
+                if self._different_enough(col):
+                    label = ''.join(self._rng.sample(string.ascii_uppercase, 6))
+                    c = Cluster(label, col, self.dist_fn)
+                    self.clusters.append(c)
+                    if len(self.clusters) == k:
+                        break
+            i += 1
 
-        itercount += 1
-
-    return clusters
-
-
-def kmeans(k, cluster_threshold, img):
-    i = 0
-    dist_thresh = 1
-    dist = dist_thresh
-    clusters = initialize_clusters(k, cluster_threshold, img)
-    maxiters = 50
-    itercount = 0
-
-    while dist >= dist_thresh and itercount < maxiters:
-        i += 1
-        itercount += 1
-
-        for c in clusters:
-            c.recenter()
-
+    @staticmethod
+    def each_img_color(img):
         for x in range(img.width):
             for y in range(img.height):
-                r, g, b = img.color(y, x)
-                rgbcol = RGBColor.from_256(r, g, b)
-                closest = None
-                closest_dist = float('Inf')
+                hsv = RGBColor.from_256(*img.color(y, x)).to_norm_hsv()
+                yield hsv
 
-                for c in clusters:
-                    d = c.dist(rgbcol)
+    def _add_to_nearest(self, color):
+        near = None
+        dist = float('Inf')
 
-                    if d < closest_dist:
-                        closest = c
-                        closest_dist = d
+        for cluster in self.clusters:
+            m = cluster.cached_mean
+            d = cluster.dist_fn(m[0], m[1], m[2], color[0], color[1], color[2])
+            if d < dist:
+                near = cluster
+                dist = d
 
-                closest.add(*rgbcol.rgb)
+        near.add(color)
 
-        dist = 0
-        for c in clusters:
-            dist = max(dist, c.mean_dist())
+    def cluster(self, img):
+        self._init_clusters(img)
 
-    return clusters
+        if len(self.clusters) < 2:
+            return
+
+        maxiters = 50
+        itercount = 0
+        thresh = self._cluster_distance_threshold
+
+        while itercount < maxiters:
+            orig_means = [c.mean() for c in self.clusters]
+
+            for hsv in ColorClusterer.each_img_color(img):
+                self._add_to_nearest(hsv)
+
+            new_means = [c.mean() for c in self.clusters]
+
+            if all(self.dist_fn(u[0], u[1], u[2], v[0], v[1], v[2]) < thresh for u, v in zip(orig_means, new_means)):
+                break
+
+            for mean, cluster in zip(new_means, self.clusters):
+                cluster.update_cached_mean(mean)
+
+            itercount += 1
 
 
 def output(imgpath, clusters):
@@ -185,32 +181,44 @@ def output(imgpath, clusters):
     s += '\n\t<body>'
     s += f'\n\t\t<div><img src="file://{imgpath}"></div>'
     for cluster in clusters:
-        r = round(cluster.mean[0] * 100.0, 2)
-        g = round(cluster.mean[1] * 100.0, 2)
-        b = round(cluster.mean[2] * 100.0, 2)
-        s += f'\n\t\t<div style="background-color: rgb({r}%,{g}%,{b}%); min-height: 200px; width=100%; border: 1px solid black;">{cluster.label} {cluster.count} {str(cluster.dist_dict)}</div>'
+        rgb = cluster.asRGB()
+        r = round(rgb.rgb[0] * 100.0, 2)
+        g = round(rgb.rgb[1] * 100.0, 2)
+        b = round(rgb.rgb[2] * 100.0, 2)
+        s += f'\n\t\t<div style="background-color: rgb({r}%,{g}%,{b}%); min-height: 200px; width=100%; border: 1px solid black;">{cluster.label} {str(cluster.dist_dict)}</div>'
     s += '\n\t</body>'
     s += "\n</html>"
     with open("/tmp/clusters.html", 'w') as f:
         f.write(s)
 
 
-def clusterize(pixbuf):
-    maxedge = 150
+def clusterize(pixbuf, rng):
+    maxedge = 80
     assert pixbuf.get_bits_per_sample() == 8
     assert pixbuf.get_colorspace() == GdkPixbuf.Colorspace.RGB
+
     if pixbuf.get_height() > maxedge and pixbuf.get_width() > maxedge:
         pixbuf = pixbuf.scale_simple(maxedge, maxedge, GdkPixbuf.InterpType.BILINEAR)
 
     img = Image(pixbuf)
-    clusters = sorted(kmeans(6, 0.0075, img), key=lambda c: c.count)
+    clusterer = ColorClusterer(8, 0.0025, rng)
+    clusterer.cluster(img)
+    clusters = clusterer.clusters
 
-    white = Cluster('white', RGBColor(1, 1, 1))
-    black = Cluster('white', RGBColor(0, 0, 0))
-    bw_thresh = 0.01
+    dist = RGBColor.norm_hsv_dist
+    white = Cluster('white', RGBColor(1, 1, 1).to_norm_hsv(), dist)
+    black = Cluster('white', RGBColor(0, 0, 0).to_norm_hsv(), dist)
+    bw_thresh = 0.0002
 
     def black_or_white(c):
-        return c.distance(white) < bw_thresh or c.distance(black) < bw_thresh
+        w = white.cached_mean
+        b = black.cached_mean
+        m = c.cached_mean
+        if dist(m[0], m[1], m[2], w[0], w[1], w[2]) < bw_thresh:
+            return True
+        if dist(m[0], m[1], m[2], b[0], b[1], b[2]) < bw_thresh:
+            return True
+        return False
 
     clusters = [c for c in clusters if not black_or_white(c)]
     return clusters
@@ -219,19 +227,21 @@ def clusterize(pixbuf):
 def main(args):
     filepath = args[0]
     with open(filepath, 'rb') as f:
-        pixbuf = pixbuf_from_file(f, maxedge=70)
+        pixbuf = pixbuf_from_file(f)
     clusters = clusterize(pixbuf)
     for c in clusters:
         dist_dict = {}
         for d in clusters:
             if c is d:
                 continue
-            dist_dict[d.label] = c.dist(RGBColor(*d.mean))
+            dist_dict[d.label] = RGBColor.norm_hsv_dist(
+                c.cached_mean[0], c.cached_mean[1], c.cached_mean[2],
+                d.cached_mean[0], d.cached_mean[1], d.cached_mean[2]
+            )
         c.dist_dict = dist_dict
 
     output(filepath, clusters)
 
 
 if __name__ == '__main__':
-    random.seed(39334)
     main(sys.argv[1:])

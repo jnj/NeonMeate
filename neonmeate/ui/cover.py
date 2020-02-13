@@ -29,8 +29,9 @@ class Gradient:
 
 
 class CoverWithGradient(Gtk.DrawingArea):
-    def __init__(self, pixbuf, executor):
+    def __init__(self, pixbuf, rng, executor):
         super(CoverWithGradient, self).__init__()
+        self._rng = rng
         self.w = 600
         self.h = 600
         self.edge_size = self.w
@@ -46,9 +47,9 @@ class CoverWithGradient(Gtk.DrawingArea):
                 clusters = fut.result()
                 if len(clusters) > 0:
                     c = clusters[0]
-                    GLib.idle_add(self._update_grad, c.mean_as_rgbcolor())
+                    GLib.idle_add(self._update_grad, c.asRGB())
 
-        cluster_result = executor.submit(cluster.clusterize, pixbuf)
+        cluster_result = executor.submit(cluster.clusterize, pixbuf, self._rng)
         cluster_result.add_done_callback(on_gradient_ready)
 
     def _update_grad(self, rgb):

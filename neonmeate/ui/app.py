@@ -16,7 +16,7 @@ class App(Gtk.ApplicationWindow):
     }
 
     # noinspection PyUnresolvedReferences
-    def __init__(self, mpdclient, executor, cache, art_cache):
+    def __init__(self, rng, mpdclient, executor, cache, art_cache):
         Gtk.ApplicationWindow.__init__(self, title="NeonMeate")
         self._executor = executor
         self._heartbeat = nmpd.MpdHeartbeat(mpdclient, 200)
@@ -48,7 +48,7 @@ class App(Gtk.ApplicationWindow):
         self._playlist.connect('key-press-event', self._on_playlist_key)
         self._update_playlist(None)
 
-        self._now_playing = NowPlaying(self._album_cache, self._art_cache, self._executor)
+        self._now_playing = NowPlaying(rng, self._album_cache, self._art_cache, self._executor)
         self._stack.add_titled(self._artists, 'artists', 'Artists')
         self._stack.add_titled(self._playlist, 'playlist', 'Playlist')
         self._stack.add_titled(self._now_playing, 'now_playing', 'Playing')

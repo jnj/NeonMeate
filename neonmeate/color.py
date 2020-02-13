@@ -9,6 +9,10 @@ class RGBColor:
         s = 255.0
         return RGBColor(r / s, g / s, b / s)
 
+    @staticmethod
+    def from_hsv(h, s, v):
+        return RGBColor(*colorsys.hsv_to_rgb(h, s, v))
+
     def __init__(self, r, g, b):
         self.rgb = [r, g, b]
 
@@ -35,6 +39,10 @@ class RGBColor:
     def hsv_distance(self, other):
         h1, s1, v1 = self.to_norm_hsv()
         h2, s2, v2 = other.to_norm_hsv()
+        return RGBColor.norm_hsv_dist(h1, s1, v1, h2, s2, v2)
+
+    @staticmethod
+    def norm_hsv_dist(h1, s1, v1, h2, s2, v2):
         return (math.sin(h1) * s1 * v1 - math.sin(h2) * s2 * v2) ** 2 + \
                (math.cos(h1) * s1 * v1 - math.cos(h2) * s2 * v2) ** 2 + \
                (v1 - v2) ** 2

@@ -15,7 +15,9 @@ from concurrent.futures import ThreadPoolExecutor
 
 
 def main(args):
-    random.seed(39334)
+    rng = random.Random()
+    rng.seed(39334)
+
     with ThreadPoolExecutor(2) as executor:
         mpdclient = nmpd.Mpd(executor, 'localhost', 6600)
         mpdclient.connect()
@@ -24,7 +26,7 @@ def main(args):
         mpdclient.populate_cache(album_cache)
 
         art_cache = artcache.ArtCache()
-        main_window = app.App(mpdclient, executor, album_cache, art_cache)
+        main_window = app.App(rng, mpdclient, executor, album_cache, art_cache)
         main_window.connect('destroy', Gtk.main_quit)
         main_window.show_all()
         Gtk.main()
