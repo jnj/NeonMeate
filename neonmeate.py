@@ -16,15 +16,16 @@ from concurrent.futures import ThreadPoolExecutor
 
 
 def main(args):
+    music_dir = args[0]
     rng = random.Random()
     rng.seed(39334)
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
 
     with ThreadPoolExecutor(2) as executor:
         mpdclient = nmpd.Mpd(executor, 'localhost', 6600)
         mpdclient.connect()
 
-        album_cache = nmcache.AlbumCache('/media/josh/Music')
+        album_cache = nmcache.AlbumCache(music_dir)
         mpdclient.populate_cache(album_cache)
 
         art_cache = artcache.ArtCache()

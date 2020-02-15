@@ -1,3 +1,4 @@
+import logging
 import re
 
 import mpd as mpd2
@@ -214,10 +215,11 @@ class MpdHeartbeat(GObject.GObject):
             self.emit('no_song')
             return
         song_info = self._client.currentsong()
+        logging.debug(f'current song: {str(song_info)}')
         try:
             self.emit('song_changed', song_info['artist'], song_info['title'], song_info['album'])
-        except KeyError:
-            print(f'failed on {str(song_info)}')
+        except KeyError as e:
+            logging.exception(e)
 
     def _on_playlist_change(self, obj, spec):
         self.emit('playlist-changed')
