@@ -1,5 +1,7 @@
 import cairo
 import gi
+import logging
+
 from gi.repository import GdkPixbuf, Gtk, Gdk, GLib
 
 from neonmeate import cluster
@@ -43,7 +45,12 @@ class CoverWithGradient(Gtk.DrawingArea):
         self._is_default_grad = True
 
         def on_gradient_ready(fut):
-            if not fut.cancelled() and fut.exception(timeout=1) is None:
+            ex = fut.exception(timeout=1)
+
+            if ex is not None:
+                logging.exception(ex)
+                return
+            elif not fut.cancelled():
                 clusters = fut.result()
                 if len(clusters) > 0:
                     c = clusters[0]
