@@ -54,7 +54,7 @@ class CoverWithGradient(Gtk.DrawingArea):
                 clusters = fut.result()
                 if len(clusters) > 0:
                     c = clusters[0]
-                    GLib.idle_add(self._update_grad, c.asRGB())
+                    GLib.idle_add(self._update_grad, c.as_rgb())
 
         cluster_result = executor.submit(cluster.clusterize, pixbuf, self._rng)
         cluster_result.add_done_callback(on_gradient_ready)

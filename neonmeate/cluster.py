@@ -61,6 +61,7 @@ class Cluster:
         self.label = label
         self.dist_fn = dist_fn
         self.colors = [color]
+        self.count = 1
         self.cached_mean = self.mean()
 
     def update_cached_mean(self, mean_color):
@@ -69,6 +70,7 @@ class Cluster:
 
     def mean(self):
         n = len(self.colors)
+        self.count = n
         if n == 0:
             return 0, 0, 0
         a = sum(x for x, _, _ in self.colors)
@@ -77,7 +79,7 @@ class Cluster:
         # todo subtract self.color because it was counted twice
         return a / n, b / n, c / n
 
-    def asRGB(self):
+    def as_rgb(self):
         h, s, v = self.mean()
         return RGBColor.from_hsv(h / (2 * math.pi), s, v)
 
@@ -94,7 +96,7 @@ class ColorClusterer:
     def __init__(self, num_clusters, cluster_threshold, rng):
         self._desired_clusters = num_clusters
         self._cluster_threshold = cluster_threshold
-        self._cluster_distance_threshold = 0.0001
+        self._cluster_distance_threshold = 0.00005
         self._max_init_cluster_iterations = 50
         self._rng = rng
         self.clusters = []
@@ -181,11 +183,11 @@ def output(imgpath, clusters):
     s += '\n\t<body>'
     s += f'\n\t\t<div><img src="file://{imgpath}"></div>'
     for cluster in clusters:
-        rgb = cluster.asRGB()
+        rgb = cluster.as_rgb()
         r = round(rgb.rgb[0] * 100.0, 2)
         g = round(rgb.rgb[1] * 100.0, 2)
         b = round(rgb.rgb[2] * 100.0, 2)
-        s += f'\n\t\t<div style="background-color: rgb({r}%,{g}%,{b}%); min-height: 200px; width=100%; border: 1px solid black;">{cluster.label} {str(cluster.dist_dict)}</div>'
+        s += f'\n\t\t<div style="background-color: rgb({r}%,{g}%,{b}%); min-height: 200px; width=100%; border: 1px solid black;">{cluster.label} <h1>Count: {cluster.count}</h1> {str(cluster.dist_dict)}</div>'
     s += '\n\t</body>'
     s += "\n</html>"
     with open("/tmp/clusters.html", 'w') as f:
@@ -201,33 +203,50 @@ def clusterize(pixbuf, rng):
         pixbuf = pixbuf.scale_simple(maxedge, maxedge, GdkPixbuf.InterpType.BILINEAR)
 
     img = Image(pixbuf)
-    clusterer = ColorClusterer(4, 0.0025, rng)
+    clusterer = ColorClusterer(5, 0.05, rng)
     clusterer.cluster(img)
     clusters = clusterer.clusters
 
     dist = RGBColor.norm_hsv_dist
     white = Cluster('white', RGBColor(1, 1, 1).to_norm_hsv(), dist)
-    black = Cluster('white', RGBColor(0, 0, 0).to_norm_hsv(), dist)
-    bw_thresh = 0.0008
-    #print("\nChecking clusters...\n")
+    black = Cluster('black', RGBColor(0, 0, 0).to_norm_hsv(), dist)
+    bw_thresh = 0.0107
 
     def black_or_white(c):
         w = white.cached_mean
         b = black.cached_mean
         m = c.cached_mean
         dw = dist(m[0], m[1], m[2], w[0], w[1], w[2])
-        # print(f'color is {c.asRGB()}')
+        # print(f'{c.label} color is {c.as_rgb()}')
         # print(f'distance from white {dw}')
         if dw < bw_thresh:
             return True
         db = dist(m[0], m[1], m[2], b[0], b[1], b[2])
         # print(f'distance from black {db}')
         if db < bw_thresh:
+            # print(f'yes, is white or black')
             return True
         return False
 
     clusters = [c for c in clusters if not black_or_white(c)]
-    return clusters
+    kept = set()
+    l = len(clusters)
+
+    for i in range(l):
+        c = clusters[i]
+        kept.add(c.label)
+        for j in range(i + 1, l):
+            d = clusters[j]
+            if not similar(c, d):
+                kept.add(d.label)
+
+    return sorted([c for c in clusters if c.label in kept], key=lambda c: c.count)
+
+
+def similar(clust1, clust2):
+    cm = clust1.cached_mean
+    dm = clust2.cached_mean
+    return RGBColor.norm_hsv_dist(cm[0], cm[1], cm[2], dm[0], dm[1], dm[2]) < 0.05
 
 
 def main(args):
@@ -235,7 +254,7 @@ def main(args):
     with open(filepath, 'rb') as f:
         pixbuf = pixbuf_from_file(f)
     rng = random.Random()
-    rng.seed(4232323)
+    rng.seed(None)
 
     clusters = clusterize(pixbuf, rng)
     for c in clusters:
