@@ -254,7 +254,7 @@ def main(args):
     with open(filepath, 'rb') as f:
         pixbuf = pixbuf_from_file(f)
     rng = random.Random()
-    rng.seed(None)
+    rng.seed(39334)
 
     clusters = clusterize(pixbuf, rng)
     for c in clusters:

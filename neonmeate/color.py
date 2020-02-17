@@ -19,6 +19,9 @@ class RGBColor:
     def __str__(self):
         return str(self.rgb)
 
+    def components(self):
+        return self.rgb[0], self.rgb[1], self.rgb[2]
+
     def darken(self, percent):
         change = percent * 0.01
         h, s, v = colorsys.rgb_to_hsv(*self.rgb)

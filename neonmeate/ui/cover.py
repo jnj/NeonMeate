@@ -42,7 +42,9 @@ class CoverWithGradient(Gtk.DrawingArea):
         self.connect('draw', self.draw)
         self.connect('size-allocate', self.alloc)
         self._grad = Gradient.gray()
+        self._border_rgb = 1, 1, 1
         self._is_default_grad = True
+        self._border_thickness = 5
 
         def on_gradient_ready(fut):
             ex = fut.exception(timeout=1)
@@ -52,19 +54,21 @@ class CoverWithGradient(Gtk.DrawingArea):
                 return
             elif not fut.cancelled():
                 clusters = fut.result()
-                if len(clusters) > 0:
+                if len(clusters) > 1:
                     c = clusters[0]
-                    GLib.idle_add(self._update_grad, c.as_rgb())
+                    b = clusters[1]
+                    GLib.idle_add(self._update_grad, c.as_rgb(), b.as_rgb())
 
         cluster_result = executor.submit(cluster.clusterize, pixbuf, self._rng)
         cluster_result.add_done_callback(on_gradient_ready)
 
-    def _update_grad(self, rgb):
+    def _update_grad(self, rgb, border_rgb):
         if self._is_default_grad:
             self._is_default_grad = False
             start_rgb = rgb
             stop_rgb = start_rgb.darken(18).saturate(5)
             self._grad = Gradient(start_rgb, stop_rgb)
+            self._border_rgb = border_rgb.components()
             self.queue_draw()
 
     def alloc(self, widget, allocation):
@@ -76,12 +80,21 @@ class CoverWithGradient(Gtk.DrawingArea):
         grad = cairo.LinearGradient(0, 0, 0, self.h)
         grad.add_color_stop_rgb(0, *self._grad.start.rgb)
         grad.add_color_stop_rgb(1, *self._grad.stop.rgb)
-
         ctx.set_source(grad)
         ctx.rectangle(0, 0, self.w, self.h)
         ctx.fill()
         edge_size = self.edge_size - 200
         p = self.pixbuf.scale_simple(edge_size, edge_size, GdkPixbuf.InterpType.BILINEAR)
-        Gdk.cairo_set_source_pixbuf(ctx, p, (self.w - p.get_width()) / 2, (self.h - p.get_height()) / 2)
+        pixbuf_x = (self.w - p.get_width()) / 2
+        pixbuf_y = (self.h - p.get_height()) / 2
+        Gdk.cairo_set_source_pixbuf(ctx, p, pixbuf_x, pixbuf_y)
         ctx.paint()
+        ctx.set_line_width(self._border_thickness)
+        r, g, b = self._border_rgb
+        ctx.set_source_rgba(r, g, b, 1)
+        rect_x = pixbuf_x #- self._border_thickness + 2
+        rect_y = pixbuf_y #- self._border_thickness + 2
+        rect_width = edge_size #+ self._border_thickness - 2
+        ctx.rectangle(rect_x, rect_y, rect_width, rect_width)
+        ctx.stroke()
         return False
