@@ -115,7 +115,7 @@ class ColorClusterer:
     def _init_clusters(self, img):
         i = 0
         k = self._desired_clusters
-        max_samples = int(0.6 * img.height * img.width)
+        max_samples = int(0.75 * img.height * img.width)
         rand_sampler = SamplerStrategy(img.width, img.height, self._rng)
 
         while len(self.clusters) < k and i < self._max_init_cluster_iterations:
@@ -195,7 +195,7 @@ def output(imgpath, clusters):
 
 
 def clusterize(pixbuf, rng):
-    maxedge = 80
+    maxedge = 150
     assert pixbuf.get_bits_per_sample() == 8
     assert pixbuf.get_colorspace() == GdkPixbuf.Colorspace.RGB
 
@@ -203,7 +203,7 @@ def clusterize(pixbuf, rng):
         pixbuf = pixbuf.scale_simple(maxedge, maxedge, GdkPixbuf.InterpType.BILINEAR)
 
     img = Image(pixbuf)
-    clusterer = ColorClusterer(5, 0.05, rng)
+    clusterer = ColorClusterer(5, 0.01, rng)
     clusterer.cluster(img)
     clusters = clusterer.clusters
 
