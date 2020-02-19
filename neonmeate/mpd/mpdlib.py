@@ -123,7 +123,7 @@ class MpdState(GObject.GObject):
     songid = GObject.Property(type=str, default='-1')
     consume = GObject.Property(type=str, default='0')
     single = GObject.Property(type=str, default='0')
-    state = GObject.Property(type=str, default='stop')
+    state = GObject.Property(type=str, default='')
     playlist = GObject.Property(type=str, default='-1')
     playlistlength = GObject.Property(type=str, default='0')
     elapsedtime = GObject.Property(type=float, default=0.0)

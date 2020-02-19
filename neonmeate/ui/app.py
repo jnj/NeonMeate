@@ -20,7 +20,7 @@ class App(Gtk.ApplicationWindow):
         Gtk.ApplicationWindow.__init__(self, title="NeonMeate")
         self.set_icon_name('mpd')
         self._executor = executor
-        self._heartbeat = nmpd.MpdHeartbeat(mpdclient, 200)
+        self._heartbeat = nmpd.MpdHeartbeat(mpdclient, 700)
         self._heartbeat.start()
         self._mpdclient = mpdclient
         self._album_cache = cache
