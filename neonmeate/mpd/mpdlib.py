@@ -1,9 +1,10 @@
 import logging
+import os
 import re
 
 import mpd as mpd2
 from gi.repository import GObject
-
+from ..model import Album, Artist, Song
 import neonmeate.nmasync as nmasync
 
 
@@ -85,33 +86,43 @@ class Mpd:
         self._client.pause(0)
 
     def find_artists(self):
-        return self._client.list('artist')
+        return [Artist(a) for a in self._client.list('artist') if len(a) > 0]
 
     def find_albums(self, artist):
         songs = self._client.find('artist', artist)
         songs_by_album = {}
+        dirs_by_album = {}
 
         for song in songs:
             if 'album' in song:
-                album = song['album']
-                songlist = songs_by_album.get(album, [])
-                songlist.append(song)
-                songs_by_album[album] = songlist
+                album_name = song['album']
+                date = song['date']
+                directory = os.path.dirname(song['file'])
+                key = (album_name, date)
+                songlist = Mpd._compute_if_absent(songs_by_album, key, [])
+                dirs = Mpd._compute_if_absent(dirs_by_album, key, [])
+                dirs.append(directory)
+                s = Song(song['track'], song.get('disc', 1), song['title'])
+                songlist.append(s)
 
-        return songs_by_album
+        albums = []
+        for key, songs in songs_by_album.items():
+            a = Album(Artist(artist), key[0], key[1], songs, dirs_by_album[key][0])
+            albums.append(a)
+
+        return Album.sorted_chrono(albums)
+
+    @staticmethod
+    def _compute_if_absent(dictionary, key, value):
+        v = dictionary.get(key, value)
+        dictionary[key] = v
+        return v
 
     def status(self):
         return self._client.status()
 
     def clear_playlist(self):
         self._client.send_playlistclear()
-
-    def populate_cache(self, albumcache):
-        artists = self._client.list('artist')
-        for artist in artists:
-            albums = self.find_albums(artist)
-            for album, songlist in albums.items():
-                albumcache.add(artist, album, songlist)
 
 
 # noinspection PyUnresolvedReferences
@@ -167,7 +178,7 @@ class MpdHeartbeat(GObject.GObject):
         'playlist_changed': (GObject.SignalFlags.RUN_FIRST, None, ()),
         'song_played_percent': (GObject.SignalFlags.RUN_FIRST, None, (float,)),
         'song_playing_status': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
-        'song_changed': (GObject.SignalFlags.RUN_FIRST, None, (str, str, str)),
+        'song_changed': (GObject.SignalFlags.RUN_FIRST, None, (str, str, str, str)),
         'no_song': (GObject.SignalFlags.RUN_FIRST, None, ()),
         'playback_mode_toggled': (GObject.SignalFlags.RUN_FIRST, None, (str, bool))
     }
@@ -217,7 +228,7 @@ class MpdHeartbeat(GObject.GObject):
         song_info = self._client.currentsong()
         logging.debug(f'current song: {str(song_info)}')
         try:
-            self.emit('song_changed', song_info['artist'], song_info['title'], song_info['album'])
+            self.emit('song_changed', song_info['artist'], song_info['title'], song_info['album'], song_info['file'])
         except KeyError as e:
             logging.exception(e)
 

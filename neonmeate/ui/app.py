@@ -1,3 +1,4 @@
+import os
 from gi.repository import Gtk
 
 from .artistsalbums import ArtistsAlbums
@@ -16,14 +17,14 @@ class App(Gtk.ApplicationWindow):
     }
 
     # noinspection PyUnresolvedReferences
-    def __init__(self, rng, mpdclient, executor, cache, art_cache):
+    def __init__(self, rng, mpdclient, executor, art_cache):
         Gtk.ApplicationWindow.__init__(self, title="NeonMeate")
-        self.set_icon_name('mpd')
+        self.name = 'NeonMeate'
+        self.set_default_icon_name('mpd')
         self._executor = executor
         self._heartbeat = nmpd.MpdHeartbeat(mpdclient, 700)
         self._heartbeat.start()
         self._mpdclient = mpdclient
-        self._album_cache = cache
         self._art_cache = art_cache
         self.set_default_size(600, 600)
         self._titlebar = Gtk.HeaderBar()
@@ -44,12 +45,12 @@ class App(Gtk.ApplicationWindow):
         self._main_box.pack_start(self._stack, True, True, 0)
         self._main_box.pack_end(self._actionbar, False, False, 0)
 
-        self._artists = ArtistsAlbums(self._album_cache, self._art_cache)
+        self._artists = ArtistsAlbums(self._mpdclient, self._art_cache)
         self._playlist = Playlist()
         self._playlist.connect('key-press-event', self._on_playlist_key)
         self._update_playlist(None)
 
-        self._now_playing = NowPlaying(rng, self._album_cache, self._art_cache, self._executor)
+        self._now_playing = NowPlaying(rng, self._art_cache, self._executor)
         self._stack.add_titled(self._artists, 'artists', 'Artists')
         self._stack.add_titled(self._playlist, 'playlist', 'Playlist')
         self._stack.add_titled(self._now_playing, 'now_playing', 'Playing')
@@ -95,7 +96,7 @@ class App(Gtk.ApplicationWindow):
                 if isinstance(title, list):
                     title = ' - '.join(title)
                 self._playlist.add_playlist_item([artist, album, int(i['track']), title])
-                cover_path = self._album_cache.cover_art_path(artist, album)
+                cover_path = self._art_cache.resolve_cover_file(os.path.dirname(i['file']))
                 if cover_path is None:
                     print(f"Cover not found for {artist} {album}")
                 else:
@@ -104,7 +105,7 @@ class App(Gtk.ApplicationWindow):
                 print(f"Failed to find key in {i}")
                 raise e
 
-    def _on_song_changed(self, hb, artist, title, album):
+    def _on_song_changed(self, hb, artist, title, album, filepath):
         title_text = 'NeonMeate'
         if artist and title:
             title_text = f'{artist} - {title}'
@@ -112,7 +113,7 @@ class App(Gtk.ApplicationWindow):
         if artist is None:
             self._now_playing.clear()
             return
-        covpath = self._album_cache.cover_art_path(artist, album)
+        covpath = self._art_cache.resolve_cover_file(os.path.dirname(filepath))
         self._art_cache.fetch(covpath, None, None)
         self._now_playing.on_playing(artist, album, covpath)
 

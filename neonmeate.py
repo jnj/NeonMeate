@@ -5,7 +5,6 @@ import sys
 import gi
 
 import neonmeate.artcache as artcache
-import neonmeate.mpd.cache as nmcache
 import neonmeate.mpd.mpdlib as nmpd
 import neonmeate.ui.app as app
 
@@ -25,11 +24,8 @@ def main(args):
         mpdclient = nmpd.Mpd(executor, 'localhost', 6600)
         mpdclient.connect()
 
-        album_cache = nmcache.AlbumCache(music_dir)
-        mpdclient.populate_cache(album_cache)
-
-        art_cache = artcache.ArtCache()
-        main_window = app.App(rng, mpdclient, executor, album_cache, art_cache)
+        art_cache = artcache.ArtCache(music_dir)
+        main_window = app.App(rng, mpdclient, executor, art_cache)
         main_window.connect('destroy', Gtk.main_quit)
         main_window.show_all()
         Gtk.main()

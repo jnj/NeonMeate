@@ -5,11 +5,10 @@ from .cover import CoverWithGradient
 
 # noinspection PyUnresolvedReferences
 class NowPlaying(Gtk.Frame):
-    def __init__(self, rng, album_cache, art_cache, executor):
+    def __init__(self, rng, art_cache, executor):
         super(Gtk.Frame, self).__init__()
         self._rng = rng
         self._executor = executor
-        self._album_cache = album_cache
         self._art_cache = art_cache
         self._cover_art = None
         self._current = (None, None)

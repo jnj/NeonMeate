@@ -1,3 +1,5 @@
+import os
+
 import gi
 
 gi.require_version('GdkPixbuf', '2.0')
@@ -6,9 +8,20 @@ from gi.repository import GdkPixbuf, Gio, GLib, GObject
 
 
 class ArtCache(GObject.GObject):
-    def __init__(self):
+    def __init__(self, root_music_dir):
+        self._root_music_dir = root_music_dir
         self._cache = {}
         self._pending_requests = {}
+        self._cover_file_names = [f'{base}.{ext}'
+                                  for base in ['cover', 'front', 'folder', 'art']
+                                  for ext in ['jpg', 'png', 'gif']]
+
+    def resolve_cover_file(self, dirpath):
+        for f in self._cover_file_names:
+            fullpath = os.path.join(self._root_music_dir, dirpath, f)
+            if os.path.exists(fullpath):
+                return fullpath
+        return None
 
     def fetch(self, file_path, callback, user_data):
         if file_path in self._cache:
