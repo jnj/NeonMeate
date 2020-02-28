@@ -5,12 +5,13 @@ import re
 import mpd as mpd2
 from gi.repository import GObject
 from ..model import Album, Artist, Song
+from functools import partial
 import neonmeate.nmasync as nmasync
 
 
 class Mpd:
-    def __init__(self, executor, host='localhost', port=6600):
-        self._exec = executor
+    def __init__(self, scheduled_executor, host='localhost', port=6600):
+        self._exec = scheduled_executor
         self._host = host
         self._port = port
         self._client = mpd2.MPDClient()
@@ -33,23 +34,22 @@ class Mpd:
     def toggle_play_mode(self, name, active):
         state = 1 if active else 0
         fn = getattr(self._client, name)
-        self._exec.submit(fn, state)
+        runnable = partial(fn, state)
+        self._exec.execute(runnable)
 
     def currentsong(self):
+        # todo execute on executor thread
         record = self._client.currentsong()
         while isinstance(record.get('file', []), list):
             record = self._client.currentsong()
         return record
-
-    def idle(self):
-        while True:
-            changed = self._client.idle()
 
     def playlist(self):
         """
         Returns the songs in the current playlist.
         :return: a list of filenames.
         """
+        # todo execute on executor thread
         return self._client.playlist()
 
     def playlistinfo(self):
@@ -58,40 +58,34 @@ class Mpd:
         gives the filepath, several of the song's tags.
         :return: a list of dictionaries, one per song
         """
+        # todo execute on executor thread
         return self._client.playlistinfo()
 
     def stop_playing(self):
-        self._exec.submit(self._client.stop)
+        self._exec.execute(self._client.stop)
 
     def next_song(self):
-        self._exec.submit(self._client.next)
+        self._exec.execute(self._client.next)
 
     def prev_song(self):
-        self._exec.submit(self._client.previous)
+        self._exec.execute(self._client.previous)
 
     def toggle_pause(self, should_pause):
         mpdstatus = self.status()
         if should_pause:
-            task = self._pause
+            task = partial(self._client.pause, 1)
         else:
-            task = self._play_first_song
+            task = partial(self._client.play, 0)
             if 'pause' == mpdstatus.get('state', 'stop'):
-                task = self._unpause
-        self._exec.submit(task)
-
-    def _pause(self):
-        self._client.pause(1)
-
-    def _play_first_song(self):
-        self._client.play(0)
-
-    def _unpause(self):
-        self._client.pause(0)
+                task = partial(self._client.pause, 0)
+        self._exec.execute(task)
 
     def find_artists(self):
+        # todo exec on executor
         return [Artist(a) for a in self._client.list('artist') if len(a) > 0]
 
     def find_albums(self, artist):
+        # todo exec on executor
         songs = self._client.find('artist', artist)
         songs_by_album = {}
         dirs_by_album = {}
@@ -122,6 +116,7 @@ class Mpd:
         return v
 
     def status(self):
+        # todo exec on executor
         return self._client.status()
 
     def clear_playlist(self):
@@ -186,10 +181,11 @@ class MpdHeartbeat(GObject.GObject):
         'playback_mode_toggled': (GObject.SignalFlags.RUN_FIRST, None, (str, bool))
     }
 
-    def __init__(self, client, millis_interval):
+    def __init__(self, client, millis_interval, executor):
         GObject.GObject.__init__(self)
         self._client = client
-        self._thread = nmasync.PeriodicTask(millis_interval, self._on_hb_interval)
+        self._thread = executor
+        self._delay = millis_interval / 1000.0
         self._mpd_status = {}
         self._state = MpdState()
 
@@ -208,6 +204,7 @@ class MpdHeartbeat(GObject.GObject):
 
     def start(self):
         self._thread.start()
+        self._thread.schedule_periodic(self._delay, self._on_hb_interval)
 
     def stop(self):
         self._thread.stop()

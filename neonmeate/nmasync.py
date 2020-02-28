@@ -1,3 +1,4 @@
+import queue
 import sched
 import threading
 import time
@@ -14,28 +15,70 @@ def signal_subcribe_on_main(connect_fn, signal_name, callback, *args):
     connect_fn(signal_name, run_on_main_thread, *args)
 
 
-class PeriodicTask(threading.Thread):
-    """
-    Thread that will execute its action repeatedly on a fixed interval.
-    """
+class AtomicBoolean:
+    def __init__(self, initial=False):
+        self._boolean = initial
+        self._lock = threading.RLock()
+        self.set(initial)
 
-    def __init__(self, delay_millis, target):
-        super(PeriodicTask, self).__init__(group=None, target=self._repeat, daemon=True)
-        self._scheduler = sched.scheduler(timefunc=time.monotonic)
-        self._delay = delay_millis / 1000.0
-        self._runnable = target
-        self._running = True
+    def set(self, b):
+        with self._lock:
+            self._boolean = b
+
+    def get(self):
+        with self._lock:
+            return self._boolean
+
+
+class EventLoopThread(threading.Thread):
+    def __init__(self):
+        super(EventLoopThread, self).__init__(daemon=True)
+        self._queue = queue.SimpleQueue()
+        self._running = AtomicBoolean(False)
+
+    def add(self, action):
+        self._queue.put(action)
+
+    def run(self):
+        self._running.set(True)
+        while self._is_running():
+            action = self._queue.get()
+            action()
 
     def stop(self):
-        self._running = False
+        self._running.set(False)
 
-    def _schedule_next(self):
-        self._scheduler.enter(self._delay, 1, self._runnable)
+    def _is_running(self):
+        return self._running.get()
 
-    def _repeat(self):
-        while self._running:
-            self._schedule_next()
-            self._scheduler.run()
+
+class ScheduledExecutor:
+    def __init__(self):
+        self._thread = EventLoopThread()
+        self._scheduler = sched.scheduler(timefunc=time.monotonic)
+
+    def start(self):
+        self._thread.start()
+
+    def stop(self):
+        self._thread.stop()
+
+    def execute(self, action):
+        self._thread.add(action)
+
+    def schedule(self, delay, action):
+        def queue_on_event_thread():
+            self._thread.add(action)
+
+        self._scheduler.enter(delay, 1, queue_on_event_thread)
+        self._scheduler.run()
+
+    def schedule_periodic(self, delay, action):
+        def run_and_requeue():
+            action()
+            self.schedule_periodic(delay, action)
+
+        self.schedule(delay, run_and_requeue)
 
 
 if __name__ == '__main__':
@@ -43,10 +86,12 @@ if __name__ == '__main__':
         print("hi!")
 
 
-    t = PeriodicTask(200, sayhi)
-    t.start()
-    t.join(timeout=10.0)
+    executor = ScheduledExecutor()
+    executor.start()
 
-    t.stop()
+    executor.schedule_periodic(1.0, sayhi)
+
     time.sleep(4)
+    executor.stop()
+    time.sleep(3)
     print("done")
