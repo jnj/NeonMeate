@@ -71,6 +71,7 @@ class ScheduledExecutor:
             self._thread.add(action)
 
         self._scheduler.enter(delay, 1, queue_on_event_thread)
+        # TODO this blocks for 'delay' amount of time! schedule() should return immediately.
         self._scheduler.run()
 
     def schedule_periodic(self, delay, action):
