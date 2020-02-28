@@ -1,3 +1,4 @@
+import concurrent.futures
 import queue
 import sched
 import threading
@@ -55,6 +56,7 @@ class EventLoopThread(threading.Thread):
 class ScheduledExecutor:
     def __init__(self):
         self._thread = EventLoopThread()
+        self._pool = concurrent.futures.ThreadPoolExecutor(5)
         self._scheduler = sched.scheduler(timefunc=time.monotonic)
 
     def start(self):
@@ -71,8 +73,7 @@ class ScheduledExecutor:
             self._thread.add(action)
 
         self._scheduler.enter(delay, 1, queue_on_event_thread)
-        # TODO this blocks for 'delay' amount of time! schedule() should return immediately.
-        self._scheduler.run()
+        self._pool.submit(self._scheduler.run)
 
     def schedule_periodic(self, delay, action):
         def run_and_requeue():
@@ -91,7 +92,7 @@ if __name__ == '__main__':
     executor.start()
 
     executor.schedule_periodic(1.0, sayhi)
-
+    print('sleeping...')
     time.sleep(4)
     executor.stop()
     time.sleep(3)
