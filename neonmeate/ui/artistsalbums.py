@@ -30,7 +30,7 @@ class Artists(toolkit.Scrollable):
 
     def __init__(self, mpdclient, art_cache):
         super(Artists, self).__init__()
-        self._artist_column = toolkit.Column(True)
+        self._artist_column = toolkit.Column(vmargin=10, selectable_rows=True)
         self.add_content(self._artist_column)
         self._mpd = mpdclient
         for artist in self._mpd.find_artists():

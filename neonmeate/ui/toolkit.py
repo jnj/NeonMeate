@@ -19,8 +19,9 @@ class Column(Gtk.ListBox):
         'value-selected': (GObject.SignalFlags.RUN_FIRST, None, (str,))
     }
 
-    def __init__(self, selectable_rows=True):
+    def __init__(self, vmargin=10, selectable_rows=True):
         super(Column, self).__init__()
+        self._vmargin = vmargin
         if selectable_rows:
             self.set_selection_mode(Gtk.SelectionMode.SINGLE)
             super(Column, self).connect('row-selected', self._on_row_selected)
@@ -31,6 +32,8 @@ class Column(Gtk.ListBox):
         label = Gtk.Label(text, xalign=0)
         label.set_justify(Gtk.Justification.LEFT)
         label.set_ellipsize(Pango.EllipsizeMode.END)
+        label.set_margin_top(self._vmargin)
+        label.set_margin_bottom(self._vmargin)
         label.show()
         self.add(label)
 

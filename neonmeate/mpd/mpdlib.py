@@ -36,7 +36,10 @@ class Mpd:
         self._exec.submit(fn, state)
 
     def currentsong(self):
-        return self._client.currentsong()
+        record = self._client.currentsong()
+        while isinstance(record.get('file', []), list):
+            record = self._client.currentsong()
+        return record
 
     def idle(self):
         while True:
@@ -96,13 +99,13 @@ class Mpd:
         for song in songs:
             if 'album' in song:
                 album_name = song['album']
-                date = song['date']
+                date = int(song['date'])
                 directory = os.path.dirname(song['file'])
                 key = (album_name, date)
                 songlist = Mpd._compute_if_absent(songs_by_album, key, [])
                 dirs = Mpd._compute_if_absent(dirs_by_album, key, [])
                 dirs.append(directory)
-                s = Song(song['track'], song.get('disc', 1), song['title'])
+                s = Song(int(song['track']), int(song.get('disc', 1)), song['title'])
                 songlist.append(s)
 
         albums = []
@@ -226,7 +229,7 @@ class MpdHeartbeat(GObject.GObject):
             self.emit('no_song')
             return
         song_info = self._client.currentsong()
-        logging.debug(f'current song: {str(song_info)}')
+        logging.info(f'current song: {str(song_info)}')
         try:
             self.emit('song_changed', song_info['artist'], song_info['title'], song_info['album'], song_info['file'])
         except KeyError as e:

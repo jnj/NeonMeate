@@ -1,3 +1,4 @@
+import logging
 import os
 from gi.repository import Gtk
 
@@ -67,7 +68,7 @@ class App(Gtk.ApplicationWindow):
         self._heartbeat.connect('song_played_percent', self._on_song_percent)
         self._heartbeat.connect('song_playing_status', self._on_song_playing_status)
         self._heartbeat.connect('song_changed', self._on_song_changed)
-        self._heartbeat.connect('no_song', lambda hb: self._on_song_changed(hb, None, None, None))
+        self._heartbeat.connect('no_song', lambda hb: self._on_song_changed(hb, None, None, None, None))
         self._heartbeat.connect('playlist-changed', self._update_playlist)
         self._heartbeat.connect('playback-mode-toggled', self._on_mode_change())
 
@@ -106,6 +107,7 @@ class App(Gtk.ApplicationWindow):
                 raise e
 
     def _on_song_changed(self, hb, artist, title, album, filepath):
+        logging.info(f"Song changed. artist={artist}, title={title}, album={album}, filepath={filepath}")
         title_text = 'NeonMeate'
         if artist and title:
             title_text = f'{artist} - {title}'
@@ -114,8 +116,11 @@ class App(Gtk.ApplicationWindow):
             self._now_playing.clear()
             return
         covpath = self._art_cache.resolve_cover_file(os.path.dirname(filepath))
-        self._art_cache.fetch(covpath, None, None)
-        self._now_playing.on_playing(artist, album, covpath)
+        if covpath is None:
+            logging.error(f'File art not found for {filepath}')
+        else:
+            self._art_cache.fetch(covpath, None, None)
+            self._now_playing.on_playing(artist, album, covpath)
 
     def _on_song_playing_status(self, hb, status):
         paused, stopped = App.PlayStatus.get(status, (False, False))
