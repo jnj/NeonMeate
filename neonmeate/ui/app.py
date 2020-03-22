@@ -84,9 +84,8 @@ class App(Gtk.ApplicationWindow):
         print(f"playlist key pressed {key}")
 
     def _update_playlist(self, obj):
-        self._playlist.clear()
-
         def on_current_queue(playqueue):
+            self._playlist.clear()
             for i in playqueue:
                 try:
                     if 'artist' not in i:
