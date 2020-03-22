@@ -1,5 +1,6 @@
 import logging
 import os
+
 from gi.repository import Gtk, GLib
 
 from .artistsalbums import ArtistsAlbums
@@ -7,7 +8,6 @@ from .controls import ControlButtons, PlayModeButtons
 from .nowplaying import NowPlaying
 from .playlist import Playlist
 from .songprogress import SongProgress
-from ..mpd import mpdlib as nmpd
 
 
 class App(Gtk.ApplicationWindow):
