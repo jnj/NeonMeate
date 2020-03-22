@@ -1,6 +1,6 @@
 import logging
 import os
-from gi.repository import Gtk
+from gi.repository import Gtk, GLib
 
 from .artistsalbums import ArtistsAlbums
 from .controls import ControlButtons, PlayModeButtons
@@ -85,25 +85,31 @@ class App(Gtk.ApplicationWindow):
 
     def _update_playlist(self, obj):
         self._playlist.clear()
-        current_queue = self._mpdclient.playlistinfo()
-        for i in current_queue:
-            try:
-                if 'artist' not in i:
-                    continue
-                artist = i['artist']
-                album = i['album']
-                title = i['title']
-                if isinstance(title, list):
-                    title = ' - '.join(title)
-                self._playlist.add_playlist_item([artist, album, int(i['track']), title])
-                cover_path = self._art_cache.resolve_cover_file(os.path.dirname(i['file']))
-                if cover_path is None:
-                    print(f"Cover not found for {artist} {album}")
-                else:
-                    self._art_cache.fetch(cover_path, None, None)
-            except KeyError as e:
-                print(f"Failed to find key in {i}")
-                raise e
+
+        def on_current_queue(playqueue):
+            for i in playqueue:
+                try:
+                    if 'artist' not in i:
+                        continue
+                    artist = i['artist']
+                    album = i['album']
+                    title = i['title']
+                    if isinstance(title, list):
+                        title = ' - '.join(title)
+                    self._playlist.add_playlist_item([artist, album, int(i['track']), title])
+                    cover_path = self._art_cache.resolve_cover_file(os.path.dirname(i['file']))
+                    if cover_path is None:
+                        print(f"Cover not found for {artist} {album}")
+                    else:
+                        self._art_cache.fetch(cover_path, None, None)
+                except KeyError as e:
+                    print(f"Failed to find key in {i}")
+                    raise e
+
+        def callback_on_main(playqueue):
+            GLib.idle_add(on_current_queue, playqueue)
+
+        self._mpdclient.playlistinfo(callback_on_main)
 
     def _on_song_changed(self, hb, artist, title, album, filepath):
         logging.info(f"Song changed. artist={artist}, title={title}, album={album}, filepath={filepath}")

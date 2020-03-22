@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import re
@@ -37,29 +38,27 @@ class Mpd:
         runnable = partial(fn, state)
         self._exec.execute(runnable)
 
-    def currentsong(self):
-        # todo execute on executor thread
-        record = self._client.currentsong()
-        while isinstance(record.get('file', []), list):
+    def currentsong(self, callback):
+        def task():
             record = self._client.currentsong()
-        return record
+            while isinstance(record.get('file', []), list):
+                record = self._client.currentsong()
+            callback(record)
 
-    def playlist(self):
-        """
-        Returns the songs in the current playlist.
-        :return: a list of filenames.
-        """
-        # todo execute on executor thread
-        return self._client.playlist()
+        self._exec.execute(task)
 
-    def playlistinfo(self):
+    def playlistinfo(self, callback):
         """
-        Returns the songs in the current playlist. This
-        gives the filepath, several of the song's tags.
-        :return: a list of dictionaries, one per song
+        This gives the filepath, as well as several of the
+        song's tags. A list of dictionaries, one per song,
+        will be passed to the callback.
         """
-        # todo execute on executor thread
-        return self._client.playlistinfo()
+
+        def task():
+            playqueue = self._client.playlistinfo()
+            callback(playqueue)
+
+        self._exec.execute(task)
 
     def stop_playing(self):
         self._exec.execute(self._client.stop)
@@ -222,15 +221,23 @@ class MpdHeartbeat(GObject.GObject):
 
     def _on_song_change(self, obj, spec):
         songid = self._state.get_property(spec.name)
+
         if songid == '-1':
             self.emit('no_song')
             return
-        song_info = self._client.currentsong()
-        logging.info(f'current song: {str(song_info)}')
-        try:
-            self.emit('song_changed', song_info['artist'], song_info['title'], song_info['album'], song_info['file'])
-        except KeyError as e:
-            logging.exception(e)
+
+        def on_current_song(song_info):
+            logging.info(f'current song: {str(song_info)}')
+            try:
+                self.emit('song_changed',
+                          song_info['artist'],
+                          song_info['title'],
+                          song_info['album'],
+                          song_info['file'])
+            except KeyError as e:
+                logging.exception(e)
+
+        self._client.currentsong(on_current_song)
 
     def _on_playlist_change(self, obj, spec):
         self.emit('playlist-changed')
@@ -259,7 +266,8 @@ class MpdHeartbeat(GObject.GObject):
 
 
 if __name__ == '__main__':
-    pass
+    event_loop = asyncio.new_event_loop()
+
     # client = Mpd('localhost', 6600)
     # client.connect()
     # hb = MpdHeartbeat(client, 900)

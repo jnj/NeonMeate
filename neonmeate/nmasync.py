@@ -67,10 +67,10 @@ class ScheduledExecutor:
         self._thread.add(action)
 
     def schedule(self, delay, action):
-        def queue_on_event_thread():
-            self._thread.add(action)
+        def run_on_event_thread():
+            self.execute(action)
 
-        self._scheduler.enter(delay, 1, queue_on_event_thread)
+        self._scheduler.enter(delay, 1, run_on_event_thread)
         t = threading.Thread(target=self._scheduler.run)
         t.start()
 
