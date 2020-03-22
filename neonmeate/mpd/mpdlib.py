@@ -232,6 +232,8 @@ class MpdHeartbeat(GObject.GObject):
             self._mpd_status = status
             self._state.update(self._mpd_status)
 
+        # Not strictly needed since the hb is typically created
+        # with the same thread that is passed to the mpd client.
         def on_hb_thread(status):
             self._thread.execute(partial(on_status, status))
 
