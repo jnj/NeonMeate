@@ -1,6 +1,6 @@
 import os
 
-from gi.repository import GdkPixbuf, GObject, Gtk
+from gi.repository import GdkPixbuf, GObject, Gtk, GLib
 
 from neonmeate.ui import toolkit
 
@@ -33,8 +33,15 @@ class Artists(toolkit.Scrollable):
         self._artist_column = toolkit.Column(vmargin=10, selectable_rows=True)
         self.add_content(self._artist_column)
         self._mpd = mpdclient
-        for artist in self._mpd.find_artists():
-            self._artist_column.add_row(artist.name)
+
+        def on_artists(artists):
+            for artist in artists:
+                self._artist_column.add_row(artist.name)
+
+        def on_main(artists):
+            GLib.idle_add(on_artists, artists)
+
+        self._mpd.find_artists(on_main)
         self._artist_column.connect('value-selected', self._on_artist_clicked)
 
     def _on_artist_clicked(self, obj, value):
@@ -67,11 +74,17 @@ class Albums(toolkit.Scrollable):
             return
         self._clear_albums()
         self._selected_artist = artist_name
-        albums = self._mpdclient.find_albums(artist_name)
-        for album in albums:
-            cover_path = self._art_cache.resolve_cover_file(album.dirpath)
-            if cover_path:
-                self._art_cache.fetch(cover_path, self._on_art_ready, album)
+
+        def on_albums(albums):
+            for album in albums:
+                cover_path = self._art_cache.resolve_cover_file(album.dirpath)
+                if cover_path:
+                    self._art_cache.fetch(cover_path, self._on_art_ready, album)
+
+        def on_main(albums):
+            GLib.idle_add(on_albums, albums)
+
+        self._mpdclient.find_albums(artist_name, on_main)
 
 
 class AlbumEntry(Gtk.Grid):
@@ -89,4 +102,3 @@ class AlbumEntry(Gtk.Grid):
         label.show()
         self.attach(label, 1, 0, 1, 1)
         self.set_row_baseline_position(0, Gtk.BaselinePosition.TOP)
-

@@ -26,7 +26,11 @@ class Mpd:
         status is obtained.
         """
         self._client.connect(self._host, self._port)
-        self._status = self.status()
+
+        def set_status(s):
+            self._status = s
+
+        self.status(set_status)
 
     def close(self):
         self._client.close()
@@ -70,43 +74,50 @@ class Mpd:
         self._exec.execute(self._client.previous)
 
     def toggle_pause(self, should_pause):
-        mpdstatus = self.status()
-        if should_pause:
-            task = partial(self._client.pause, 1)
-        else:
-            task = partial(self._client.play, 0)
-            if 'pause' == mpdstatus.get('state', 'stop'):
-                task = partial(self._client.pause, 0)
+        def on_status(mpdstatus):
+            if should_pause:
+                task = partial(self._client.pause, 1)
+            else:
+                task = partial(self._client.play, 0)
+                if 'pause' == mpdstatus.get('state', 'stop'):
+                    task = partial(self._client.pause, 0)
+            self._exec.execute(task)
+
+        self.status(on_status)
+
+    def find_artists(self, callback):
+        def task():
+            callback([Artist(a) for a in self._client.list('artist') if len(a) > 0])
+
         self._exec.execute(task)
 
-    def find_artists(self):
-        # todo exec on executor
-        return [Artist(a) for a in self._client.list('artist') if len(a) > 0]
+    def find_albums(self, artist, callback):
+        def task():
+            songs = self._client.find('artist', artist)
+            songs_by_album = {}
+            dirs_by_album = {}
 
-    def find_albums(self, artist):
-        # todo exec on executor
-        songs = self._client.find('artist', artist)
-        songs_by_album = {}
-        dirs_by_album = {}
+            for song in songs:
+                if 'album' in song:
+                    album_name = song['album']
+                    date = int(song['date'])
+                    directory = os.path.dirname(song['file'])
+                    key = (album_name, date)
+                    songlist = Mpd._compute_if_absent(songs_by_album, key, [])
+                    dirs = Mpd._compute_if_absent(dirs_by_album, key, [])
+                    dirs.append(directory)
+                    s = Song(int(song['track']), int(song.get('disc', 1)), song['title'])
+                    songlist.append(s)
 
-        for song in songs:
-            if 'album' in song:
-                album_name = song['album']
-                date = int(song['date'])
-                directory = os.path.dirname(song['file'])
-                key = (album_name, date)
-                songlist = Mpd._compute_if_absent(songs_by_album, key, [])
-                dirs = Mpd._compute_if_absent(dirs_by_album, key, [])
-                dirs.append(directory)
-                s = Song(int(song['track']), int(song.get('disc', 1)), song['title'])
-                songlist.append(s)
+            albums = []
+            for key, songs in songs_by_album.items():
+                a = Album(Artist(artist), key[0], key[1], songs, dirs_by_album[key][0])
+                albums.append(a)
 
-        albums = []
-        for key, songs in songs_by_album.items():
-            a = Album(Artist(artist), key[0], key[1], songs, dirs_by_album[key][0])
-            albums.append(a)
+            ordered_albums = Album.sorted_chrono(albums)
+            callback(ordered_albums)
 
-        return Album.sorted_chrono(albums)
+        self._exec.execute(task)
 
     @staticmethod
     def _compute_if_absent(dictionary, key, value):
@@ -114,12 +125,17 @@ class Mpd:
         dictionary[key] = v
         return v
 
-    def status(self):
-        # todo exec on executor
-        return self._client.status()
+    def status(self, callback):
+        def task():
+            callback(self._client.status())
+
+        self._exec.execute(task)
 
     def clear_playlist(self):
-        self._client.send_playlistclear()
+        def task():
+            self._client.send_playlistclear()
+
+        self._exec.execute(task)
 
 
 # noinspection PyUnresolvedReferences
@@ -212,8 +228,14 @@ class MpdHeartbeat(GObject.GObject):
         nmasync.signal_subcribe_on_main(super(MpdHeartbeat, self).connect, signal_name, handler, *args)
 
     def _on_hb_interval(self):
-        self._mpd_status = self._client.status()
-        self._state.update(self._mpd_status)
+        def on_status(status):
+            self._mpd_status = status
+            self._state.update(self._mpd_status)
+
+        def on_hb_thread(status):
+            self._thread.execute(partial(on_status, status))
+
+        self._client.status(on_hb_thread)
         return True
 
     def _on_state_change(self, obj, spec):
