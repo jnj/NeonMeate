@@ -56,16 +56,27 @@ class Albums(toolkit.Scrollable):
         self._albums = toolkit.Column(False)
         self.add_content(self._albums)
         self._selected_artist = None
+        self._entries = []
 
-    def _on_art_ready(self, pixbuf, album):
+    def _on_art_ready(self, pixbuf, album_count):
+        album, count = album_count
         if self._selected_artist != album.artist.name:
             return
+
         album_entry = AlbumEntry(album, pixbuf)
-        album_entry.show()
-        self._albums.add(album_entry)
+        self._entries.append(album_entry)
+        if len(self._entries) == count:
+            self._on_all_albums_ready()
+
+    def _on_all_albums_ready(self):
+        chrono_order = sorted(self._entries, key=lambda entry: entry.album.date)
+        for entry in chrono_order:
+            entry.show()
+            self._albums.add(entry)
         self.queue_draw()
 
     def _clear_albums(self):
+        self._entries.clear()
         for c in self._albums.get_children():
             self._albums.remove(c)
 
@@ -76,10 +87,11 @@ class Albums(toolkit.Scrollable):
         self._selected_artist = artist_name
 
         def on_albums(albums):
+            print(f'got album list: {[str(a) for a in albums]}')
             for album in albums:
                 cover_path = self._art_cache.resolve_cover_file(album.dirpath)
                 if cover_path:
-                    self._art_cache.fetch(cover_path, self._on_art_ready, album)
+                    self._art_cache.fetch(cover_path, self._on_art_ready, (album, len(albums)))
 
         def on_main(albums):
             GLib.idle_add(on_albums, albums)
@@ -90,12 +102,13 @@ class Albums(toolkit.Scrollable):
 class AlbumEntry(Gtk.Grid):
     def __init__(self, album, pixbuf):
         super(AlbumEntry, self).__init__()
+        self.album = album
         self.set_column_spacing(10)
         pixbuf = pixbuf.scale_simple(200, 200, GdkPixbuf.InterpType.BILINEAR)
         img = Gtk.Image.new_from_pixbuf(pixbuf)
         img.show()
         self.attach(img, 0, 0, 1, 1)
-        label_txt = f"{album.title}\n"
+        label_txt = f"{album.title} - {album.date}\n"
         for s in album.sorted_songs():
             label_txt += f"{s.number}. {s.title}\n"
         label = Gtk.Label(label_txt)

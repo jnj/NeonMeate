@@ -16,6 +16,9 @@ class Album:
         self.title = title
         self.dirpath = dirpath
 
+    def __str__(self):
+        return f'Album:title={self.title}, date={self.date}, artist={self.artist}'
+
     def sorted_songs(self):
         return sorted(self.songs, key=lambda song: (song.discnum, song.number))
 
