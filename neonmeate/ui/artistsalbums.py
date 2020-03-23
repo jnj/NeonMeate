@@ -87,7 +87,6 @@ class Albums(toolkit.Scrollable):
         self._selected_artist = artist_name
 
         def on_albums(albums):
-            print(f'got album list: {[str(a) for a in albums]}')
             for album in albums:
                 cover_path = self._art_cache.resolve_cover_file(album.dirpath)
                 if cover_path:
