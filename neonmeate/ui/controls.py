@@ -128,6 +128,10 @@ class PlayModeButtons(NeonMeateButtonBox):
         self._single = self._add_button(PlayModeButton('zoom-original', '1'), 'single', None)
         self._random = self._add_button(PlayModeButton('media-playlist-shuffle'), 'random', None)
         self._repeat = self._add_button(PlayModeButton('media-playlist-repeat'), 'repeat', None)
+        self._consume.set_tooltip_text('Consume mode')
+        self._single.set_tooltip_text('Single mode')
+        self._random.set_tooltip_text('Random mode')
+        self._repeat.set_tooltip_text('Repeat mode')
         self._subscribers_by_signal = {}
         for name, btn in self._byname.items():
             btn.connect('clicked', self._on_click(name, btn))
