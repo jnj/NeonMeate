@@ -12,15 +12,15 @@ class ArtistsAlbums(Gtk.Frame):
         self._art_cache = art_cache
         self._panes = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
         self._artists_scrollable = Artists(mpdclient, art_cache)
-        self._albums = Albums(self._mpdclient, self._art_cache)
+        self._albums_songs = AlbumsSongs(self._mpdclient, self._art_cache)
         self._panes.pack1(self._artists_scrollable)
-        self._panes.pack2(self._albums)
+        self._panes.pack2(self._albums_songs)
         self._panes.set_position(280)
         self.add(self._panes)
         self._artists_scrollable.connect('artist-selected', self._on_artist_clicked)
 
     def _on_artist_clicked(self, column_widget, selected_value):
-        self._albums.on_artist_selected(selected_value)
+        self._albums_songs.on_artist_selected(selected_value)
 
 
 class Artists(toolkit.Scrollable):
@@ -98,19 +98,40 @@ class Albums(toolkit.Scrollable):
         self._mpdclient.find_albums(artist_name, on_main)
 
 
-class AlbumEntry(Gtk.Grid):
+class AlbumEntry(Gtk.Box):
     def __init__(self, album, pixbuf):
-        super(AlbumEntry, self).__init__()
+        super(AlbumEntry, self).__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.album = album
-        self.set_column_spacing(10)
-        pixbuf = pixbuf.scale_simple(200, 200, GdkPixbuf.InterpType.BILINEAR)
+        pixbuf = pixbuf.scale_simple(300, 300, GdkPixbuf.InterpType.BILINEAR)
         img = Gtk.Image.new_from_pixbuf(pixbuf)
         img.show()
-        self.attach(img, 0, 0, 1, 1)
+        self.pack_start(img, True, False, 5)
         label_txt = f"{album.title} - {album.date}\n"
         for s in album.sorted_songs():
             label_txt += f"{s.number}. {s.title}\n"
         label = Gtk.Label(label_txt)
-        label.show()
-        self.attach(label, 1, 0, 1, 1)
-        self.set_row_baseline_position(0, Gtk.BaselinePosition.TOP)
+        #label.show()
+        #self.attach(label, 1, 0, 1, 1)
+        #self.set_row_baseline_position(0, Gtk.BaselinePosition.TOP)
+
+
+class Songs(toolkit.Scrollable):
+    def __init__(self):
+        super(Songs, self).__init__()
+
+
+class AlbumsSongs(Gtk.Frame):
+    def __init__(self, mpdclient, art_cache):
+        super(AlbumsSongs, self).__init__()
+        self._mpdclient = mpdclient
+        self._art_cache = art_cache
+        self._panes = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
+        self._albums = Albums(self._mpdclient, self._art_cache)
+        self._songs = Songs()
+        self._panes.pack1(self._albums)
+        self._panes.pack2(self._songs)
+        self._panes.set_position(310) # todo determine from album cover width
+        self.add(self._panes)
+
+    def on_artist_selected(self, artist_name):
+        self._albums.on_artist_selected(artist_name)

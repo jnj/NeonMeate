@@ -92,9 +92,9 @@ class CoverWithGradient(Gtk.DrawingArea):
         ctx.set_line_width(self._border_thickness)
         r, g, b = self._border_rgb
         ctx.set_source_rgba(r, g, b, 1)
-        rect_x = pixbuf_x #- self._border_thickness + 2
-        rect_y = pixbuf_y #- self._border_thickness + 2
-        rect_width = edge_size #+ self._border_thickness - 2
+        rect_x = pixbuf_x  # - self._border_thickness + 2
+        rect_y = pixbuf_y  # - self._border_thickness + 2
+        rect_width = edge_size  # + self._border_thickness - 2
         ctx.rectangle(rect_x, rect_y, rect_width, rect_width)
         ctx.stroke()
         return False

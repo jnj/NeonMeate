@@ -26,7 +26,7 @@ class App(Gtk.ApplicationWindow):
         self._heartbeat = mpd_hb
         self._mpdclient = mpdclient
         self._art_cache = art_cache
-        self.set_default_size(600, 600)
+        self.set_default_size(800, 600)
         self._titlebar = Gtk.HeaderBar()
         self._titlebar.set_title("NeonMeate")
         self._titlebar.set_show_close_button(True)
