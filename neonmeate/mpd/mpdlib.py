@@ -11,6 +11,13 @@ import neonmeate.nmasync as nmasync
 
 
 class Mpd:
+    """
+    Our client for interacting with the MPD server. The commands are
+    asynchronously executed and methods typically accept a callback to
+    accept the results of a command. The executor provided to the
+    constructor will be used to issue commands to the server.
+
+    """
     def __init__(self, scheduled_executor, host='localhost', port=6600):
         self._exec = scheduled_executor
         self._host = host
@@ -33,16 +40,24 @@ class Mpd:
         self.status(set_status)
 
     def close(self):
+        """Shuts down the client and disconnects from the server."""
         self._client.close()
         self._client.disconnect()
 
     def toggle_play_mode(self, name, active):
+        """
+        Sets a play mode.
+
+        :param name: one of 'repeat', 'random', 'single', or 'consume'.
+        :param active: True enables and False disables the mode.
+        """
         state = 1 if active else 0
         fn = getattr(self._client, name)
         runnable = partial(fn, state)
         self._exec.execute(runnable)
 
     def currentsong(self, callback):
+        """Fetches the current song."""
         def task():
             record = self._client.currentsong()
             while isinstance(record.get('file', []), list):
@@ -86,6 +101,10 @@ class Mpd:
         self.status(on_status)
 
     def find_artists(self, callback):
+        """
+        Queries the database for all artists. A list of Artist
+        instances will be provided to the callback.
+        """
         def task():
             callback([Artist(a) for a in self._client.list('artist') if len(a) > 0])
 
@@ -140,6 +159,10 @@ class Mpd:
 
 # noinspection PyUnresolvedReferences
 class MpdState(GObject.GObject):
+    """
+    Used by the heartbeat to track the player state.
+    """
+    
     duration = GObject.Property(type=str, default='1')
     repeat = GObject.Property(type=str, default='0')
     random = GObject.Property(type=str, default='0')
@@ -187,6 +210,21 @@ class MpdState(GObject.GObject):
 
 # noinspection PyUnresolvedReferences
 class MpdHeartbeat(GObject.GObject):
+    """
+    Ideally MPD would allow a client to register itself to receive
+    status pushes, so that a client can update in a reactive way as
+    needed. MPD currently does not support that kind of model; the
+    idle command is sort of in that vein, but isn't all that useful.
+    So instead we create a heartbeat with the server that polls on an
+    interval.
+
+    The only needed interaction with an instance of the heartbeat is
+    to call connect() to receive event notification. It also will need
+    to be started and stopped.
+
+    """
+
+    # These signals will be emitted when player events are detected.
     __gsignals__ = {
         'playlist_changed': (GObject.SignalFlags.RUN_FIRST, None, ()),
         'song_played_percent': (GObject.SignalFlags.RUN_FIRST, None, (float,)),
@@ -197,6 +235,9 @@ class MpdHeartbeat(GObject.GObject):
     }
 
     def __init__(self, client, millis_interval, executor):
+        """
+        The executor will be used to periodically query the server.
+        """
         GObject.GObject.__init__(self)
         self._client = client
         self._thread = executor
@@ -225,6 +266,11 @@ class MpdHeartbeat(GObject.GObject):
         self._thread.stop()
 
     def connect(self, signal_name, handler, *args):
+        """
+        Clients should use this method to subscribe to the events this
+        class emits. The handler will be called on the main GTK thread.
+
+        """
         nmasync.signal_subcribe_on_main(super(MpdHeartbeat, self).connect, signal_name, handler, *args)
 
     def _on_hb_interval(self):
