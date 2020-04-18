@@ -1,6 +1,9 @@
-Overview
-========
-neonmeate is a GTK3 MPD client.
+# Overview #
+NeonMeate is a GTK3 MPD client.
+
+## Features ##
+ * Large display of album artwork
+ * Background color gradient that compliments the album art
 
 This is a work in progress. 
 
