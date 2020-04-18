@@ -18,6 +18,7 @@ class Mpd:
     constructor will be used to issue commands to the server.
 
     """
+
     def __init__(self, scheduled_executor, host='localhost', port=6600):
         self._exec = scheduled_executor
         self._host = host
@@ -58,6 +59,7 @@ class Mpd:
 
     def currentsong(self, callback):
         """Fetches the current song."""
+
         def task():
             record = self._client.currentsong()
             while isinstance(record.get('file', []), list):
@@ -105,6 +107,7 @@ class Mpd:
         Queries the database for all artists. A list of Artist
         instances will be provided to the callback.
         """
+
         def task():
             callback([Artist(a) for a in self._client.list('artist') if len(a) > 0])
 
@@ -162,7 +165,7 @@ class MpdState(GObject.GObject):
     """
     Used by the heartbeat to track the player state.
     """
-    
+
     duration = GObject.Property(type=str, default='1')
     repeat = GObject.Property(type=str, default='0')
     random = GObject.Property(type=str, default='0')
