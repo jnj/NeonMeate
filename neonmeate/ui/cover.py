@@ -55,9 +55,8 @@ class CoverWithGradient(Gtk.DrawingArea):
             elif not fut.cancelled():
                 clusters = fut.result()
                 if len(clusters) > 1:
-                    c = clusters[0]
-                    b = clusters[1]
-                    GLib.idle_add(self._update_grad, c.as_rgb(), b.as_rgb())
+                    c, b = clusters[0:2]
+                    GLib.idle_add(self._update_grad, b.as_rgb(), c.as_rgb())
 
         cluster_result = executor.submit(cluster.clusterize, pixbuf, self._rng)
         cluster_result.add_done_callback(on_gradient_ready)
@@ -92,9 +91,9 @@ class CoverWithGradient(Gtk.DrawingArea):
         ctx.set_line_width(self._border_thickness)
         r, g, b = self._border_rgb
         ctx.set_source_rgba(r, g, b, 1)
-        rect_x = pixbuf_x  # - self._border_thickness + 2
-        rect_y = pixbuf_y  # - self._border_thickness + 2
-        rect_width = edge_size  # + self._border_thickness - 2
+        rect_x = pixbuf_x
+        rect_y = pixbuf_y
+        rect_width = edge_size
         ctx.rectangle(rect_x, rect_y, rect_width, rect_width)
         ctx.stroke()
         return False

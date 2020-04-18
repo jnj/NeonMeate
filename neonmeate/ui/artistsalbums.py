@@ -6,13 +6,18 @@ from neonmeate.ui import toolkit
 
 
 class ArtistsAlbums(Gtk.Frame):
+    AlbumWidthPx = 200
+    AlbumSpacing = 20
+
     def __init__(self, mpdclient, art_cache):
         super(ArtistsAlbums, self).__init__()
+        album_width_px = ArtistsAlbums.AlbumWidthPx
+        album_spacing = ArtistsAlbums.AlbumSpacing
         self._mpdclient = mpdclient
         self._art_cache = art_cache
         self._panes = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
         self._artists_scrollable = Artists(mpdclient, art_cache)
-        self._albums_songs = AlbumsSongs(self._mpdclient, self._art_cache)
+        self._albums_songs = AlbumsSongs(self._mpdclient, self._art_cache, album_width_px, album_spacing)
         self._panes.pack1(self._artists_scrollable)
         self._panes.pack2(self._albums_songs)
         self._panes.set_position(280)
@@ -49,8 +54,10 @@ class Artists(toolkit.Scrollable):
 
 
 class Albums(toolkit.Scrollable):
-    def __init__(self, mpdclient, art_cache):
+    def __init__(self, mpdclient, art_cache, album_width_pix, album_spacing):
         super(Albums, self).__init__()
+        self._album_width_px = album_width_pix
+        self._album_spacing = album_spacing
         self._art_cache = art_cache
         self._mpdclient = mpdclient
         self._albums = toolkit.Column(False)
@@ -63,7 +70,7 @@ class Albums(toolkit.Scrollable):
         if self._selected_artist != album.artist.name:
             return
 
-        album_entry = AlbumEntry(album, pixbuf)
+        album_entry = AlbumEntry(album, pixbuf, self._album_width_px, self._album_spacing)
         self._entries.append(album_entry)
         if len(self._entries) == count:
             self._on_all_albums_ready()
@@ -92,27 +99,25 @@ class Albums(toolkit.Scrollable):
                 if cover_path:
                     self._art_cache.fetch(cover_path, self._on_art_ready, (album, len(albums)))
 
-        def on_main(albums):
+        def show_on_gtk_main(albums):
             GLib.idle_add(on_albums, albums)
 
-        self._mpdclient.find_albums(artist_name, on_main)
+        self._mpdclient.find_albums(artist_name, show_on_gtk_main)
 
 
 class AlbumEntry(Gtk.Box):
-    def __init__(self, album, pixbuf):
-        super(AlbumEntry, self).__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+    def __init__(self, album, pixbuf, width, spacing):
+        super(AlbumEntry, self).__init__(orientation=Gtk.Orientation.VERTICAL, spacing=spacing)
         self.album = album
-        pixbuf = pixbuf.scale_simple(300, 300, GdkPixbuf.InterpType.BILINEAR)
+        pixbuf = pixbuf.scale_simple(width, width, GdkPixbuf.InterpType.BILINEAR)
         img = Gtk.Image.new_from_pixbuf(pixbuf)
         img.show()
         self.pack_start(img, True, False, 5)
+
+        # todo following not needed
         label_txt = f"{album.title} - {album.date}\n"
         for s in album.sorted_songs():
             label_txt += f"{s.number}. {s.title}\n"
-        label = Gtk.Label(label_txt)
-        #label.show()
-        #self.attach(label, 1, 0, 1, 1)
-        #self.set_row_baseline_position(0, Gtk.BaselinePosition.TOP)
 
 
 class Songs(toolkit.Scrollable):
@@ -121,17 +126,18 @@ class Songs(toolkit.Scrollable):
 
 
 class AlbumsSongs(Gtk.Frame):
-    def __init__(self, mpdclient, art_cache):
+    def __init__(self, mpdclient, art_cache, album_width_px, album_spacing):
         super(AlbumsSongs, self).__init__()
         self._mpdclient = mpdclient
         self._art_cache = art_cache
         self._panes = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
-        self._albums = Albums(self._mpdclient, self._art_cache)
+        self._albums = Albums(self._mpdclient, self._art_cache, album_width_px, album_spacing)
         self._songs = Songs()
-        self._panes.pack1(self._albums)
-        self._panes.pack2(self._songs)
-        self._panes.set_position(310) # todo determine from album cover width
+        self._panes.pack1(self._albums, False, False)
+        self._panes.pack2(self._songs, False, False)
+        self._panes.set_position(album_spacing * 2 + album_width_px)
         self.add(self._panes)
 
     def on_artist_selected(self, artist_name):
         self._albums.on_artist_selected(artist_name)
+        # todo display songs
