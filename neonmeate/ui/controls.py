@@ -1,6 +1,7 @@
 from gi.repository import Gtk, GObject
 
 
+# noinspection PyUnresolvedReferences
 class ControlButton(Gtk.Button):
     def __init__(self, icon_name):
         super(ControlButton, self).__init__()
@@ -9,6 +10,7 @@ class ControlButton(Gtk.Button):
         self.add(self.icon)
 
 
+# noinspection PyUnresolvedReferences
 class PlayModeButton(Gtk.ToggleButton):
     def __init__(self, icon_name, label=None):
         super(PlayModeButton, self).__init__()
@@ -20,6 +22,7 @@ class PlayModeButton(Gtk.ToggleButton):
             self.add(Gtk.Label(label))
 
 
+# noinspection PyUnresolvedReferences
 class PlayPauseButton(ControlButton):
     __gsignals__ = {
         'neonmeate_playpause_toggled': (GObject.SignalFlags.RUN_FIRST, None, (bool,))
@@ -58,6 +61,7 @@ class PlayPauseButton(ControlButton):
         self.paused = not self.paused
 
 
+# noinspection PyUnresolvedReferences
 class NeonMeateButtonBox(Gtk.ButtonBox):
     def __init__(self):
         super(NeonMeateButtonBox, self).__init__(Gtk.Orientation.HORIZONTAL)

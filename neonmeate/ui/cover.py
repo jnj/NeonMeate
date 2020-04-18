@@ -30,6 +30,7 @@ class Gradient:
         return str(self.start)
 
 
+# noinspection PyUnresolvedReferences
 class CoverWithGradient(Gtk.DrawingArea):
     def __init__(self, pixbuf, rng, executor):
         super(CoverWithGradient, self).__init__()
