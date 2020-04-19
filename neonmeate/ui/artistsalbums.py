@@ -1,10 +1,9 @@
-import os
-
 from gi.repository import GdkPixbuf, GObject, Gtk, GLib
 
 from neonmeate.ui import toolkit
 
 
+# noinspection PyArgumentList,PyUnresolvedReferences
 class ArtistsAlbums(Gtk.Frame):
     AlbumWidthPx = 200
     AlbumSpacing = 20
@@ -28,6 +27,7 @@ class ArtistsAlbums(Gtk.Frame):
         self._albums_songs.on_artist_selected(selected_value)
 
 
+# noinspection PyArgumentList,PyUnresolvedReferences
 class Artists(toolkit.Scrollable):
     __gsignals__ = {
         'artist-selected': (GObject.SignalFlags.RUN_FIRST, None, (str,))
@@ -53,6 +53,7 @@ class Artists(toolkit.Scrollable):
         self.emit('artist-selected', value)
 
 
+# noinspection PyArgumentList,PyUnresolvedReferences
 class Albums(toolkit.Scrollable):
     def __init__(self, mpdclient, art_cache, album_width_pix, album_spacing):
         super(Albums, self).__init__()
@@ -76,7 +77,7 @@ class Albums(toolkit.Scrollable):
             self._on_all_albums_ready()
 
     def _on_all_albums_ready(self):
-        chrono_order = sorted(self._entries, key=lambda entry: entry.album.date)
+        chrono_order = sorted(self._entries, key=lambda e: e.album.date)
         for entry in chrono_order:
             entry.show()
             self._albums.add(entry)
@@ -105,6 +106,7 @@ class Albums(toolkit.Scrollable):
         self._mpdclient.find_albums(artist_name, show_on_gtk_main)
 
 
+# noinspection PyArgumentList,PyUnresolvedReferences
 class AlbumEntry(Gtk.Box):
     def __init__(self, album, pixbuf, width, spacing):
         super(AlbumEntry, self).__init__(orientation=Gtk.Orientation.VERTICAL, spacing=spacing)
@@ -125,6 +127,7 @@ class Songs(toolkit.Scrollable):
         super(Songs, self).__init__()
 
 
+# noinspection PyArgumentList,PyUnresolvedReferences
 class AlbumsSongs(Gtk.Frame):
     def __init__(self, mpdclient, art_cache, album_width_px, album_spacing):
         super(AlbumsSongs, self).__init__()
