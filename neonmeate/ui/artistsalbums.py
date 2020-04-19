@@ -1,6 +1,7 @@
 from gi.repository import GdkPixbuf, GObject, Gtk, GLib
 
 from neonmeate.ui import toolkit
+from neonmeate.ui.toolkit import gtk_main
 
 
 # noinspection PyArgumentList,PyUnresolvedReferences
@@ -88,22 +89,17 @@ class Albums(toolkit.Scrollable):
         for c in self._albums.get_children():
             self._albums.remove(c)
 
-    def on_artist_selected(self, artist_name):
-        if artist_name == '':
+    def on_artist_selected(self, artist_name, albums):
+        if artist_name == '' or self._selected_artist == artist_name:
             return
+
         self._clear_albums()
         self._selected_artist = artist_name
 
-        def on_albums(albums):
-            for album in albums:
-                cover_path = self._art_cache.resolve_cover_file(album.dirpath)
-                if cover_path:
-                    self._art_cache.fetch(cover_path, self._on_art_ready, (album, len(albums)))
-
-        def show_on_gtk_main(albums):
-            GLib.idle_add(on_albums, albums)
-
-        self._mpdclient.find_albums(artist_name, show_on_gtk_main)
+        for album in albums:
+            cover_path = self._art_cache.resolve_cover_file(album.dirpath)
+            if cover_path:
+                self._art_cache.fetch(cover_path, self._on_art_ready, (album, len(albums)))
 
 
 # noinspection PyArgumentList,PyUnresolvedReferences
@@ -129,6 +125,7 @@ class Songs(toolkit.Scrollable):
 
 # noinspection PyArgumentList,PyUnresolvedReferences
 class AlbumsSongs(Gtk.Frame):
+
     def __init__(self, mpdclient, art_cache, album_width_px, album_spacing):
         super(AlbumsSongs, self).__init__()
         self._mpdclient = mpdclient
@@ -140,7 +137,18 @@ class AlbumsSongs(Gtk.Frame):
         self._panes.pack2(self._songs, False, False)
         self._panes.set_position(album_spacing * 2 + album_width_px)
         self.add(self._panes)
+        self._albums_list = []
+        self._selected_artist = None
 
     def on_artist_selected(self, artist_name):
-        self._albums.on_artist_selected(artist_name)
-        # todo display songs
+        if not artist_name or artist_name == self._selected_artist:
+            return
+
+        @gtk_main
+        def on_albums(albums):
+            self._albums_list.clear()
+            self._albums_list.extend(albums)
+            self._selected_artist = artist_name
+            self._albums.on_artist_selected(artist_name, albums)
+
+        self._mpdclient.find_albums(artist_name, on_albums)

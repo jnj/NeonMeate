@@ -1,4 +1,18 @@
-from gi.repository import GObject, Gtk, Pango
+import functools
+from gi.repository import GObject, Gtk, Pango, GLib
+
+
+def gtk_main(func):
+    """
+    Wraps a function so that it will run on the main GTK
+    thread. Intended for use as a decorator with the
+    @ syntax.
+    """
+
+    def f(*args):
+        GLib.idle_add(func, *args)
+
+    return f
 
 
 class Scrollable(Gtk.ScrolledWindow):
@@ -64,7 +78,7 @@ class Table:
         for i, col_header in enumerate(self.column_names):
             renderer = Gtk.CellRendererText()
             column = Gtk.TreeViewColumn(col_header, renderer, text=i)
-            #column.set_sort_column_id(i)
+            # column.set_sort_column_id(i)
             column.set_resizable(True)
             self.tree.append_column(column)
 
@@ -97,6 +111,7 @@ if __name__ == "__main__":
     box.add(t.as_widget())
     button = Gtk.Button(label="clear")
 
+
     def toggle(x):
         if l[0]:
             l[0] = False
@@ -105,11 +120,14 @@ if __name__ == "__main__":
             l[0] = True
             t.add(['1', '2'])
 
+
     button.connect('clicked', toggle)
     box.add(button)
 
+
     def on_select(row):
         print(f"You selected {row[0]} {row[1]}")
+
 
     t.set_selection_handler(on_select)
     win.show_all()
