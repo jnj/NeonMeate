@@ -7,6 +7,7 @@ gi.require_version('GdkPixbuf', '2.0')
 from gi.repository import GdkPixbuf, Gio, GLib, GObject
 
 
+# noinspection PyUnresolvedReferences
 class ArtCache(GObject.GObject):
     def __init__(self, root_music_dir):
         self._root_music_dir = root_music_dir
