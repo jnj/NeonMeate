@@ -1,13 +1,14 @@
 import logging
 import os
 
-from gi.repository import Gtk, GLib
+from gi.repository import Gtk
 
 from .artistsalbums import ArtistsAlbums
 from .controls import ControlButtons, PlayModeButtons
 from .nowplaying import NowPlaying
 from .playlist import Playlist
 from .songprogress import SongProgress
+from .toolkit import gtk_main
 
 
 class App(Gtk.ApplicationWindow):
@@ -84,6 +85,8 @@ class App(Gtk.ApplicationWindow):
         print(f"playlist key pressed {key}")
 
     def _update_playlist(self, obj):
+
+        @gtk_main
         def on_current_queue(playqueue):
             self._playlist.clear()
             for i in playqueue:
@@ -105,10 +108,7 @@ class App(Gtk.ApplicationWindow):
                     print(f"Failed to find key in {i}")
                     raise e
 
-        def callback_on_main(playqueue):
-            GLib.idle_add(on_current_queue, playqueue)
-
-        self._mpdclient.playlistinfo(callback_on_main)
+        self._mpdclient.playlistinfo(on_current_queue)
 
     def _on_song_changed(self, hb, artist, title, album, filepath):
         logging.info(f"Song changed. artist={artist}, title={title}, album={album}, filepath={filepath}")
