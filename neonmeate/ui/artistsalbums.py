@@ -40,14 +40,12 @@ class Artists(toolkit.Scrollable):
         self.add_content(self._artist_column)
         self._mpd = mpdclient
 
+        @gtk_main
         def on_artists(artists):
             for artist in artists:
                 self._artist_column.add_row(artist.name)
 
-        def on_main(artists):
-            GLib.idle_add(on_artists, artists)
-
-        self._mpd.find_artists(on_main)
+        self._mpd.find_artists(on_artists)
         self._artist_column.connect('value-selected', self._on_artist_clicked)
 
     def _on_artist_clicked(self, obj, value):
