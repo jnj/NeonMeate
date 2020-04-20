@@ -46,8 +46,12 @@ class ArtCache(GObject.GObject):
     def fetch(self, file_path, callback, user_data):
         """
         Asynchronously loads the image at file_path
-        and provides it to the callback. Arbitrary
-        user data will also be given to the callback.
+        and provides it to the callback as a GdkPixbuf
+        instance.
+
+        The caller can also supply arbitrary data for the
+        user_data parameter and that will be given to the
+        callback as well.
         """
         if file_path in self._cache:
             if callback is not None:
@@ -58,6 +62,11 @@ class ArtCache(GObject.GObject):
         gio_file.read_async(GLib.PRIORITY_DEFAULT, None, self._on_stream_ready, req)
 
     def _get_pending_or_create(self, file_path, callback, user_data):
+        """
+        Returns an ArtRequest for the path. If there is already
+        one pending, then it will be returned. Otherwise, creates
+        a new one.
+        """
         if file_path in self._pending_requests:
             r = self._pending_requests[file_path]
             r.add_callback(callback, user_data)
@@ -86,6 +95,11 @@ class ArtCache(GObject.GObject):
 
 
 class ArtRequest:
+    """
+    A request to fetch an image file. Once the file has
+    been loaded, the associated callbacks will be called
+    on the GTK main thread.
+    """
     def __init__(self, file_path, callback, user_data):
         self.file_path = file_path
         self._callbacks = []
