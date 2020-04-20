@@ -9,15 +9,34 @@ from gi.repository import GdkPixbuf, Gio, GLib, GObject
 
 # noinspection PyUnresolvedReferences
 class ArtCache(GObject.GObject):
+    """
+    Service for fetching album artwork. This assumes that the
+    album artwork is located in <music_dir>/<artist>/<album>
+
+    This does not use MPD's command for retrieving embedded
+    album art; it assumes the music being played is located
+    on the filesystem and it will read from there.
+    """
+
+    CoverNames = [f'{base}.{ext}'
+                  for base in ['cover', 'front', 'folder', 'art']
+                  for ext in ['jpg', 'png', 'gif']]
+
     def __init__(self, root_music_dir):
-        self._root_music_dir = root_music_dir
         self._cache = {}
+        self._root_music_dir = root_music_dir
         self._pending_requests = {}
-        self._cover_file_names = [f'{base}.{ext}'
-                                  for base in ['cover', 'front', 'folder', 'art']
-                                  for ext in ['jpg', 'png', 'gif']]
+        self._cover_file_names = CoverNames
 
     def resolve_cover_file(self, dirpath):
+        """
+        Locates the cover artwork with the directory path given.
+        Various artwork file name patterns will be tried.
+
+        :param dirpath: directory relative to music dir
+        :return: full path to the album art file,
+        or None if it could not be found
+        """
         for f in self._cover_file_names:
             fullpath = os.path.join(self._root_music_dir, dirpath, f)
             if os.path.exists(fullpath):
@@ -25,6 +44,11 @@ class ArtCache(GObject.GObject):
         return None
 
     def fetch(self, file_path, callback, user_data):
+        """
+        Asynchronously loads the image at file_path
+        and provides it to the callback. Arbitrary
+        user data will also be given to the callback.
+        """
         if file_path in self._cache:
             if callback is not None:
                 callback(self._cache[file_path], user_data)
