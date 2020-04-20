@@ -4,7 +4,7 @@ import sys
 
 import gi
 
-import neonmeate.artcache as artcache
+import neonmeate.art as artcache
 import neonmeate.mpd.mpdlib as nmpd
 import neonmeate.ui.app as app
 import neonmeate.nmasync as nmasync
