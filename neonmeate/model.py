@@ -1,5 +1,16 @@
 class Artist:
     def __init__(self, name):
+        if isinstance(name, dict):
+            d = name
+            for key in ['artist', 'name']:
+                if key in d:
+                    name = d[key]
+                    break
+        if name is None:
+            name = ''
+        name = name.strip()
+        if len(name) == 0:
+            name = '<Unknown>'
         self.name = name
 
 
