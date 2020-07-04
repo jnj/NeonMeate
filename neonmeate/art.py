@@ -26,7 +26,7 @@ class ArtCache(GObject.GObject):
         self._cache = {}
         self._root_music_dir = root_music_dir
         self._pending_requests = {}
-        self._cover_file_names = CoverNames
+        self._cover_file_names = ArtCache.CoverNames
 
     def resolve_cover_file(self, dirpath):
         """
