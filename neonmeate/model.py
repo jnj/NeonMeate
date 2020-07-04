@@ -1,4 +1,15 @@
 class Artist:
+
+    @staticmethod
+    def sanitize_artist_name(name):
+        if name is None:
+            name = ''
+        else:
+            name = name.strip()
+        if name == '':
+            name = '<Unknown>'
+        return name
+
     def __init__(self, name):
         if isinstance(name, dict):
             d = name
@@ -6,12 +17,7 @@ class Artist:
                 if key in d:
                     name = d[key]
                     break
-        if name is None:
-            name = ''
-        name = name.strip()
-        if len(name) == 0:
-            name = '<Unknown>'
-        self.name = name
+        self.name = Artist.sanitize_artist_name(name)
 
 
 class Album:
