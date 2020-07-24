@@ -242,6 +242,7 @@ class MpdHeartbeat(GObject.GObject):
         The executor will be used to periodically query the server.
         """
         GObject.GObject.__init__(self)
+        self.logger = logging.getLogger(__name__)
         self._client = client
         self._thread = executor
         self._delay = millis_interval / 1000.0
@@ -300,7 +301,7 @@ class MpdHeartbeat(GObject.GObject):
             return
 
         def on_current_song(song_info):
-            logging.info(f'current song: {str(song_info)}')
+            self.logger.info(f'current song: {str(song_info)}')
             try:
                 self.emit('song_changed',
                           song_info['artist'],
@@ -308,7 +309,7 @@ class MpdHeartbeat(GObject.GObject):
                           song_info['album'],
                           song_info['file'])
             except KeyError as e:
-                logging.exception(e)
+                self.logger.exception(e)
 
         self._client.currentsong(on_current_song)
 

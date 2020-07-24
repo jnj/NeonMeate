@@ -35,6 +35,7 @@ class Gradient:
 class CoverWithGradient(Gtk.DrawingArea):
     def __init__(self, pixbuf, rng, executor, cfg, artist, album):
         super(CoverWithGradient, self).__init__()
+        self.logger = logging.getLogger(__name__)
         self._rng = rng
         self._cfg = cfg
         self.w = 600
@@ -55,7 +56,7 @@ class CoverWithGradient(Gtk.DrawingArea):
             ex = fut.exception(timeout=1)
 
             if ex is not None:
-                logging.exception(ex)
+                self.logger.exception(ex)
                 return
             elif not fut.cancelled():
                 clusters, _ = fut.result()

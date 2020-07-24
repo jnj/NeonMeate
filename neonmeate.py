@@ -1,4 +1,5 @@
 import logging
+import logging.config
 import random
 import sys
 import time
@@ -17,12 +18,37 @@ from gi.repository import Gtk
 from concurrent.futures import ThreadPoolExecutor
 
 
+def configure_logging():
+    logging.config.dictConfig({
+        'version': 1,
+        'handlers': {
+            'console': {
+                'class': 'logging.StreamHandler',
+                'level': 'DEBUG',
+                'formatter': 'default',
+                'stream': 'ext://sys.stdout'
+            }
+        },
+        'formatters': {
+            'default': {
+                'format': '%(asctime)s %(levelname)s [%(name)s] - %(message)s'
+            }
+        },
+        'loggers': {
+            'neonmeate': {
+                'handlers': ['console'],
+                'level': 'INFO'
+            }
+        }
+    })
+
+
 def main(args):
     cfg = config.Config.load_main_config()
     music_dir = cfg['media_dir']
     rng = random.Random()
     rng.seed(int(1000 * time.time()))
-    logging.basicConfig(level=logging.INFO)
+    logger = configure_logging()
     hb_executor = nmasync.ScheduledExecutor()
 
     with ThreadPoolExecutor(2) as executor:
@@ -37,6 +63,7 @@ def main(args):
         main_window.show_all()
         Gtk.main()
         cfg.save(config.main_config_file())
+        logging.shutdown()
         hb_executor.stop()
 
 

@@ -21,6 +21,7 @@ class App(Gtk.ApplicationWindow):
     # noinspection PyUnresolvedReferences
     def __init__(self, rng, mpdclient, executor, art_cache, mpd_hb, cfg):
         Gtk.ApplicationWindow.__init__(self, title="NeonMeate")
+        self.logger = logging.getLogger(__name__)
         self.name = 'NeonMeate'
         self._cfg = cfg
         self.set_default_icon_name('mpd')
@@ -119,7 +120,7 @@ class App(Gtk.ApplicationWindow):
         return track, artist, album, title
 
     def _on_song_changed(self, hb, artist, title, album, filepath):
-        logging.info(f"Song changed. artist={artist}, title={title}, album={album}, filepath={filepath}")
+        self.logger.info(f"Song changed. artist={artist}, title={title}, album={album}, filepath={filepath}")
         title_text = 'NeonMeate'
         if artist and title:
             title_text = f'{artist} - {title}'
@@ -129,7 +130,7 @@ class App(Gtk.ApplicationWindow):
             return
         covpath = self._art_cache.resolve_cover_file(os.path.dirname(filepath))
         if covpath is None:
-            logging.error(f'File art not found for {filepath}')
+            self.logger.error(f'File art not found for {filepath}')
         else:
             self._art_cache.fetch(covpath, None, None)
             self._now_playing.on_playing(artist, album, covpath)
