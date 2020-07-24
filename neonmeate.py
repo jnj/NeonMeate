@@ -18,8 +18,8 @@ from concurrent.futures import ThreadPoolExecutor
 
 
 def main(args):
-    music_dir = args[0]
     cfg = config.Config.load_main_config()
+    music_dir = cfg['media_dir']
     rng = random.Random()
     rng.seed(int(1000 * time.time()))
     logging.basicConfig(level=logging.INFO)
@@ -32,7 +32,7 @@ def main(args):
         hb.start()
         art_cache = artcache.ArtCache(music_dir)
 
-        main_window = app.App(rng, mpdclient, executor, art_cache, hb)
+        main_window = app.App(rng, mpdclient, executor, art_cache, hb, cfg)
         main_window.connect('destroy', Gtk.main_quit)
         main_window.show_all()
         Gtk.main()

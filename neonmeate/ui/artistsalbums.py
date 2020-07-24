@@ -9,12 +9,13 @@ class ArtistsAlbums(Gtk.Frame):
     AlbumWidthPx = 200
     AlbumSpacing = 20
 
-    def __init__(self, mpdclient, art_cache):
+    def __init__(self, mpdclient, art_cache, cfg):
         super(ArtistsAlbums, self).__init__()
         album_width_px = ArtistsAlbums.AlbumWidthPx
         album_spacing = ArtistsAlbums.AlbumSpacing
         self._mpdclient = mpdclient
         self._art_cache = art_cache
+        self._cfg = cfg
         self._panes = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
         self._artists_scrollable = Artists(mpdclient, art_cache)
         self._albums_songs = AlbumsSongs(self._mpdclient, self._art_cache, album_width_px, album_spacing)

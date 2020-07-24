@@ -33,9 +33,10 @@ class Gradient:
 
 # noinspection PyUnresolvedReferences
 class CoverWithGradient(Gtk.DrawingArea):
-    def __init__(self, pixbuf, rng, executor):
+    def __init__(self, pixbuf, rng, executor, cfg, artist, album):
         super(CoverWithGradient, self).__init__()
         self._rng = rng
+        self._cfg = cfg
         self.w = 600
         self.h = 600
         self.edge_size = self.w
@@ -47,6 +48,8 @@ class CoverWithGradient(Gtk.DrawingArea):
         self._border_rgb = 1, 1, 1
         self._is_default_grad = True
         self._border_thickness = 5
+        self.artist = artist
+        self.album = album
 
         def on_gradient_ready(fut):
             ex = fut.exception(timeout=1)
@@ -58,11 +61,15 @@ class CoverWithGradient(Gtk.DrawingArea):
                 clusters, _ = fut.result()
 
                 if len(clusters) > 1:
-                    c, b = clusters[0:2]
-                    self._update_grad(b.as_rgb(), c.as_rgb())
-
-        cluster_result = executor.submit(cluster.clusterize, pixbuf, self._rng)
-        cluster_result.add_done_callback(on_gradient_ready)
+                    border, bg = clusters[0:2]
+                    self._update_grad(bg.as_rgb(), border.as_rgb())
+                    self._cfg.save_background(self.artist, self.album, border.as_rgb(), bg.as_rgb())
+        border, bg = self._cfg.get_background(artist, album)
+        if border is not None and bg is not None:
+            self._update_grad(RGBColor(*bg), RGBColor(*border))
+        else:
+            cluster_result = executor.submit(cluster.clusterize, pixbuf, self._rng)
+            cluster_result.add_done_callback(on_gradient_ready)
 
     @gtk_main
     def _update_grad(self, rgb, border_rgb):

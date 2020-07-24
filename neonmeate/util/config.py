@@ -16,11 +16,26 @@ def user_config_dir():
     if config_home:
         return os.path.abspath(config_home)
 
-    return os.path.join(os.path.expanduser("~"), ".config")
+    return os.path.join(user_home(), ".config")
+
+
+def user_home():
+    return os.path.expanduser("~")
 
 
 class Config:
     Defaults = {
+        # Where to find album art
+        'media_dir': os.path.join(user_home(), 'Music'),
+
+        # Whether to persist the computed color gradient backgrounds
+        # in configuration so that they can be loaded later (this will
+        # load them quickly whereas computing the clusters for the
+        # gradient can take a little while).
+        'cache_backgrounds': True,
+
+        'background_cache': {},
+
         'mpd': {
             'host': 'localhost',
             'port': 6600
@@ -48,6 +63,9 @@ class Config:
             return self._config[item]
         return Config.Defaults[item]
 
+    def __contains__(self, item):
+        return item in self._config
+
     def _merge_with_defaults(self):
         self._merge(Config.Defaults, self._config)
 
@@ -59,8 +77,12 @@ class Config:
                 else:
                     target[k] = v
 
+    def set(self, key, item):
+        self._config[key] = item
+
     def save(self, file):
-        os.makedirs(os.path.basename(file))
+        if not os.path.exists(os.path.basename(file)):
+            os.makedirs(os.path.basename(file))
         with open(file, 'w') as f:
             json.dump(self._config, f)
 
@@ -69,3 +91,17 @@ class Config:
 
     def mpd_port(self):
         return self['mpd']['port']
+
+    def get_background(self, artist, album):
+        cache_ = self['background_cache']
+        if artist in cache_:
+            album_art = cache_.get(artist, {}).get(album, None)
+            if album_art is not None:
+                return album_art
+        return None, None
+
+    def save_background(self, artist, album, border, background):
+        cache_ = self['background_cache']
+        if artist not in cache_:
+            cache_[artist] = {}
+        cache_[artist][album] = [border.rgb, background.rgb]
