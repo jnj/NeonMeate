@@ -7,3 +7,4 @@ venv
 .idea/ui.iml
 .idea/modules.xml
 
+run.sh
