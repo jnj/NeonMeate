@@ -2,10 +2,10 @@ import cairo
 import gi
 import logging
 
-from gi.repository import GdkPixbuf, Gtk, Gdk, GLib
+from gi.repository import GdkPixbuf, Gtk, Gdk
 
-from neonmeate import cluster
-from neonmeate.color import RGBColor
+from neonmeate.util import cluster
+from neonmeate.util.color import RGBColor
 from neonmeate.ui.toolkit import gtk_main
 
 gi.require_version('Gtk', '3.0')

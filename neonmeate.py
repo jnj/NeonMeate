@@ -6,10 +6,10 @@ import time
 
 import gi
 
-import neonmeate.art as artcache
+import neonmeate.util.art as artcache
 import neonmeate.mpd.mpdlib as nmpd
 import neonmeate.ui.app as app
-import neonmeate.nmasync as nmasync
+import neonmeate.util.nmasync as nmasync
 import neonmeate.util.config as config
 
 gi.require_version('Gtk', '3.0')

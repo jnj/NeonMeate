@@ -5,7 +5,7 @@ import sys
 
 from gi.repository import GdkPixbuf
 
-from neonmeate.color import RGBColor
+from neonmeate.util.color import RGBColor
 
 
 class SamplerStrategy:

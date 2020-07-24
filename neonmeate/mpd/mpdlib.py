@@ -7,7 +7,7 @@ import mpd as mpd2
 from gi.repository import GObject
 from ..model import Album, Artist, Song
 from functools import partial
-import neonmeate.nmasync as nmasync
+import neonmeate.util.nmasync as nmasync
 
 
 class Mpd:
