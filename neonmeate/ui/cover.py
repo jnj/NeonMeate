@@ -55,7 +55,7 @@ class CoverWithGradient(Gtk.DrawingArea):
                 logging.exception(ex)
                 return
             elif not fut.cancelled():
-                clusters = fut.result()
+                clusters, _ = fut.result()
 
                 if len(clusters) > 1:
                     c, b = clusters[0:2]

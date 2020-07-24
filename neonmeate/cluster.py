@@ -99,6 +99,7 @@ class ColorClusterer:
         self._cluster_distance_threshold = 0.00005
         self._max_init_cluster_iterations = 50
         self._rng = rng
+        self.rounds = []
         self.clusters = []
         self.dist_fn = RGBColor.norm_hsv_dist
 
@@ -162,6 +163,9 @@ class ColorClusterer:
         while itercount < maxiters:
             orig_means = [c.mean() for c in self.clusters]
 
+            round = [c.as_rgb() for c in self.clusters]
+            self.rounds.append(round)
+
             for hsv in ColorClusterer.each_img_color(img):
                 self._add_to_nearest(hsv)
 
@@ -176,12 +180,22 @@ class ColorClusterer:
             itercount += 1
 
 
-def output(imgpath, clusters):
+def output(imgpath, clusters, rounds):
     s = "<!doctype html>"
     s += "\n<html>"
     s += '\n\t<head><style>div { margin: 1em; }</style></head>'
     s += '\n\t<body>'
     s += f'\n\t\t<div><img src="file://{imgpath}"></div>'
+
+    for i, rgbs in enumerate(rounds):
+        s += f"<div><h3>Round {i+1}</h3>"
+        for rgb in rgbs:
+            r = round(rgb.rgb[0] * 100.0, 2)
+            g = round(rgb.rgb[1] * 100.0, 2)
+            b = round(rgb.rgb[2] * 100.0, 2)
+            s += f'\n\t\t<div style="background-color: rgb({r}%,{g}%,{b}%); min-height: 100px; width=100px; border: 1px solid black;"></div>'
+        s += "</div>"
+
     for cluster in clusters:
         rgb = cluster.as_rgb()
         r = round(rgb.rgb[0] * 100.0, 2)
@@ -228,7 +242,7 @@ def clusterize(pixbuf, rng):
             return True
         return False
 
-    clusters = [c for c in clusters if not black_or_white(c)]
+    clusters = [c for c in clusters] #if not black_or_white(c)]
     kept = set()
     l = len(clusters)
 
@@ -240,7 +254,7 @@ def clusterize(pixbuf, rng):
             if not similar(c, d):
                 kept.add(d.label)
 
-    return sorted([c for c in clusters if c.label in kept], key=lambda c: c.count)
+    return sorted([c for c in clusters if c.label in kept], key=lambda c: c.count), clusterer.rounds
 
 
 def similar(clust1, clust2):
@@ -254,9 +268,9 @@ def main(args):
     with open(filepath, 'rb') as f:
         pixbuf = pixbuf_from_file(f)
     rng = random.Random()
-    rng.seed(39334)
+    rng.seed(14144)
 
-    clusters = clusterize(pixbuf, rng)
+    clusters, rounds = clusterize(pixbuf, rng)
     for c in clusters:
         dist_dict = {}
         for d in clusters:
@@ -268,7 +282,7 @@ def main(args):
             )
         c.dist_dict = dist_dict
 
-    output(filepath, clusters)
+    output(filepath, clusters, rounds)
 
 
 if __name__ == '__main__':
