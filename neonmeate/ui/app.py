@@ -22,7 +22,7 @@ class App(Gtk.ApplicationWindow):
     def __init__(self, rng, mpdclient, executor, art_cache, mpd_hb, cfg):
         Gtk.ApplicationWindow.__init__(self, title="NeonMeate")
         self.name = 'NeonMeate'
-        self._cfg =cfg
+        self._cfg = cfg
         self.set_default_icon_name('mpd')
         self._executor = executor
         self._heartbeat = mpd_hb
@@ -89,27 +89,34 @@ class App(Gtk.ApplicationWindow):
 
         @gtk_main
         def on_current_queue(playqueue):
-            self._playlist.clear()
-            for i in playqueue:
-                try:
-                    if 'artist' not in i:
-                        continue
-                    artist = i['artist']
-                    album = i['album']
-                    title = i['title']
-                    if isinstance(title, list):
-                        title = ' - '.join(title)
-                    self._playlist.add_playlist_item([artist, album, int(i['track']), title])
-                    cover_path = self._art_cache.resolve_cover_file(os.path.dirname(i['file']))
-                    if cover_path is None:
-                        print(f"Cover not found for {artist} {album}")
-                    else:
-                        self._art_cache.fetch(cover_path, None, None)
-                except KeyError as e:
-                    print(f"Failed to find key in {i}")
-                    raise e
+            self._update_play_queue(playqueue)
 
         self._mpdclient.playlistinfo(on_current_queue)
+
+    def _update_play_queue(self, playqueue):
+        self._playlist.clear()
+        artist_elems = filter(lambda e: 'artist' in e, playqueue)
+        for elem in artist_elems:
+            track, artist, album, title = App._track_details_from_queue_elem(elem)
+            self._playlist.add_playlist_item([artist, album, track, title])
+            cover_path = self._art_cache.resolve_cover_file(os.path.dirname(elem['file']))
+            self._on_resolved_cover_path(cover_path, artist, album)
+
+    def _on_resolved_cover_path(self, cover_path, artist, album):
+        if cover_path is None:
+            print(f"Cover not found for {artist} {album}")
+        else:
+            self._art_cache.fetch(cover_path, None, None)
+
+    @staticmethod
+    def _track_details_from_queue_elem(elem):
+        artist, album, title = elem['artist'], elem['album'], elem['title']
+        track = int(elem['track'])
+
+        if isinstance(title, list):
+            title = ' - '.join(title)
+
+        return track, artist, album, title
 
     def _on_song_changed(self, hb, artist, title, album, filepath):
         logging.info(f"Song changed. artist={artist}, title={title}, album={album}, filepath={filepath}")
