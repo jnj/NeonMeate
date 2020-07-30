@@ -1,4 +1,3 @@
-import math
 import random
 import string
 import sys
@@ -6,6 +5,29 @@ import sys
 from gi.repository import GdkPixbuf
 
 from neonmeate.util.color import RGBColor
+
+
+def triplet_mean(elements):
+    n = len(elements)
+
+    if n == 0:
+        return 0, 0, 0
+
+    a = sum(x for x, _, _ in elements)
+    b = sum(y for _, y, _ in elements)
+    c = sum(z for _, _, z in elements)
+
+    return a / n, b / n, c / n
+
+
+def pixbuf_from_file(fileobj):
+    pixbuf = GdkPixbuf.Pixbuf.new_from_file(fileobj.name)
+    return pixbuf
+
+
+def cluster_rgb(cluster):
+    h, s, v = cluster.mean()
+    return RGBColor.from_hsv(h, s, v)
 
 
 class SamplerStrategy:
@@ -22,27 +44,6 @@ class SamplerStrategy:
         return [(self.rng.randrange(0, self.width), self.rng.randrange(0, self.height)) for i in range(n)]
 
 
-class GridSampler(SamplerStrategy):
-    """
-    Subsample in a grid pattern.
-    """
-
-    def __init__(self, width, height, rng):
-        super(GridSampler, self).__init__(width, height, rng)
-        self.x_stride = max(int(width / 5.0), 5)
-        self.y_stride = max(int(height / 5.0), 5)
-        self.x = 0
-        self.y = 0
-
-    def take(self, n):
-        a = []
-        for x in range(0, self.width, self.x_stride):
-            for y in range(0, self.height, self.y_stride):
-                a.append((x, y))
-        self.rng.shuffle(a)
-        return a
-
-
 class Image:
     def __init__(self, pixbuf):
         self.pixbuf = pixbuf
@@ -57,39 +58,26 @@ class Image:
 
 
 class Cluster:
-    def __init__(self, label, color, dist_fn):
+
+    def __init__(self, label, initial_value, dist_fn, mean_fn):
         self.label = label
         self.dist_fn = dist_fn
-        self.colors = [color]
-        self.count = 1
+        self.mean_fn = mean_fn
+        self.elements = [initial_value]
         self.cached_mean = self.mean()
+        self.count = 1
 
-    def update_cached_mean(self, mean_color):
-        self.colors = [mean_color]
+    def update_cached_mean(self, mean):
+        self.elements = [mean]
         self.cached_mean = self.mean()
 
     def mean(self):
-        n = len(self.colors)
+        n = len(self.elements)
         self.count = n
-        if n == 0:
-            return 0, 0, 0
-        a = sum(x for x, _, _ in self.colors)
-        b = sum(y for _, y, _ in self.colors)
-        c = sum(z for _, _, z in self.colors)
-        # todo subtract self.color because it was counted twice
-        return a / n, b / n, c / n
+        return self.mean_fn(self.elements)
 
-    def as_rgb(self):
-        h, s, v = self.mean()
-        return RGBColor.from_hsv(h / (2 * math.pi), s, v)
-
-    def add(self, color):
-        self.colors.append(color)
-
-
-def pixbuf_from_file(fileobj):
-    pixbuf = GdkPixbuf.Pixbuf.new_from_file(fileobj.name)
-    return pixbuf
+    def add(self, element):
+        self.elements.append(element)
 
 
 class ColorClusterer:
@@ -124,7 +112,7 @@ class ColorClusterer:
                 col = RGBColor.from_256(*img.color(y, x)).to_norm_hsv()
                 if self._different_enough(col):
                     label = ''.join(self._rng.sample(string.ascii_uppercase, 6))
-                    c = Cluster(label, col, self.dist_fn)
+                    c = Cluster(label, col, self.dist_fn, triplet_mean)
                     self.clusters.append(c)
                     if len(self.clusters) == k:
                         break
@@ -162,8 +150,7 @@ class ColorClusterer:
 
         while itercount < maxiters:
             orig_means = [c.mean() for c in self.clusters]
-
-            round = [c.as_rgb() for c in self.clusters]
+            round = [cluster_rgb(c) for c in self.clusters]
             self.rounds.append(round)
 
             for hsv in ColorClusterer.each_img_color(img):
@@ -183,12 +170,12 @@ class ColorClusterer:
 def output(imgpath, clusters, rounds):
     s = "<!doctype html>"
     s += "\n<html>"
-    s += '\n\t<head><style>div { margin: 1em; }</style></head>'
+    s += '\n\t<head><style>div { margin: 1em; } #gradArt { width: 700px; height: 700px; }</style></head>'
     s += '\n\t<body>'
     s += f'\n\t\t<div><img src="file://{imgpath}"></div>'
 
     for i, rgbs in enumerate(rounds):
-        s += f"<div><h3>Round {i+1}</h3>"
+        s += f"<div><h3>Round {i + 1}</h3>"
         for rgb in rgbs:
             r = round(rgb.rgb[0] * 100.0, 2)
             g = round(rgb.rgb[1] * 100.0, 2)
@@ -197,11 +184,15 @@ def output(imgpath, clusters, rounds):
         s += "</div>"
 
     for cluster in clusters:
-        rgb = cluster.as_rgb()
+        rgb = cluster_rgb(cluster)
         r = round(rgb.rgb[0] * 100.0, 2)
         g = round(rgb.rgb[1] * 100.0, 2)
         b = round(rgb.rgb[2] * 100.0, 2)
         s += f'\n\t\t<div style="background-color: rgb({r}%,{g}%,{b}%); min-height: 200px; width=100%; border: 1px solid black;">{cluster.label} <h1>Count: {cluster.count}</h1> {str(cluster.dist_dict)}</div>'
+
+    s += "<div id=\"gradArt\">"
+
+    s += "</div>"
     s += '\n\t</body>'
     s += "\n</html>"
     with open("/tmp/clusters.html", 'w') as f:
@@ -209,7 +200,7 @@ def output(imgpath, clusters, rounds):
 
 
 def clusterize(pixbuf, rng):
-    maxedge = 150
+    maxedge = 200
     assert pixbuf.get_bits_per_sample() == 8
     assert pixbuf.get_colorspace() == GdkPixbuf.Colorspace.RGB
 
@@ -217,13 +208,13 @@ def clusterize(pixbuf, rng):
         pixbuf = pixbuf.scale_simple(maxedge, maxedge, GdkPixbuf.InterpType.BILINEAR)
 
     img = Image(pixbuf)
-    clusterer = ColorClusterer(5, 0.01, rng)
+    clusterer = ColorClusterer(4, 0.008, rng)
     clusterer.cluster(img)
     clusters = clusterer.clusters
 
     dist = RGBColor.norm_hsv_dist
-    white = Cluster('white', RGBColor(1, 1, 1).to_norm_hsv(), dist)
-    black = Cluster('black', RGBColor(0, 0, 0).to_norm_hsv(), dist)
+    white = Cluster('white', RGBColor(1, 1, 1).to_norm_hsv(), dist, triplet_mean)
+    black = Cluster('black', RGBColor(0, 0, 0).to_norm_hsv(), dist, triplet_mean)
     bw_thresh = 0.0107
 
     def black_or_white(c):
@@ -231,18 +222,15 @@ def clusterize(pixbuf, rng):
         b = black.cached_mean
         m = c.cached_mean
         dw = dist(m[0], m[1], m[2], w[0], w[1], w[2])
-        # print(f'{c.label} color is {c.as_rgb()}')
-        # print(f'distance from white {dw}')
         if dw < bw_thresh:
             return True
         db = dist(m[0], m[1], m[2], b[0], b[1], b[2])
-        # print(f'distance from black {db}')
         if db < bw_thresh:
             # print(f'yes, is white or black')
             return True
         return False
 
-    clusters = [c for c in clusters] #if not black_or_white(c)]
+    clusters = [c for c in clusters if not black_or_white(c)]
     kept = set()
     l = len(clusters)
 
@@ -254,7 +242,27 @@ def clusterize(pixbuf, rng):
             if not similar(c, d):
                 kept.add(d.label)
 
-    return sorted([c for c in clusters if c.label in kept], key=lambda c: c.count), clusterer.rounds
+    return sorted([c for c in clusters if c.label in kept], key=lambda c: c.count, reverse=True), clusterer.rounds
+
+
+class ClusteringResult:
+    def __init__(self, clusters):
+        self.clusters = clusters
+
+    def dominant(self):
+        c = cluster_rgb(self.clusters[0])
+        if c.almost_black():
+            return c.lighten(10)
+        return c
+
+    def complementary(self):
+        l = len(self.clusters)
+        if l == 1:
+            return cluster_rgb(self.clusters[0]).alter()
+        elif l <= 2:
+            return cluster_rgb(self.clusters[1])
+        else:
+            return cluster_rgb(self.clusters[-2])
 
 
 def similar(clust1, clust2):
@@ -264,11 +272,13 @@ def similar(clust1, clust2):
 
 
 def main(args):
+    import time
+
     filepath = args[0]
     with open(filepath, 'rb') as f:
         pixbuf = pixbuf_from_file(f)
     rng = random.Random()
-    rng.seed(14144)
+    rng.seed(int(1000 * time.time()))
 
     clusters, rounds = clusterize(pixbuf, rng)
     for c in clusters:

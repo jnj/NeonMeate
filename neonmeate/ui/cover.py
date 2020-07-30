@@ -62,9 +62,10 @@ class CoverWithGradient(Gtk.DrawingArea):
                 clusters, _ = fut.result()
 
                 if len(clusters) > 1:
-                    border, bg = clusters[0:2]
-                    self._update_grad(bg.as_rgb(), border.as_rgb())
-                    self._cfg.save_background(self.artist, self.album, border.as_rgb(), bg.as_rgb())
+                    result = cluster.ClusteringResult(clusters)
+                    border, bg = result.complementary(), result.dominant()
+                    self._update_grad(bg, border)
+                    self._cfg.save_background(self.artist, self.album, border, bg)
         border, bg = self._cfg.get_background(artist, album)
         if border is not None and bg is not None:
             self._update_grad(RGBColor(*bg), RGBColor(*border))
