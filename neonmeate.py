@@ -44,11 +44,12 @@ def configure_logging():
 
 
 def main(args):
+    configure_logging()
     cfg = config.Config.load_main_config()
     music_dir = cfg['media_dir']
     rng = random.Random()
     rng.seed(int(1000 * time.time()))
-    logger = configure_logging()
+
     hb_executor = nmasync.ScheduledExecutor()
 
     with ThreadPoolExecutor(2) as executor:
