@@ -1,5 +1,4 @@
 import random
-import string
 import sys
 
 from gi.repository import GdkPixbuf
@@ -63,79 +62,117 @@ class Cluster:
         self.label = label
         self.dist_fn = dist_fn
         self.mean_fn = mean_fn
-        self.elements = [initial_value]
-        self.cached_mean = self.mean()
+        self.initial_value = initial_value
+        self.elements = []
+        self._centroid = None
         self.count = 1
+        self.recalc_centroid()
 
-    def update_cached_mean(self, mean):
-        self.elements = [mean]
-        self.cached_mean = self.mean()
+    def distance(self, color):
+        e = self.initial_value
+        return self.dist_fn(color[0], color[1], color[2], e[0], e[1], e[2])
+
+    def centroid(self):
+        return self._centroid
+
+    def recalc_centroid(self):
+        self._centroid = self.mean()
 
     def mean(self):
-        n = len(self.elements)
-        self.count = n
-        return self.mean_fn(self.elements)
+        return self.mean_fn(self.elements + [self.initial_value])
 
     def add(self, element):
         self.elements.append(element)
 
 
 class ColorClusterer:
+
+    @staticmethod
+    def color_at(img, x, y):
+        return RGBColor.from_256(*img.color(y, x)).to_norm_hsv()
+
     def __init__(self, num_clusters, cluster_threshold, rng):
-        self._desired_clusters = num_clusters
+        self._k = num_clusters
         self._cluster_threshold = cluster_threshold
-        self._cluster_distance_threshold = 0.00005
+        self._cluster_distance_threshold = 0.001
         self._max_init_cluster_iterations = 50
+        self.dist_fn = RGBColor.norm_hsv_dist
         self._rng = rng
         self.rounds = []
         self.clusters = []
-        self.dist_fn = RGBColor.norm_hsv_dist
 
     def reset(self):
         self.clusters = []
 
     def _different_enough(self, col):
-        for c in self.clusters:
-            m = c.cached_mean
-            if self.dist_fn(col[0], col[1], col[2], m[0], m[1], m[2]) >= self._cluster_distance_threshold:
-                return False
-        return True
+
+        def diff(cluster):
+            m = cluster.cached_mean
+            dist_from_mean = self.dist_fn(col[0], col[1], col[2], m[0], m[1], m[2])
+            return dist_from_mean
+
+        return all(diff(c) > self._cluster_distance_threshold for c in self.clusters)
 
     def _init_clusters(self, img):
-        i = 0
-        k = self._desired_clusters
-        max_samples = int(0.75 * img.height * img.width)
-        rand_sampler = SamplerStrategy(img.width, img.height, self._rng)
 
-        while len(self.clusters) < k and i < self._max_init_cluster_iterations:
-            for x, y in rand_sampler.take(max_samples):
-                col = RGBColor.from_256(*img.color(y, x)).to_norm_hsv()
-                if self._different_enough(col):
-                    label = ''.join(self._rng.sample(string.ascii_uppercase, 6))
-                    c = Cluster(label, col, self.dist_fn, triplet_mean)
-                    self.clusters.append(c)
-                    if len(self.clusters) == k:
-                        break
-            i += 1
+        def getcolor(px, py):
+            return ColorClusterer.color_at(img, px, py)
+
+        # randomly select 1st cluster
+        x, y = self._rng.randrange(0, img.width), self._rng.randrange(0, img.height)
+        cluster = Cluster(f'Cluster 0', getcolor(x, y), self.dist_fn, triplet_mean)
+        self.clusters.append(cluster)
+
+        points = []
+        cluster_points = {(x, y)}
+
+        def nearest(point):
+            a, b = point
+            return self._nearest_cluster(getcolor(a, b))
+
+        for x in range(img.width):
+            for y in range(img.height):
+                points.append((x, y))
+
+        while len(self.clusters) < self._k:
+            max_dsquared = float('-inf')
+            max_p = None
+            for p in points:
+                if p not in cluster_points:
+                    x, y = p
+                    closest = nearest(p)
+                    col = getcolor(x, y)
+                    d = closest.distance(col)
+                    ds = d * d
+                    if ds > max_dsquared:
+                        max_dsquared = ds
+                        max_p = p
+            i = len(self.clusters)
+            cent = Cluster(f'Cluster {i}', getcolor(max_p[0], max_p[1]), self.dist_fn, triplet_mean)
+            self.clusters.append(cent)
+            cluster_points.add(max_p)
 
     @staticmethod
     def each_img_color(img):
         for x in range(img.width):
             for y in range(img.height):
-                hsv = RGBColor.from_256(*img.color(y, x)).to_norm_hsv()
-                yield hsv
+                yield RGBColor.from_256(*img.color(y, x)).to_norm_hsv()
+
+    def _nearest_cluster(self, color):
+        n = None
+        d = float('Inf')
+
+        for c in self.clusters:
+            m = c.centroid()
+            dist = c.dist_fn(m[0], m[1], m[2], color[0], color[1], color[2])
+            if dist < d:
+                n = c
+                d = dist
+
+        return n
 
     def _add_to_nearest(self, color):
-        near = None
-        dist = float('Inf')
-
-        for cluster in self.clusters:
-            m = cluster.cached_mean
-            d = cluster.dist_fn(m[0], m[1], m[2], color[0], color[1], color[2])
-            if d < dist:
-                near = cluster
-                dist = d
-
+        near = self._nearest_cluster(color)
         near.add(color)
 
     def cluster(self, img):
@@ -156,13 +193,13 @@ class ColorClusterer:
             for hsv in ColorClusterer.each_img_color(img):
                 self._add_to_nearest(hsv)
 
-            new_means = [c.mean() for c in self.clusters]
+            for c in self.clusters:
+                c.recalc_centroid()
+
+            new_means = [c.centroid() for c in self.clusters]
 
             if all(self.dist_fn(u[0], u[1], u[2], v[0], v[1], v[2]) < thresh for u, v in zip(orig_means, new_means)):
                 break
-
-            for mean, cluster in zip(new_means, self.clusters):
-                cluster.update_cached_mean(mean)
 
             itercount += 1
 
@@ -200,7 +237,7 @@ def output(imgpath, clusters, rounds):
 
 
 def clusterize(pixbuf, rng):
-    maxedge = 200
+    maxedge = 180
     assert pixbuf.get_bits_per_sample() == 8
     assert pixbuf.get_colorspace() == GdkPixbuf.Colorspace.RGB
 
@@ -208,7 +245,7 @@ def clusterize(pixbuf, rng):
         pixbuf = pixbuf.scale_simple(maxedge, maxedge, GdkPixbuf.InterpType.BILINEAR)
 
     img = Image(pixbuf)
-    clusterer = ColorClusterer(4, 0.008, rng)
+    clusterer = ColorClusterer(5, 0.04, rng)
     clusterer.cluster(img)
     clusters = clusterer.clusters
 
@@ -218,9 +255,9 @@ def clusterize(pixbuf, rng):
     bw_thresh = 0.0107
 
     def black_or_white(c):
-        w = white.cached_mean
-        b = black.cached_mean
-        m = c.cached_mean
+        w = white.centroid()
+        b = black.centroid()
+        m = c.centroid()
         dw = dist(m[0], m[1], m[2], w[0], w[1], w[2])
         if dw < bw_thresh:
             return True
@@ -266,8 +303,8 @@ class ClusteringResult:
 
 
 def similar(clust1, clust2):
-    cm = clust1.cached_mean
-    dm = clust2.cached_mean
+    cm = clust1.centroid()
+    dm = clust2.centroid()
     return RGBColor.norm_hsv_dist(cm[0], cm[1], cm[2], dm[0], dm[1], dm[2]) < 0.05
 
 
@@ -287,8 +324,8 @@ def main(args):
             if c is d:
                 continue
             dist_dict[d.label] = RGBColor.norm_hsv_dist(
-                c.cached_mean[0], c.cached_mean[1], c.cached_mean[2],
-                d.cached_mean[0], d.cached_mean[1], d.cached_mean[2]
+                c.centroid()[0], c.centroid()[1], c.centroid()[2],
+                d.centroid()[0], d.centroid()[1], d.centroid()[2]
             )
         c.dist_dict = dist_dict
 
