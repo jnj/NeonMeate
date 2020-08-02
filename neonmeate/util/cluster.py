@@ -25,7 +25,7 @@ def pixbuf_from_file(fileobj):
 
 
 def cluster_rgb(cluster):
-    h, s, v = cluster.mean()
+    h, s, v = cluster.centroid()
     return RGBColor.from_hsv(h, s, v)
 
 
@@ -62,24 +62,24 @@ class Cluster:
         self.label = label
         self.dist_fn = dist_fn
         self.mean_fn = mean_fn
-        self.initial_value = initial_value
+        self._centroid = initial_value
         self.elements = []
-        self._centroid = None
         self.count = 1
-        self.recalc_centroid()
 
     def distance(self, color):
-        e = self.initial_value
+        e = self._centroid
         return self.dist_fn(color[0], color[1], color[2], e[0], e[1], e[2])
 
     def centroid(self):
         return self._centroid
 
     def recalc_centroid(self):
-        self._centroid = self.mean()
+        assert self.elements
+        self._centroid = self._mean()
+        self.elements = []
 
-    def mean(self):
-        return self.mean_fn(self.elements + [self.initial_value])
+    def _mean(self):
+        return self.mean_fn(self.elements)
 
     def add(self, element):
         self.elements.append(element)
@@ -101,20 +101,7 @@ class ColorClusterer:
         self.rounds = []
         self.clusters = []
 
-    def reset(self):
-        self.clusters = []
-
-    def _different_enough(self, col):
-
-        def diff(cluster):
-            m = cluster.cached_mean
-            dist_from_mean = self.dist_fn(col[0], col[1], col[2], m[0], m[1], m[2])
-            return dist_from_mean
-
-        return all(diff(c) > self._cluster_distance_threshold for c in self.clusters)
-
     def _init_clusters(self, img):
-
         def getcolor(px, py):
             return ColorClusterer.color_at(img, px, py)
 
@@ -183,10 +170,10 @@ class ColorClusterer:
 
         maxiters = 50
         itercount = 0
-        thresh = self._cluster_distance_threshold
+        thresh = self._cluster_threshold
 
         while itercount < maxiters:
-            orig_means = [c.mean() for c in self.clusters]
+            orig_means = [c.centroid() for c in self.clusters]
             round = [cluster_rgb(c) for c in self.clusters]
             self.rounds.append(round)
 
@@ -238,6 +225,7 @@ def output(imgpath, clusters, rounds):
 
 def clusterize(pixbuf, rng):
     maxedge = 180
+    k = 5
     assert pixbuf.get_bits_per_sample() == 8
     assert pixbuf.get_colorspace() == GdkPixbuf.Colorspace.RGB
 
@@ -245,14 +233,14 @@ def clusterize(pixbuf, rng):
         pixbuf = pixbuf.scale_simple(maxedge, maxedge, GdkPixbuf.InterpType.BILINEAR)
 
     img = Image(pixbuf)
-    clusterer = ColorClusterer(5, 0.04, rng)
+    clusterer = ColorClusterer(k, 0.005, rng)
     clusterer.cluster(img)
     clusters = clusterer.clusters
 
     dist = RGBColor.norm_hsv_dist
     white = Cluster('white', RGBColor(1, 1, 1).to_norm_hsv(), dist, triplet_mean)
     black = Cluster('black', RGBColor(0, 0, 0).to_norm_hsv(), dist, triplet_mean)
-    bw_thresh = 0.0107
+    bw_thresh = 0.0105
 
     def black_or_white(c):
         w = white.centroid()
