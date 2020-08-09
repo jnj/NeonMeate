@@ -37,7 +37,6 @@ class App(Gtk.ApplicationWindow):
         self._controlbuttons = ControlButtons()
         self._playmodebuttons = PlayModeButtons()
         self._songprogress = SongProgress()
-        self._songprogress.set_fraction(0)
         self._actionbar = Gtk.ActionBar()
         self._actionbar.pack_start(self._controlbuttons)
         self._actionbar.pack_start(self._songprogress)
@@ -67,7 +66,7 @@ class App(Gtk.ApplicationWindow):
         self._controlbuttons.connect('neonmeate_prev_song', self.on_prev_song)
         self._controlbuttons.connect('neonmeate_next_song', self.on_next_song)
         self._playmodebuttons.subscribe_to_signal('neonmeate_playmode_toggle', self._on_user_mode_toggle)
-        self._heartbeat.connect('song_played_percent', self._on_song_percent)
+        self._heartbeat.connect('song_elapsed', self._on_song_elapsed)
         self._heartbeat.connect('song_playing_status', self._on_song_playing_status)
         self._heartbeat.connect('song_changed', self._on_song_changed)
         self._heartbeat.connect('no_song', lambda hb: self._on_song_changed(hb, None, None, None, None))
@@ -139,9 +138,8 @@ class App(Gtk.ApplicationWindow):
         paused, stopped = App.PlayStatus.get(status, (False, False))
         self._controlbuttons.set_paused(paused, stopped)
 
-    def _on_song_percent(self, hb, fraction):
-        self._songprogress.set_fraction(fraction)
-        self._songprogress.queue_draw()
+    def _on_song_elapsed(self, hb, elapsed, total):
+        self._songprogress.set_elapsed(elapsed, total)
 
     def on_start(self, x):
         self._mpdclient.toggle_pause(0)

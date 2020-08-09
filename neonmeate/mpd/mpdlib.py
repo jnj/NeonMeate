@@ -176,8 +176,9 @@ class MpdState(GObject.GObject):
     state = GObject.Property(type=str, default='')
     playlist = GObject.Property(type=str, default='-1')
     playlistlength = GObject.Property(type=str, default='0')
-    elapsedtime = GObject.Property(type=float, default=0.0)
-    synth_props = {'elapsedtime'}
+    songseconds = GObject.Property(type=float, default=1)
+    elapsedseconds = GObject.Property(type=float, default=0)
+    synth_props = {'songseconds', 'elapsedseconds'}
 
     def __init__(self):
         GObject.GObject.__init__(self)
@@ -200,15 +201,15 @@ class MpdState(GObject.GObject):
     def _update_if_changed(self, name, newval):
         current = self.get_property(name)
         if current != newval:
-            # print(f"updating property {name} from {current} to {newval}")
             self.set_property(name, newval)
 
     def _update_elapsed_time(self):
-        e = float(self.get_property('elapsed'))
-        duration = self.get_property('duration')
-        if self._time_pattern.search(duration):
-            t = float(duration)
-            self._update_if_changed('elapsedtime', round(e / t, 3))
+        elapsed_secs = float(self.get_property('elapsed'))
+        duration_str = self.get_property('duration')
+        if self._time_pattern.search(duration_str):
+            total_secs = float(duration_str)
+            self._update_if_changed('songseconds', total_secs)
+            self._update_if_changed('elapsedseconds', elapsed_secs)
 
 
 # noinspection PyUnresolvedReferences
@@ -230,7 +231,7 @@ class MpdHeartbeat(GObject.GObject):
     # These signals will be emitted when player events are detected.
     __gsignals__ = {
         'playlist_changed': (GObject.SignalFlags.RUN_FIRST, None, ()),
-        'song_played_percent': (GObject.SignalFlags.RUN_FIRST, None, (float,)),
+        'song_elapsed': (GObject.SignalFlags.RUN_FIRST, None, (float, float)),
         'song_playing_status': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
         'song_changed': (GObject.SignalFlags.RUN_FIRST, None, (str, str, str, str)),
         'no_song': (GObject.SignalFlags.RUN_FIRST, None, ()),
@@ -257,7 +258,8 @@ class MpdHeartbeat(GObject.GObject):
             'random': self._on_mode_change,
             'repeat': self._on_mode_change,
             'single': self._on_mode_change,
-            'elapsedtime': self._on_elapsed_change,
+            'elapsedseconds': self._on_elapsed_change,
+            'songseconds': self._on_total_seconds_change,
             'state': self._on_state_change
         }.items():
             self._state.connect(f'notify::{prop}', fn)
@@ -324,7 +326,12 @@ class MpdHeartbeat(GObject.GObject):
         self.emit('playback-mode-toggled', spec.name, propval != '0')
 
     def _on_elapsed_change(self, obj, spec):
-        self.emit('song_played_percent', self._state.get_property(spec.name))
+        self._on_total_seconds_change(obj, spec)
+
+    def _on_total_seconds_change(self, obj, spec):
+        elapsed = self._state.get_property('elapsedseconds')
+        total = self._state.get_property('songseconds')
+        self.emit('song_elapsed', elapsed, total)
 
     def _mpd_state(self):
         return self._mpd_status.get('state', 'unknown')

@@ -64,7 +64,10 @@ class Cluster:
         self.mean_fn = mean_fn
         self._centroid = initial_value
         self.elements = []
-        self.count = 1
+        self._count = 0
+
+    def count(self):
+        return self._count
 
     def distance(self, color):
         e = self._centroid
@@ -74,9 +77,10 @@ class Cluster:
         return self._centroid
 
     def recalc_centroid(self):
-        assert self.elements
-        self._centroid = self._mean()
-        self.elements = []
+        if self.elements:
+            self._count = len(self.elements)
+            self._centroid = self._mean()
+            self.elements = []
 
     def _mean(self):
         return self.mean_fn(self.elements)
@@ -212,7 +216,7 @@ def output(imgpath, clusters, rounds):
         r = round(rgb.rgb[0] * 100.0, 2)
         g = round(rgb.rgb[1] * 100.0, 2)
         b = round(rgb.rgb[2] * 100.0, 2)
-        s += f'\n\t\t<div style="background-color: rgb({r}%,{g}%,{b}%); min-height: 200px; width=100%; border: 1px solid black;">{cluster.label} <h1>Count: {cluster.count}</h1> {str(cluster.dist_dict)}</div>'
+        s += f'\n\t\t<div style="background-color: rgb({r}%,{g}%,{b}%); min-height: 200px; width=100%; border: 1px solid black;">{cluster.label} <h1>Count: {cluster.count()}</h1> {str(cluster.dist_dict)}</div>'
 
     s += "<div id=\"gradArt\">"
 
@@ -267,7 +271,7 @@ def clusterize(pixbuf, rng):
             if not similar(c, d):
                 kept.add(d.label)
 
-    return sorted([c for c in clusters if c.label in kept], key=lambda c: c.count, reverse=True), clusterer.rounds
+    return sorted([c for c in clusters if c.label in kept], key=lambda c: c.count(), reverse=True), clusterer.rounds
 
 
 class ClusteringResult:
@@ -299,7 +303,7 @@ def similar(clust1, clust2):
 def main(args):
     import time
 
-    filepath = args[0]
+    filepath = "/media/josh/Music/Slough Feg/Ape Uprising/cover.jpg"
     with open(filepath, 'rb') as f:
         pixbuf = pixbuf_from_file(f)
     rng = random.Random()
