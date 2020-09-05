@@ -59,10 +59,10 @@ class CoverWithGradient(Gtk.DrawingArea):
                 self.logger.exception(ex)
                 return
             elif not fut.cancelled():
-                clusters, _ = fut.result()
+                clusterer, _, clusters, _ = fut.result()
 
                 if len(clusters) > 1:
-                    result = cluster.ClusteringResult(clusters)
+                    result = cluster.ClusteringResult(clusters, clusterer._colorspace)
                     border, bg = result.complementary(), result.dominant()
                     self._update_grad(bg, border)
                     self._cfg.save_background(self.artist, self.album, border, bg)
@@ -71,7 +71,7 @@ class CoverWithGradient(Gtk.DrawingArea):
             a, b = (bg, border) if self._rng.randint(1, 100) > 50 else (border, bg)
             self._update_grad(RGBColor(*a), RGBColor(*b))
         else:
-            cluster_result = executor.submit(cluster.clusterize, pixbuf, self._rng)
+            cluster_result = executor.submit(cluster.clusterize, pixbuf, self._rng, 200, 7, 0.001, 200, 'hsv')
             cluster_result.add_done_callback(on_gradient_ready)
 
     @gtk_main

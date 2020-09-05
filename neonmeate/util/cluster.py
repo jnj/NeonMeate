@@ -326,8 +326,7 @@ def clusterize(pixbuf, rng, maxedge=200, k=7, cluster_thresh=0.6, max_iters=200,
             if not c.similar(d):
                 kept.add(d.label)
 
-    return clusterer, img, sorted([c for c in clusters if c.label in kept], key=lambda c: c.count(),
-                                  reverse=True), clusterer.rounds
+    return clusterer, img, sorted([c for c in clusters if c.label in kept], key=lambda c: c.count(), reverse=True), clusterer.rounds
 
 
 class ClusteringResult:
