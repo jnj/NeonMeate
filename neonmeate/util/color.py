@@ -27,6 +27,15 @@ class RGBColor:
     def __str__(self):
         return str(self.rgb)
 
+    def to_256(self):
+        return self._as_256(self.rgb[0]), self._as_256(self.rgb[1]), self._as_256(self.rgb[2])
+
+    def to_100(self):
+        return tuple([100.0 * x for x in self.rgb])
+
+    def _as_256(self, val):
+        return int(round(val * 255.0))
+
     def components(self):
         return self.rgb[0], self.rgb[1], self.rgb[2]
 
@@ -70,7 +79,11 @@ class RGBColor:
         return RGBColor.norm_hsv_dist(h1, s1, v1, h2, s2, v2)
 
     @staticmethod
+    def rgb_euclidean_dist(r1, g1, b1, r2, g2, b2):
+        return math.sqrt(((r1 - r2) ** 2) + ((g1 - g2) ** 2) + ((b1 - b2) ** 2))
+
+    @staticmethod
     def norm_hsv_dist(h1, s1, v1, h2, s2, v2):
         return (math.sin(h1) * s1 * v1 - math.sin(h2) * s2 * v2) ** 2 + \
                (math.cos(h1) * s1 * v1 - math.cos(h2) * s2 * v2) ** 2 + \
-               (v1 - v2) ** 2
+               4.0 * (v1 - v2) ** 2

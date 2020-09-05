@@ -24,25 +24,6 @@ def pixbuf_from_file(fileobj):
     return pixbuf
 
 
-def cluster_rgb(cluster):
-    h, s, v = cluster.centroid()
-    return RGBColor.from_hsv(h, s, v)
-
-
-class SamplerStrategy:
-    """
-    Randomly samples.
-    """
-
-    def __init__(self, width, height, rng):
-        self.width = width
-        self.height = height
-        self.rng = rng
-
-    def take(self, n):
-        return [(self.rng.randrange(0, self.width), self.rng.randrange(0, self.height)) for i in range(n)]
-
-
 class Image:
     def __init__(self, pixbuf):
         self.pixbuf = pixbuf
@@ -58,9 +39,10 @@ class Image:
 
 class Cluster:
 
-    def __init__(self, label, initial_value, dist_fn, mean_fn):
+    def __init__(self, label, initial_value, mean_fn, colorspace):
+        self._colorspace = colorspace
         self.label = label
-        self.dist_fn = dist_fn
+        self.dist_fn = colorspace.distance
         self.mean_fn = mean_fn
         self._centroid = initial_value
         self.elements = []
@@ -88,30 +70,73 @@ class Cluster:
     def add(self, element):
         self.elements.append(element)
 
+    def similar(self, clust2, threshold=0.01):
+        dm = clust2.centroid()
+        return self.distance(dm) < threshold
+
+
+class RGBColorSpace:
+
+    @staticmethod
+    def distance(r1, g1, b1, r2, g2, b2):
+        return RGBColor.rgb_euclidean_dist(r1, g1, b1, r2, g2, b2)
+
+    @staticmethod
+    def as_3_tuple(rgbcolor):
+        return rgbcolor.components()
+
+    @staticmethod
+    def to_rgb_256_tuple(a, b, c):
+        return RGBColor(a, b, c).to_256()
+
+    @staticmethod
+    def to_rgbcolor(a, b, c):
+        return RGBColor(a, b, c)
+
+
+class HSVColorSpace:
+
+    @staticmethod
+    def distance(h1, s1, v1, h2, s2, v2):
+        return RGBColor.norm_hsv_dist(h1, s1, v1, h2, s2, v2)
+
+    @staticmethod
+    def as_3_tuple(rgbcolor):
+        return rgbcolor.to_norm_hsv()
+
+    @staticmethod
+    def to_rgb_256_tuple(a, b, c):
+        return RGBColor.from_hsv(a, b, c).to_256()
+
+    @staticmethod
+    def to_rgbcolor(a, b, c):
+        return RGBColor.from_hsv(a, b, c)
+
 
 class ColorClusterer:
 
     @staticmethod
-    def color_at(img, x, y):
-        return RGBColor.from_256(*img.color(y, x)).to_norm_hsv()
+    def color_at(img, x, y, colorspace):
+        rgbcolor = RGBColor.from_256(*img.color(y, x))
+        return colorspace.as_3_tuple(rgbcolor)
 
-    def __init__(self, num_clusters, cluster_threshold, rng):
+    def __init__(self, num_clusters, cluster_threshold, rng, max_iters, space):
         self._k = num_clusters
+        self._max_iters = max_iters
+        self._max_init_cluster_iterations = 100
         self._cluster_threshold = cluster_threshold
-        self._cluster_distance_threshold = 0.001
-        self._max_init_cluster_iterations = 50
-        self.dist_fn = RGBColor.norm_hsv_dist
+        self._colorspace = space
         self._rng = rng
         self.rounds = []
         self.clusters = []
+        self.cluster_assignments = {}
 
     def _init_clusters(self, img):
         def getcolor(px, py):
-            return ColorClusterer.color_at(img, px, py)
+            return ColorClusterer.color_at(img, px, py, self._colorspace)
 
-        # randomly select 1st cluster
         x, y = self._rng.randrange(0, img.width), self._rng.randrange(0, img.height)
-        cluster = Cluster(f'Cluster 0', getcolor(x, y), self.dist_fn, triplet_mean)
+        cluster = Cluster(f'Cluster 0', getcolor(x, y), triplet_mean, self._colorspace)
         self.clusters.append(cluster)
 
         points = []
@@ -139,15 +164,15 @@ class ColorClusterer:
                         max_dsquared = ds
                         max_p = p
             i = len(self.clusters)
-            cent = Cluster(f'Cluster {i}', getcolor(max_p[0], max_p[1]), self.dist_fn, triplet_mean)
+            cent = Cluster(f'Cluster {i}', getcolor(max_p[0], max_p[1]), triplet_mean, self._colorspace)
             self.clusters.append(cent)
             cluster_points.add(max_p)
 
     @staticmethod
-    def each_img_color(img):
+    def each_img_color(img, colorspace):
         for x in range(img.width):
             for y in range(img.height):
-                yield RGBColor.from_256(*img.color(y, x)).to_norm_hsv()
+                yield x, y, colorspace.as_3_tuple(RGBColor.from_256(*img.color(y, x)))
 
     def _nearest_cluster(self, color):
         n = None
@@ -165,61 +190,91 @@ class ColorClusterer:
     def _add_to_nearest(self, color):
         near = self._nearest_cluster(color)
         near.add(color)
+        return near
+
+    def _merge_similar(self):
+        merged_any = True
+        while merged_any:
+            merged_any = False
+            cluster = self.clusters[0]
+            to_merge = []
+            for other in self.clusters[1:]:
+                if cluster.similar(other, self._cluster_threshold):
+                    to_merge.append(other)
+            if to_merge:
+                self._merge_clusters([cluster] + to_merge)
+                merged_any = True
+
+    def _merge_clusters(self, clusters):
+        merged = clusters[0]
+        to_prune = clusters[1:]
+        for c in to_prune:
+            merged.add(c.centroid())
+            for (x, y), cl in self.cluster_assignments.items():
+                if cl == c:
+                    self.cluster_assignments[(x, y)] = merged
+        self.clusters = [c for c in self.clusters if c not in to_prune]
+        merged.recalc_centroid()
+
+    def _recalc_centroids(self):
+        for c in self.clusters:
+            c.recalc_centroid()
 
     def cluster(self, img):
         self._init_clusters(img)
-
         if len(self.clusters) < 2:
             return
 
-        maxiters = 50
         itercount = 0
-        thresh = self._cluster_threshold
+        maxiters = self._max_iters
+        thresh = 0.01
 
         while itercount < maxiters:
             orig_means = [c.centroid() for c in self.clusters]
-            round = [cluster_rgb(c) for c in self.clusters]
-            self.rounds.append(round)
+            iteration = [self._colorspace.to_rgbcolor(*c.centroid()) for c in self.clusters]
+            self.rounds.append(iteration)
 
-            for hsv in ColorClusterer.each_img_color(img):
-                self._add_to_nearest(hsv)
+            for x, y, components in ColorClusterer.each_img_color(img, self._colorspace):
+                c = self._add_to_nearest(components)
+                self.cluster_assignments[(x, y)] = c
 
-            for c in self.clusters:
-                c.recalc_centroid()
+            self._recalc_centroids()
+            self._merge_similar()
 
             new_means = [c.centroid() for c in self.clusters]
 
-            if all(self.dist_fn(u[0], u[1], u[2], v[0], v[1], v[2]) < thresh for u, v in zip(orig_means, new_means)):
+            # If the clusters haven't changed much since the last round, we're done.
+            if all(self._colorspace.distance(u[0], u[1], u[2], v[0], v[1], v[2]) < thresh for u, v in
+                   zip(orig_means, new_means)):
                 break
 
             itercount += 1
 
 
-def output(imgpath, clusters, rounds):
+def output(imgpath, clusters, rounds, colorspace):
     s = "<!doctype html>"
     s += "\n<html>"
     s += '\n\t<head><style>div { margin: 1em; } #gradArt { width: 700px; height: 700px; }</style></head>'
     s += '\n\t<body>'
     s += f'\n\t\t<div><img src="file://{imgpath}"></div>'
+    s += f'\n\t\t<div><img src="file:///tmp/cluster.jpg"></div>'
+
+    def to_rgb_100(a):
+        return round(a / 256.0 * 100, 2)
 
     for i, rgbs in enumerate(rounds):
         s += f"<div><h3>Round {i + 1}</h3>"
         for rgb in rgbs:
-            r = round(rgb.rgb[0] * 100.0, 2)
-            g = round(rgb.rgb[1] * 100.0, 2)
-            b = round(rgb.rgb[2] * 100.0, 2)
+            r, g, b = rgb.to_100()
             s += f'\n\t\t<div style="background-color: rgb({r}%,{g}%,{b}%); min-height: 100px; width=100px; border: 1px solid black;"></div>'
         s += "</div>"
 
     for cluster in clusters:
-        rgb = cluster_rgb(cluster)
-        r = round(rgb.rgb[0] * 100.0, 2)
-        g = round(rgb.rgb[1] * 100.0, 2)
-        b = round(rgb.rgb[2] * 100.0, 2)
+        rgb = colorspace.to_rgbcolor(*cluster.centroid())
+        r, g, b = rgb.to_100()
         s += f'\n\t\t<div style="background-color: rgb({r}%,{g}%,{b}%); min-height: 200px; width=100%; border: 1px solid black;">{cluster.label} <h1>Count: {cluster.count()}</h1> {str(cluster.dist_dict)}</div>'
 
     s += "<div id=\"gradArt\">"
-
     s += "</div>"
     s += '\n\t</body>'
     s += "\n</html>"
@@ -227,9 +282,11 @@ def output(imgpath, clusters, rounds):
         f.write(s)
 
 
-def clusterize(pixbuf, rng):
-    maxedge = 180
-    k = 5
+def space_for(space):
+    return RGBColorSpace if space == 'rgb' else HSVColorSpace
+
+
+def clusterize(pixbuf, rng, maxedge=200, k=7, cluster_thresh=0.6, max_iters=200, space='hsv'):
     assert pixbuf.get_bits_per_sample() == 8
     assert pixbuf.get_colorspace() == GdkPixbuf.Colorspace.RGB
 
@@ -237,27 +294,25 @@ def clusterize(pixbuf, rng):
         pixbuf = pixbuf.scale_simple(maxedge, maxedge, GdkPixbuf.InterpType.BILINEAR)
 
     img = Image(pixbuf)
-    clusterer = ColorClusterer(k, 0.005, rng)
+    color_space = space_for(space)
+    clusterer = ColorClusterer(k, cluster_thresh, rng, max_iters, color_space)
     clusterer.cluster(img)
     clusters = clusterer.clusters
 
-    dist = RGBColor.norm_hsv_dist
-    white = Cluster('white', RGBColor(1, 1, 1).to_norm_hsv(), dist, triplet_mean)
-    black = Cluster('black', RGBColor(0, 0, 0).to_norm_hsv(), dist, triplet_mean)
+    dist = color_space.distance
+    white = Cluster('white', color_space.as_3_tuple(RGBColor(1, 1, 1)), triplet_mean, color_space)
+    black = Cluster('black', color_space.as_3_tuple(RGBColor(0, 0, 0)), triplet_mean, color_space)
     bw_thresh = 0.0105
 
     def black_or_white(c):
         w = white.centroid()
         b = black.centroid()
         m = c.centroid()
-        dw = dist(m[0], m[1], m[2], w[0], w[1], w[2])
+        dw = color_space.distance(m[0], m[1], m[2], w[0], w[1], w[2])
         if dw < bw_thresh:
             return True
-        db = dist(m[0], m[1], m[2], b[0], b[1], b[2])
-        if db < bw_thresh:
-            # print(f'yes, is white or black')
-            return True
-        return False
+        db = color_space.distance(m[0], m[1], m[2], b[0], b[1], b[2])
+        return db < bw_thresh
 
     clusters = [c for c in clusters if not black_or_white(c)]
     kept = set()
@@ -268,60 +323,73 @@ def clusterize(pixbuf, rng):
         kept.add(c.label)
         for j in range(i + 1, l):
             d = clusters[j]
-            if not similar(c, d):
+            if not c.similar(d):
                 kept.add(d.label)
 
-    return sorted([c for c in clusters if c.label in kept], key=lambda c: c.count(), reverse=True), clusterer.rounds
+    return clusterer, img, sorted([c for c in clusters if c.label in kept], key=lambda c: c.count(),
+                                  reverse=True), clusterer.rounds
 
 
 class ClusteringResult:
-    def __init__(self, clusters):
+    def __init__(self, clusters, colorspace):
         self.clusters = clusters
+        self._color_space = colorspace
 
     def dominant(self):
-        c = cluster_rgb(self.clusters[0])
-        if c.almost_black():
-            return c.lighten(10)
+        c = self._color_space.to_rgbcolor(*self.clusters[0].centroid())
         return c
 
     def complementary(self):
-        l = len(self.clusters)
-        if l == 1:
-            return cluster_rgb(self.clusters[0]).alter()
-        elif l <= 2:
-            return cluster_rgb(self.clusters[1])
-        else:
-            return cluster_rgb(self.clusters[-2])
-
-
-def similar(clust1, clust2):
-    cm = clust1.centroid()
-    dm = clust2.centroid()
-    return RGBColor.norm_hsv_dist(cm[0], cm[1], cm[2], dm[0], dm[1], dm[2]) < 0.05
+        choice = (random.choice(self.clusters))
+        return self._color_space.to_rgbcolor(*choice.centroid())
 
 
 def main(args):
+    from PIL import Image
+    import argparse
     import time
 
-    filepath = "/media/josh/Music/Slough Feg/Ape Uprising/cover.jpg"
-    with open(filepath, 'rb') as f:
+    parser = argparse.ArgumentParser(prog='cluster', description='Clusterize an image using k-means',
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('file', help='jpg file path')
+    parser.add_argument('-e', '--edge', help='edge_size', default=200, type=int)
+    parser.add_argument('-k', '--k', help='number of clusters', default=7, type=int)
+    parser.add_argument('-t', '--thresh', help='cluster distance threshold', default=0.001, type=float)
+    parser.add_argument('-i', '--iters', help='max number of iterations', default=100, type=int)
+    parser.add_argument('-s', '--space', help='color space for distance', choices=['rgb', 'hsv'], default='hsv')
+    parsed = parser.parse_args(args)
+
+    with open(parsed.file, 'rb') as f:
         pixbuf = pixbuf_from_file(f)
+
     rng = random.Random()
     rng.seed(int(1000 * time.time()))
 
-    clusters, rounds = clusterize(pixbuf, rng)
+    clusterer, pixbuf_img, clusters, rounds = \
+        clusterize(pixbuf, rng, parsed.edge, parsed.k, parsed.thresh, parsed.iters, parsed.space)
+    colorspace = space_for(parsed.space)
     for c in clusters:
         dist_dict = {}
         for d in clusters:
             if c is d:
                 continue
-            dist_dict[d.label] = RGBColor.norm_hsv_dist(
+            dist_dict[d.label] = colorspace.distance(
                 c.centroid()[0], c.centroid()[1], c.centroid()[2],
                 d.centroid()[0], d.centroid()[1], d.centroid()[2]
             )
         c.dist_dict = dist_dict
 
-    output(filepath, clusters, rounds)
+    im = Image.new('RGB', (parsed.edge, parsed.edge))
+
+    for row in range(parsed.edge):
+        for col in range(parsed.edge):
+            clust = clusterer.cluster_assignments[(col, row)]
+            a, b, c = clust.centroid()
+            rgb = colorspace.to_rgb_256_tuple(a, b, c)
+            im.putpixel((col, row), rgb)
+
+    im.save('/tmp/cluster.jpg')
+    output(parsed.file, clusters, rounds, colorspace)
 
 
 if __name__ == '__main__':
