@@ -299,20 +299,11 @@ def clusterize(pixbuf, rng, maxedge=200, k=7, cluster_thresh=0.6, max_iters=200,
     clusterer.cluster(img)
     clusters = clusterer.clusters
 
-    dist = color_space.distance
     white = Cluster('white', color_space.as_3_tuple(RGBColor(1, 1, 1)), triplet_mean, color_space)
     black = Cluster('black', color_space.as_3_tuple(RGBColor(0, 0, 0)), triplet_mean, color_space)
-    bw_thresh = 0.0105
 
     def black_or_white(c):
-        w = white.centroid()
-        b = black.centroid()
-        m = c.centroid()
-        dw = color_space.distance(m[0], m[1], m[2], w[0], w[1], w[2])
-        if dw < bw_thresh:
-            return True
-        db = color_space.distance(m[0], m[1], m[2], b[0], b[1], b[2])
-        return db < bw_thresh
+        return c.similar(white, 0.065) or c.similar(black, 0.065)
 
     clusters = [c for c in clusters if not black_or_white(c)]
     kept = set()

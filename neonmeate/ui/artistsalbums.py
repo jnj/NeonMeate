@@ -61,7 +61,9 @@ class Albums(toolkit.Scrollable):
         self._album_spacing = album_spacing
         self._art_cache = art_cache
         self._mpdclient = mpdclient
-        self._albums = toolkit.Column(False)
+        self._albums = Gtk.FlowBox()
+        self._albums.set_valign(Gtk.Align.START)
+        self._albums.set_selection_mode(Gtk.SelectionMode.SINGLE)
         self.add_content(self._albums)
         self._selected_artist = None
         self._entries = []
@@ -129,13 +131,8 @@ class AlbumsSongs(Gtk.Frame):
         super(AlbumsSongs, self).__init__()
         self._mpdclient = mpdclient
         self._art_cache = art_cache
-        self._panes = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
         self._albums = Albums(self._mpdclient, self._art_cache, album_width_px, album_spacing)
-        self._songs = Songs()
-        self._panes.pack1(self._albums, False, False)
-        self._panes.pack2(self._songs, False, False)
-        self._panes.set_position(album_spacing * 2 + album_width_px)
-        self.add(self._panes)
+        self.add(self._albums)
         self._albums_list = []
         self._selected_artist = None
 

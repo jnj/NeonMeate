@@ -92,16 +92,20 @@ class Config:
     def mpd_port(self):
         return self['mpd']['port']
 
-    def get_background(self, artist, album):
+    def get_background(self, artist, album, rng):
         cache_ = self['background_cache']
         if artist in cache_:
-            album_art = cache_.get(artist, {}).get(album, None)
-            if album_art is not None:
-                return album_art
+            clusters = cache_.get(artist, {}).get(album, None)
+            if clusters is not None:
+                fore = rng.choice(clusters)
+                back = rng.choice(clusters)
+                while fore == back:
+                    back = rng.choice(clusters)
+                return fore, back
         return None, None
 
-    def save_background(self, artist, album, border, background):
+    def save_clusters(self, artist, album, clusters):
         cache_ = self['background_cache']
         if artist not in cache_:
             cache_[artist] = {}
-        cache_[artist][album] = [border.rgb, background.rgb]
+        cache_[artist][album] = [c.rgb for c in clusters]
