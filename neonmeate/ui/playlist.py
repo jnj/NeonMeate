@@ -1,9 +1,14 @@
 import neonmeate.ui.toolkit as tk
 
-from gi.repository import Gdk
+from gi.repository import Gdk, GObject
 
 
+# noinspection PyUnresolvedReferences
 class Playlist(tk.Scrollable):
+    __gsignals__ = {
+        'neonmeate_clear_playlist': (GObject.SignalFlags.RUN_FIRST, None, ()),
+    }
+
     def __init__(self):
         super(Playlist, self).__init__()
         self._playlist_table = tk.Table(['Artist', 'Album', 'Track', 'Title'], [str, str, int, str])
@@ -14,7 +19,7 @@ class Playlist(tk.Scrollable):
 
     def _on_keypress(self, treeview, eventkey):
         if eventkey.keyval == Gdk.KEY_c:
-            print("User pressed 'c'")
+            self.emit('neonmeate_clear_playlist')
         elif eventkey.keyval == Gdk.KEY_Down or \
                 eventkey.keyval == Gdk.KEY_Up or \
                 eventkey.keyval == Gdk.KEY_Left or \

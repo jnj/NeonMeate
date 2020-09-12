@@ -155,7 +155,7 @@ class Mpd:
 
     def clear_playlist(self):
         def task():
-            self._client.send_playlistclear()
+            self._client.clear()
 
         self._exec.execute(task)
 

@@ -126,7 +126,8 @@ class Table:
     def _on_selection_changed(self, select):
         model, treeiter = select.get_selected()
         if self.selection_handler:
-            self.selection_handler(model[treeiter])
+            if model and mode[treeiter]:
+                self.selection_handler(model[treeiter])
 
     def set_selection_handler(self, handler):
         self.selection_handler = handler

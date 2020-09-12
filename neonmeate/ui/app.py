@@ -49,7 +49,7 @@ class App(Gtk.ApplicationWindow):
 
         self._artists = ArtistsAlbums(self._mpdclient, self._art_cache, cfg)
         self._playlist = Playlist()
-        self._playlist.connect('key-press-event', self._on_playlist_key)
+        self._playlist.connect('neonmeate_clear_playlist', self._clear_playlist)
         self._update_playlist(None)
 
         self._now_playing = NowPlaying(rng, self._art_cache, self._executor, cfg)
@@ -73,6 +73,9 @@ class App(Gtk.ApplicationWindow):
         self._heartbeat.connect('playlist-changed', self._update_playlist)
         self._heartbeat.connect('playback-mode-toggled', self._on_mode_change())
 
+    def _clear_playlist(self, event):
+        self._mpdclient.clear_playlist()
+
     def _on_user_mode_toggle(self, _, name, is_active):
         self._mpdclient.toggle_play_mode(name, is_active)
 
@@ -81,9 +84,6 @@ class App(Gtk.ApplicationWindow):
             self._playmodebuttons.on_mode_change(name, is_active)
 
         return handler
-
-    def _on_playlist_key(self, obj, key):
-        print(f"playlist key pressed {key}")
 
     def _update_playlist(self, obj):
 
