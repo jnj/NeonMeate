@@ -77,16 +77,6 @@ class Albums(toolkit.Scrollable):
         self.add_content(self._albums_grid)
         self._selected_artist = None
         self._entries = []
-        self._entry_by_index = {}
-
-    def _on_art_ready(self, pixbuf, user_data_tuple):
-        album, index = user_data_tuple
-        if self._selected_artist != album.artist.name or not self._entry_by_index:
-            print(f'No art found for {album}')
-            return
-        entry = self._entry_by_index[index]
-        if entry:
-            entry.update_art(pixbuf)
 
     def _on_all_albums_ready(self):
         chrono_order = sorted(self._entries, key=lambda e: e.album.date)
@@ -110,29 +100,33 @@ class Albums(toolkit.Scrollable):
 
         for i, album in enumerate(albums):
             album_art = AlbumArt(self._art_cache, album, self._placeholder_pixbuf)
-            album_entry = AlbumEntry(i, album, self._placeholder_pixbuf, self._album_width_px, self._album_spacing)
+            album_entry = AlbumEntry(i, album, album_art, self._album_width_px, self._album_spacing)
             self._entries.append(album_entry)
-            self._entry_by_index[i] = album_entry
-            album_art.resolve(self._on_art_ready, (album, i))
 
         self._on_all_albums_ready()
 
 
 # noinspection PyArgumentList,PyUnresolvedReferences
 class AlbumEntry(Gtk.Box):
-    def __init__(self, index, album, pixbuf, width, spacing):
+    def __init__(self, index, album, art, width, spacing):
         super(AlbumEntry, self).__init__(orientation=Gtk.Orientation.VERTICAL, spacing=spacing)
         self.index = index
         self.width = width
         self.album = album
         self.set_halign(Gtk.Align.START)
         self.img = None
-        self.update_art(pixbuf)
+        self._art = art
+        self.update_art()
 
-    def update_art(self, new_pixbuf):
+        def _on_done(new_pixbuf, _):
+            self.update_art()
+
+        art.resolve(_on_done, None)
+
+    def update_art(self):
         if self.img:
             self.remove(self.img)
-        new_pixbuf = new_pixbuf.scale_simple(self.width, self.width, GdkPixbuf.InterpType.BILINEAR)
+        new_pixbuf = self._art.get_scaled_pixbuf(self.width)
         self.img = Gtk.Image.new_from_pixbuf(new_pixbuf)
         self.img.show()
         self.pack_start(self.img, False, False, 0)
