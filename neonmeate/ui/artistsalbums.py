@@ -3,7 +3,7 @@ import functools
 from gi.repository import GdkPixbuf, GObject, Gtk, GLib
 
 from neonmeate.ui import toolkit
-from neonmeate.ui.toolkit import gtk_main
+from neonmeate.ui.toolkit import gtk_main, AlbumArt
 
 
 # noinspection PyArgumentList,PyUnresolvedReferences
@@ -109,18 +109,11 @@ class Albums(toolkit.Scrollable):
         self._selected_artist = artist_name
 
         for i, album in enumerate(albums):
+            album_art = AlbumArt(self._art_cache, album, self._placeholder_pixbuf)
             album_entry = AlbumEntry(i, album, self._placeholder_pixbuf, self._album_width_px, self._album_spacing)
             self._entries.append(album_entry)
             self._entry_by_index[i] = album_entry
-
-            @gtk_main
-            def on_cover_ready(album_obj, album_index, cover_path):
-                if cover_path:
-                    self._art_cache.fetch(cover_path, self._on_art_ready, (album_obj, album_index))
-                else:
-                    print(f'no cover path for {album_obj}')
-
-            self._art_cache.async_resolve_cover_file(album.dirpath, functools.partial(on_cover_ready, album, i))
+            album_art.resolve(self._on_art_ready, (album, i))
 
         self._on_all_albums_ready()
 

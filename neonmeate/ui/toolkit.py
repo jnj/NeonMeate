@@ -1,5 +1,6 @@
+from gi.repository import GdkPixbuf, GObject, Gtk, Pango, GLib
+
 import functools
-from gi.repository import GObject, Gtk, Pango, GLib
 
 
 def gtk_main(func):
@@ -15,6 +16,38 @@ def gtk_main(func):
     return f
 
 
+# noinspection PyUnresolvedReferences
+class AlbumArt:
+    def __init__(self, artcache, album, placeholder_pixbuf):
+        self._artcache = artcache
+        self._album = album
+        self._placeholder_pixbuf = placeholder_pixbuf
+        self._resolved_pixbuf = None
+
+    def get_scaled_pixbuf(self, edge_size):
+        pixbuf = self._resolved_pixbuf or self._placeholder_pixbuf
+        return pixbuf.scale_simple(edge_size, edge_size, GdkPixbuf.InterpType.BILINEAR)
+
+    def resolve(self, on_done, user_data):
+        """
+        Asychronously resolves and loads the cover artwork file into a pixbuf.
+        Calls the user-supplied callback with the new pixbuf when done. The
+        user_data is arbitrary data that will be passed along to the callback.
+        """
+        @gtk_main
+        def _on_art_ready(pixbuf, data):
+            self._resolved_pixbuf = pixbuf
+            on_done(pixbuf, data)
+
+        @gtk_main
+        def _on_cover_path(cover_path):
+            if cover_path:
+                self._artcache.fetch(cover_path, _on_art_ready, user_data)
+
+        self._artcache.async_resolve_cover_file(self._album.dirpath, _on_cover_path)
+
+
+# noinspection PyUnresolvedReferences
 class Scrollable(Gtk.ScrolledWindow):
     def __init__(self):
         super(Scrollable, self).__init__()
@@ -25,6 +58,7 @@ class Scrollable(Gtk.ScrolledWindow):
         self._vp.add(widget)
 
 
+# noinspection PyUnresolvedReferences,PyArgumentList
 class Column(Gtk.ListBox):
     """
     Renders items in a column using a Gtk.ListBox.
@@ -51,6 +85,7 @@ class Column(Gtk.ListBox):
         label.show()
         self.add(label)
 
+    # noinspection PyUnusedLocal
     def _on_row_selected(self, box, row):
         child = row.get_child()
         if child and isinstance(child, Gtk.Label):
@@ -58,6 +93,7 @@ class Column(Gtk.ListBox):
         return True
 
 
+# noinspection PyUnresolvedReferences,PyArgumentList
 class Table:
     def __init__(self, column_names, column_types):
         self.column_names = column_names
@@ -94,40 +130,3 @@ class Table:
 
     def set_selection_handler(self, handler):
         self.selection_handler = handler
-
-
-if __name__ == "__main__":
-    from gi.repository import GdkPixbuf
-
-    maxedge = 200
-    win = Gtk.Window()
-    box = Gtk.FlowBox()
-    win.add(box)
-    win.connect('destroy', Gtk.main_quit)
-
-    paths = [
-        '/media/josh/Music/Wino/Forever Gone/cover.jpg',
-        '/media/josh/Music/Neko Case/Blacklisted/cover.jpg',
-        '/media/josh/Music/Neurosis/Through Silver in Blood/cover.jpg'
-    ]
-
-    box.set_homogeneous(True)
-    box.set_valign(Gtk.Align.START)
-    box.set_halign(Gtk.Align.START)
-
-    pixbuf = Gtk.IconTheme.get_default().load_icon('process-working', maxedge, 0)
-    box.add(Gtk.Image.new_from_pixbuf(pixbuf))
-
-    for path in paths:
-        with open(path, 'rb') as f:
-            pixbuf = GdkPixbuf.Pixbuf.new_from_file(f.name)
-
-            pixbuf = pixbuf.scale_simple(maxedge, maxedge, GdkPixbuf.InterpType.BILINEAR)
-            img = Gtk.Image.new_from_pixbuf(pixbuf)
-            box.add(img)
-
-    def on_select(row):
-        print(f"You selected {row[0]} {row[1]}")
-
-    win.show_all()
-    Gtk.main()

@@ -7,7 +7,7 @@ import mpd as mpd2
 from gi.repository import GObject
 from ..model import Album, Artist, Song
 from functools import partial
-import neonmeate.util.nmasync as nmasync
+import neonmeate.util.thread as thread
 
 
 class Mpd:
@@ -277,7 +277,7 @@ class MpdHeartbeat(GObject.GObject):
         class emits. The handler will be called on the main GTK thread.
 
         """
-        nmasync.signal_subcribe_on_main(super(MpdHeartbeat, self).connect, signal_name, handler, *args)
+        thread.signal_subcribe_on_main(super(MpdHeartbeat, self).connect, signal_name, handler, *args)
 
     def _on_hb_interval(self):
         def on_status(status):

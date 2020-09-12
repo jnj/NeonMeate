@@ -1,21 +1,21 @@
+import gi
+
+gi.require_version('Gtk', '3.0')
+
+from gi.repository import Gtk
+from concurrent.futures import ThreadPoolExecutor
+
 import logging
 import logging.config
 import random
 import sys
 import time
 
-import gi
-
-import neonmeate.util.art as artcache
 import neonmeate.mpd.mpdlib as nmpd
 import neonmeate.ui.app as app
-import neonmeate.util.nmasync as nmasync
+import neonmeate.util.art as artcache
 import neonmeate.util.config as config
-
-gi.require_version('Gtk', '3.0')
-
-from gi.repository import Gtk
-from concurrent.futures import ThreadPoolExecutor
+import neonmeate.util.thread as thread
 
 
 def configure_logging():
@@ -43,14 +43,14 @@ def configure_logging():
     })
 
 
+# noinspection PyUnresolvedReferences
 def main(args):
     configure_logging()
     cfg = config.Config.load_main_config()
     music_dir = cfg['media_dir']
     rng = random.Random()
     rng.seed(int(1000 * time.time()))
-
-    hb_executor = nmasync.ScheduledExecutor()
+    hb_executor = thread.ScheduledExecutor()
 
     with ThreadPoolExecutor(2) as executor:
         mpdclient = nmpd.Mpd(hb_executor, cfg.mpd_host(), cfg.mpd_port())

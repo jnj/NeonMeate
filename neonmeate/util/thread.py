@@ -1,4 +1,3 @@
-import concurrent.futures as fut
 import queue
 import sched
 import threading
