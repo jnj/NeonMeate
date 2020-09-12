@@ -1,3 +1,5 @@
+import functools
+
 from gi.repository import GdkPixbuf, GObject, Gtk, GLib
 
 from neonmeate.ui import toolkit
@@ -6,11 +8,13 @@ from neonmeate.ui.toolkit import gtk_main
 
 # noinspection PyArgumentList,PyUnresolvedReferences
 class ArtistsAlbums(Gtk.Frame):
-    AlbumWidthPx = 200
-    AlbumSpacing = 20
+    AlbumWidthPx = 300
+    AlbumSpacing = 0
 
     def __init__(self, mpdclient, art_cache, cfg):
         super(ArtistsAlbums, self).__init__()
+        self._album_placeholder_pixbuf = Gtk.IconTheme.get_default().load_icon('music-app', ArtistsAlbums.AlbumWidthPx,
+                                                                               0)
         album_width_px = ArtistsAlbums.AlbumWidthPx
         album_spacing = ArtistsAlbums.AlbumSpacing
         self._mpdclient = mpdclient
@@ -18,7 +22,8 @@ class ArtistsAlbums(Gtk.Frame):
         self._cfg = cfg
         self._panes = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
         self._artists_scrollable = Artists(mpdclient, art_cache)
-        self._albums_songs = AlbumsSongs(self._mpdclient, self._art_cache, album_width_px, album_spacing)
+        self._albums_songs = AlbumsSongs(self._mpdclient, self._art_cache, album_width_px, album_spacing,
+                                         self._album_placeholder_pixbuf)
         self._panes.pack1(self._artists_scrollable)
         self._panes.pack2(self._albums_songs)
         self._panes.set_position(280)
@@ -55,40 +60,46 @@ class Artists(toolkit.Scrollable):
 
 # noinspection PyArgumentList,PyUnresolvedReferences
 class Albums(toolkit.Scrollable):
-    def __init__(self, mpdclient, art_cache, album_width_pix, album_spacing):
+    def __init__(self, mpdclient, art_cache, album_width_pix, album_spacing, placeholder_pixbuf):
         super(Albums, self).__init__()
+        self._placeholder_pixbuf = placeholder_pixbuf
         self._album_width_px = album_width_pix
         self._album_spacing = album_spacing
         self._art_cache = art_cache
         self._mpdclient = mpdclient
-        self._albums = Gtk.FlowBox()
-        self._albums.set_valign(Gtk.Align.START)
-        self._albums.set_selection_mode(Gtk.SelectionMode.SINGLE)
-        self.add_content(self._albums)
+        self._albums_grid = Gtk.FlowBox()
+        self._albums_grid.set_homogeneous(True)
+        self._albums_grid.set_valign(Gtk.Align.START)
+        self._albums_grid.set_halign(Gtk.Align.START)
+        self._albums_grid.set_column_spacing(album_spacing)
+        self._albums_grid.set_row_spacing(album_spacing)
+        self._albums_grid.set_selection_mode(Gtk.SelectionMode.SINGLE)
+        self.add_content(self._albums_grid)
         self._selected_artist = None
         self._entries = []
+        self._entry_by_index = {}
 
-    def _on_art_ready(self, pixbuf, album_count):
-        album, count = album_count
-        if self._selected_artist != album.artist.name:
+    def _on_art_ready(self, pixbuf, user_data_tuple):
+        album, index = user_data_tuple
+        if self._selected_artist != album.artist.name or not self._entry_by_index:
+            print(f'No art found for {album}')
             return
-
-        album_entry = AlbumEntry(album, pixbuf, self._album_width_px, self._album_spacing)
-        self._entries.append(album_entry)
-        if len(self._entries) == count:
-            self._on_all_albums_ready()
+        entry = self._entry_by_index[index]
+        if entry:
+            entry.update_art(pixbuf)
 
     def _on_all_albums_ready(self):
         chrono_order = sorted(self._entries, key=lambda e: e.album.date)
         for entry in chrono_order:
             entry.show()
-            self._albums.add(entry)
+            self._albums_grid.add(entry)
         self.queue_draw()
 
     def _clear_albums(self):
         self._entries.clear()
-        for c in self._albums.get_children():
-            self._albums.remove(c)
+        self._entry_by_index = {}
+        for c in self._albums_grid.get_children():
+            self._albums_grid.remove(c)
 
     def on_artist_selected(self, artist_name, albums):
         if artist_name == '' or self._selected_artist == artist_name:
@@ -97,26 +108,45 @@ class Albums(toolkit.Scrollable):
         self._clear_albums()
         self._selected_artist = artist_name
 
-        for album in albums:
-            cover_path = self._art_cache.resolve_cover_file(album.dirpath)
-            if cover_path:
-                self._art_cache.fetch(cover_path, self._on_art_ready, (album, len(albums)))
+        for i, album in enumerate(albums):
+            album_entry = AlbumEntry(i, album, self._placeholder_pixbuf, self._album_width_px, self._album_spacing)
+            self._entries.append(album_entry)
+            self._entry_by_index[i] = album_entry
+
+            @gtk_main
+            def on_cover_ready(album_obj, album_index, cover_path):
+                if cover_path:
+                    self._art_cache.fetch(cover_path, self._on_art_ready, (album_obj, album_index))
+                else:
+                    print(f'no cover path for {album_obj}')
+
+            self._art_cache.async_resolve_cover_file(album.dirpath, functools.partial(on_cover_ready, album, i))
+
+        self._on_all_albums_ready()
 
 
 # noinspection PyArgumentList,PyUnresolvedReferences
 class AlbumEntry(Gtk.Box):
-    def __init__(self, album, pixbuf, width, spacing):
+    def __init__(self, index, album, pixbuf, width, spacing):
         super(AlbumEntry, self).__init__(orientation=Gtk.Orientation.VERTICAL, spacing=spacing)
+        self.index = index
+        self.width = width
         self.album = album
-        pixbuf = pixbuf.scale_simple(width, width, GdkPixbuf.InterpType.BILINEAR)
-        img = Gtk.Image.new_from_pixbuf(pixbuf)
-        img.show()
-        self.pack_start(img, True, False, 5)
+        self.set_halign(Gtk.Align.START)
+        self.img = None
+        self.update_art(pixbuf)
 
-        # todo following not needed
-        label_txt = f"{album.title} - {album.date}\n"
-        for s in album.sorted_songs():
-            label_txt += f"{s.number}. {s.title}\n"
+    def update_art(self, new_pixbuf):
+        if self.img:
+            self.remove(self.img)
+        new_pixbuf = new_pixbuf.scale_simple(self.width, self.width, GdkPixbuf.InterpType.BILINEAR)
+        self.img = Gtk.Image.new_from_pixbuf(new_pixbuf)
+        self.img.show()
+        self.pack_start(self.img, False, False, 0)
+        self.queue_draw()
+
+    def __str__(self):
+        return self.album
 
 
 class Songs(toolkit.Scrollable):
@@ -127,11 +157,11 @@ class Songs(toolkit.Scrollable):
 # noinspection PyArgumentList,PyUnresolvedReferences
 class AlbumsSongs(Gtk.Frame):
 
-    def __init__(self, mpdclient, art_cache, album_width_px, album_spacing):
+    def __init__(self, mpdclient, art_cache, album_width_px, album_spacing, placeholder_pixbuf):
         super(AlbumsSongs, self).__init__()
         self._mpdclient = mpdclient
         self._art_cache = art_cache
-        self._albums = Albums(self._mpdclient, self._art_cache, album_width_px, album_spacing)
+        self._albums = Albums(self._mpdclient, self._art_cache, album_width_px, album_spacing, placeholder_pixbuf)
         self.add(self._albums)
         self._albums_list = []
         self._selected_artist = None

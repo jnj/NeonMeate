@@ -252,15 +252,14 @@ class ColorClusterer:
 
 
 def output(imgpath, clusters, rounds, colorspace):
-    s = "<!doctype html>"
-    s += "\n<html>"
-    s += '\n\t<head><style>div { margin: 1em; } #gradArt { width: 700px; height: 700px; }</style></head>'
-    s += '\n\t<body>'
-    s += f'\n\t\t<div><img src="file://{imgpath}"></div>'
-    s += f'\n\t\t<div><img src="file:///tmp/cluster.jpg"></div>'
-
-    def to_rgb_100(a):
-        return round(a / 256.0 * 100, 2)
+    s = f"""
+        <!doctype html>
+        <html>
+        <head><style>div {{ margin: 1em; padding: 1em;}} #gradArt {{ width: 700px; height: 700px; }}</style></head>
+        <body>'
+            <div><img src="file://{imgpath}"></div>
+            <div><img src="file:///tmp/cluster.jpg"></div>
+    """
 
     for i, rgbs in enumerate(rounds):
         s += f"<div><h3>Round {i + 1}</h3>"
@@ -272,12 +271,20 @@ def output(imgpath, clusters, rounds, colorspace):
     for cluster in clusters:
         rgb = colorspace.to_rgbcolor(*cluster.centroid())
         r, g, b = rgb.to_100()
-        s += f'\n\t\t<div style="background-color: rgb({r}%,{g}%,{b}%); min-height: 200px; width=100%; border: 1px solid black;">{cluster.label} <h1>Count: {cluster.count()}</h1> {str(cluster.dist_dict)}</div>'
+        s += f"""
+        <div style="background-color: rgb({r}%,{g}%,{b}%); min-height: 200px; width=100%; border: 1px solid black;">
+            <h1>{cluster.label}</h1>
+            <h2>Count: {cluster.count()}</h2>
+            <h2>Color: {r} {g} {b}</h2>
+            {str(cluster.dist_dict)}
+        </div>
+        """
 
-    s += "<div id=\"gradArt\">"
-    s += "</div>"
-    s += '\n\t</body>'
-    s += "\n</html>"
+    s += """
+    </body>
+    </html>    
+    """
+
     with open("/tmp/clusters.html", 'w') as f:
         f.write(s)
 
@@ -303,7 +310,7 @@ def clusterize(pixbuf, rng, maxedge=200, k=7, cluster_thresh=0.6, max_iters=200,
     black = Cluster('black', color_space.as_3_tuple(RGBColor(0, 0, 0)), triplet_mean, color_space)
 
     def black_or_white(c):
-        return c.similar(white, 0.065) or c.similar(black, 0.065)
+        return c.similar(white, 0.15) or c.similar(black, 0.15)
 
     clusters = [c for c in clusters if not black_or_white(c)]
     kept = set()

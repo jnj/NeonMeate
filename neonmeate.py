@@ -57,7 +57,7 @@ def main(args):
         hb = nmpd.MpdHeartbeat(mpdclient, 700, hb_executor)
         mpdclient.connect()
         hb.start()
-        art_cache = artcache.ArtCache(music_dir)
+        art_cache = artcache.ArtCache(music_dir, executor)
 
         main_window = app.App(rng, mpdclient, executor, art_cache, hb, cfg)
         main_window.connect('destroy', Gtk.main_quit)

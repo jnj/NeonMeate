@@ -97,38 +97,37 @@ class Table:
 
 
 if __name__ == "__main__":
-    l = [True]
-    t = Table(['foo', 'bar'], [str, str])
+    from gi.repository import GdkPixbuf
 
-    t.add(['1', '2'])
-    t.add(['3', '4'])
-    t.add(['5', '6'])
-
+    maxedge = 200
     win = Gtk.Window()
     box = Gtk.FlowBox()
     win.add(box)
     win.connect('destroy', Gtk.main_quit)
-    box.add(t.as_widget())
-    button = Gtk.Button(label="clear")
 
+    paths = [
+        '/media/josh/Music/Wino/Forever Gone/cover.jpg',
+        '/media/josh/Music/Neko Case/Blacklisted/cover.jpg',
+        '/media/josh/Music/Neurosis/Through Silver in Blood/cover.jpg'
+    ]
 
-    def toggle(x):
-        if l[0]:
-            l[0] = False
-            t.clear()
-        else:
-            l[0] = True
-            t.add(['1', '2'])
+    box.set_homogeneous(True)
+    box.set_valign(Gtk.Align.START)
+    box.set_halign(Gtk.Align.START)
 
+    pixbuf = Gtk.IconTheme.get_default().load_icon('process-working', maxedge, 0)
+    box.add(Gtk.Image.new_from_pixbuf(pixbuf))
 
-    button.connect('clicked', toggle)
-    box.add(button)
+    for path in paths:
+        with open(path, 'rb') as f:
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file(f.name)
 
+            pixbuf = pixbuf.scale_simple(maxedge, maxedge, GdkPixbuf.InterpType.BILINEAR)
+            img = Gtk.Image.new_from_pixbuf(pixbuf)
+            box.add(img)
 
     def on_select(row):
         print(f"You selected {row[0]} {row[1]}")
 
-
-    t.set_selection_handler(on_select)
     win.show_all()
     Gtk.main()

@@ -22,11 +22,19 @@ class ArtCache(GObject.GObject):
                   for base in ['cover', 'front', 'folder', 'art']
                   for ext in ['jpg', 'png', 'gif']]
 
-    def __init__(self, root_music_dir):
+    def __init__(self, root_music_dir, executor):
         self._cache = {}
         self._root_music_dir = root_music_dir
         self._pending_requests = {}
         self._cover_file_names = ArtCache.CoverNames
+        self._thread_pool = executor
+
+    def async_resolve_cover_file(self, dirpath, on_ready):
+        def runnable():
+            path = self.resolve_cover_file(dirpath)
+            on_ready(path)
+
+        self._thread_pool.submit(runnable)
 
     def resolve_cover_file(self, dirpath):
         """
@@ -100,6 +108,7 @@ class ArtRequest:
     been loaded, the associated callbacks will be called
     on the GTK main thread.
     """
+
     def __init__(self, file_path, callback, user_data):
         self.file_path = file_path
         self._callbacks = []
