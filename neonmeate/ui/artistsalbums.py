@@ -87,7 +87,6 @@ class Albums(toolkit.Scrollable):
 
     def _clear_albums(self):
         self._entries.clear()
-        self._entry_by_index = {}
         for c in self._albums_grid.get_children():
             self._albums_grid.remove(c)
 
