@@ -1,3 +1,4 @@
+import logging
 import json
 import os
 
@@ -96,6 +97,7 @@ class Config:
         cache_ = self['background_cache']
         if artist in cache_:
             clusters = cache_.get(artist, {}).get(album, None)
+            logging.info(f'clusters for {album} = {clusters}')
             if clusters is not None:
                 fore = rng.choice(clusters)
                 back = rng.choice(clusters)
@@ -108,4 +110,4 @@ class Config:
         cache_ = self['background_cache']
         if artist not in cache_:
             cache_[artist] = {}
-        cache_[artist][album] = [c.rgb for c in clusters]
+        cache_[artist][album] = [c.centroid() for c in clusters]
