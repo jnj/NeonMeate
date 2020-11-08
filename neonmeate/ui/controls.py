@@ -16,7 +16,10 @@ class PlayModeButton(Gtk.ToggleButton):
         super(PlayModeButton, self).__init__()
         if icon_name is not None:
             self._icon_size = Gtk.IconSize.MENU
-            self._icon = Gtk.Image.new_from_icon_name(icon_name, self._icon_size)
+            self._icon = Gtk.Image.new_from_icon_name(
+                icon_name,
+                self._icon_size
+            )
             self.add(self._icon)
         else:
             self.add(Gtk.Label(label))
@@ -25,12 +28,16 @@ class PlayModeButton(Gtk.ToggleButton):
 # noinspection PyUnresolvedReferences
 class PlayPauseButton(ControlButton):
     __gsignals__ = {
-        'neonmeate_playpause_toggled': (GObject.SignalFlags.RUN_FIRST, None, (bool,))
+        'neonmeate_playpause_toggled':
+            (GObject.SignalFlags.RUN_FIRST, None, (bool,))
     }
 
     def __init__(self):
         super(PlayPauseButton, self).__init__('media-playback-start')
-        self.pause_icon = Gtk.Image.new_from_icon_name('media-playback-pause', self.icon_size)
+        self.pause_icon = Gtk.Image.new_from_icon_name(
+            'media-playback-pause',
+            self.icon_size
+        )
         self.play_icon = self.icon
         self.paused = False
         self.set_paused(False)

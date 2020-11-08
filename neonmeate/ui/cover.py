@@ -33,6 +33,15 @@ class Gradient:
 
 # noinspection PyUnresolvedReferences
 class CoverWithGradient(Gtk.DrawingArea):
+    ScaleMode = GdkPixbuf.InterpType.BILINEAR
+
+    @staticmethod
+    def rand_switch(rng, a, b):
+        if rng.randint(1, 100) >= 50:
+            return a, b
+        else:
+            return b, a
+
     def __init__(self, pixbuf, rng, executor, cfg, artist, album):
         super(CoverWithGradient, self).__init__()
         self.logger = logging.getLogger(__name__)
@@ -60,18 +69,32 @@ class CoverWithGradient(Gtk.DrawingArea):
                 return
             elif not fut.cancelled():
                 clusterer, _, clusters, _ = fut.result()
+                if len(clusters) < 2:
+                    return
+                result = cluster.ClusteringResult(
+                    clusters,
+                    clusterer._colorspace
+                )
 
-                if len(clusters) > 1:
-                    result = cluster.ClusteringResult(clusters, clusterer._colorspace)
-                    border, bg = result.complementary(), result.dominant()
-                    self._update_grad(bg, border)
-                    self._cfg.save_clusters(self.artist, self.album, clusters)
+                bordercolor, start = result.complementary(), result.dominant()
+                self._update_grad(start, bordercolor)
+                self._cfg.save_clusters(self.artist, self.album, clusters)
+
         border, bg = self._cfg.get_background(artist, album, rng)
+
         if border is not None and bg is not None:
-            a, b = (bg, border) if self._rng.randint(1, 100) > 50 else (border, bg)
+            a, b = CoverWithGradient.rand_switch(self._rng, border, bg)
             self._update_grad(RGBColor(*a), RGBColor(*b))
         else:
-            cluster_result = executor.submit(cluster.clusterize, pixbuf, self._rng, 200, 7, 0.001, 200, 'rgb')
+            cluster_result = executor.submit(
+                cluster.clusterize,
+                pixbuf,
+                self._rng,
+                200,
+                7,
+                0.001,
+                200,
+                'rgb')
             cluster_result.add_done_callback(on_gradient_ready)
 
     @gtk_main
@@ -97,7 +120,7 @@ class CoverWithGradient(Gtk.DrawingArea):
         ctx.rectangle(0, 0, self.w, self.h)
         ctx.fill()
         edge_size = self.edge_size - 200
-        p = self.pixbuf.scale_simple(edge_size, edge_size, GdkPixbuf.InterpType.BILINEAR)
+        p = self._scale(edge_size)
         pixbuf_x = (self.w - p.get_width()) / 2
         pixbuf_y = (self.h - p.get_height()) / 2
         Gdk.cairo_set_source_pixbuf(ctx, p, pixbuf_x, pixbuf_y)
@@ -111,3 +134,6 @@ class CoverWithGradient(Gtk.DrawingArea):
         ctx.rectangle(rect_x, rect_y, rect_width, rect_width)
         ctx.stroke()
         return False
+
+    def _scale(self, size):
+        return self.pixbuf.scale_simple(size, size, CoverWithGradient.ScaleMode)
