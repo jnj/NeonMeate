@@ -9,9 +9,9 @@ from neonmeate.ui.toolkit import gtk_main, AlbumArt
 class AlbumViewOptions:
     def __init__(self):
         self.num_grid_cols = -1
-        self.col_spacing = 20
-        self.row_spacing = 20
         self.album_size = 150
+        self.col_spacing = self.album_size // 15
+        self.row_spacing = self.col_spacing
 
 
 # noinspection PyArgumentList,PyUnresolvedReferences
