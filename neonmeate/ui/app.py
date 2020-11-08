@@ -53,7 +53,7 @@ class App(Gtk.ApplicationWindow):
         self._playlist.connect('neonmeate_clear_playlist', self._clear_playlist)
         self._update_playlist(None)
 
-        self._now_playing = NowPlaying(rng, art, executor, cfg)
+        self._now_playing = NowPlaying(rng, art_cache, executor, cfg)
         self._stack.add_titled(self._artists, 'artists', 'Artists')
         self._stack.add_titled(self._playlist, 'playlist', 'Playlist')
         self._stack.add_titled(self._now_playing, 'now_playing', 'Playing')
