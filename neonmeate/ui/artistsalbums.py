@@ -6,29 +6,37 @@ from neonmeate.ui import toolkit
 from neonmeate.ui.toolkit import gtk_main, AlbumArt
 
 
+class AlbumViewOptions:
+    def __init__(self):
+        self.num_grid_cols = -1
+        self.col_spacing = 20
+        self.row_spacing = 20
+        self.album_size = 150
+
+
 # noinspection PyArgumentList,PyUnresolvedReferences
 class ArtistsAlbums(Gtk.Frame):
-    AlbumWidthPx = 300
-    AlbumSpacing = 0
 
     def __init__(self, mpdclient, art_cache, cfg):
         super(ArtistsAlbums, self).__init__()
-        self._album_placeholder_pixbuf = Gtk.IconTheme.get_default().load_icon('music-app', ArtistsAlbums.AlbumWidthPx,
-                                                                               0)
-        album_width_px = ArtistsAlbums.AlbumWidthPx
-        album_spacing = ArtistsAlbums.AlbumSpacing
+        album_view_opts = AlbumViewOptions()
+        self._album_placeholder_pixbuf = Gtk.IconTheme.get_default().load_icon(
+            'music-app', album_view_opts.album_size, 0)
         self._mpdclient = mpdclient
         self._art_cache = art_cache
         self._cfg = cfg
         self._panes = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
         self._artists_scrollable = Artists(mpdclient, art_cache)
-        self._albums_songs = AlbumsSongs(self._mpdclient, self._art_cache, album_width_px, album_spacing,
-                                         self._album_placeholder_pixbuf)
+
+        self._albums_songs = AlbumsSongs(self._mpdclient, self._art_cache,
+                                         self._album_placeholder_pixbuf,
+                                         album_view_opts)
         self._panes.pack1(self._artists_scrollable)
         self._panes.pack2(self._albums_songs)
         self._panes.set_position(280)
         self.add(self._panes)
-        self._artists_scrollable.connect('artist-selected', self._on_artist_clicked)
+        self._artists_scrollable.connect('artist-selected',
+                                         self._on_artist_clicked)
 
     def _on_artist_clicked(self, column_widget, selected_value):
         self._albums_songs.on_artist_selected(selected_value)
@@ -60,20 +68,27 @@ class Artists(toolkit.Scrollable):
 
 # noinspection PyArgumentList,PyUnresolvedReferences
 class Albums(toolkit.Scrollable):
-    def __init__(self, mpdclient, art_cache, album_width_pix, album_spacing, placeholder_pixbuf):
+    def __init__(self, mpdclient, art_cache, placeholder_pixbuf, options):
         super(Albums, self).__init__()
         self._placeholder_pixbuf = placeholder_pixbuf
-        self._album_width_px = album_width_pix
-        self._album_spacing = album_spacing
+        self._album_width_px = options.album_size
+        self._album_spacing = options.col_spacing
         self._art_cache = art_cache
         self._mpdclient = mpdclient
+        self._options = options
+
         self._albums_grid = Gtk.FlowBox()
         self._albums_grid.set_homogeneous(True)
         self._albums_grid.set_valign(Gtk.Align.START)
         self._albums_grid.set_halign(Gtk.Align.START)
-        self._albums_grid.set_column_spacing(album_spacing)
-        self._albums_grid.set_row_spacing(album_spacing)
         self._albums_grid.set_selection_mode(Gtk.SelectionMode.SINGLE)
+
+        if options.num_grid_cols > 0:
+            self._albums_grid.set_min_children_per_line(options.num_grid_cols)
+            self._albums_grid.set_max_children_per_line(options.num_grid_cols)
+
+        self._albums_grid.set_column_spacing(options.col_spacing)
+        self._albums_grid.set_row_spacing(options.col_spacing)
         self.add_content(self._albums_grid)
         self._selected_artist = None
         self._entries = []
@@ -93,7 +108,6 @@ class Albums(toolkit.Scrollable):
     def on_artist_selected(self, artist_name, albums):
         if artist_name == '' or self._selected_artist == artist_name:
             return
-
         self._clear_albums()
         self._selected_artist = artist_name
 
@@ -108,7 +122,8 @@ class Albums(toolkit.Scrollable):
 # noinspection PyArgumentList,PyUnresolvedReferences
 class AlbumEntry(Gtk.Box):
     def __init__(self, index, album, art, width, spacing):
-        super(AlbumEntry, self).__init__(orientation=Gtk.Orientation.VERTICAL, spacing=spacing)
+        super(AlbumEntry, self).__init__(orientation=Gtk.Orientation.VERTICAL,
+                                         spacing=spacing)
         self.index = index
         self.width = width
         self.album = album
@@ -143,11 +158,17 @@ class Songs(toolkit.Scrollable):
 # noinspection PyArgumentList,PyUnresolvedReferences
 class AlbumsSongs(Gtk.Frame):
 
-    def __init__(self, mpdclient, art_cache, album_width_px, album_spacing, placeholder_pixbuf):
+    def __init__(self, mpdclient, art_cache, placeholder_pixbuf, albums_view_options):
         super(AlbumsSongs, self).__init__()
         self._mpdclient = mpdclient
         self._art_cache = art_cache
-        self._albums = Albums(self._mpdclient, self._art_cache, album_width_px, album_spacing, placeholder_pixbuf)
+
+        self._albums = Albums(
+            self._mpdclient,
+            self._art_cache,
+            placeholder_pixbuf,
+            albums_view_options)
+
         self.add(self._albums)
         self._albums_list = []
         self._selected_artist = None
