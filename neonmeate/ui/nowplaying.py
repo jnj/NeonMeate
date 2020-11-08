@@ -47,6 +47,5 @@ class NowPlaying(Gtk.Frame):
     def _on_art_ready(self, pixbuf, artist_album):
         if (self._current != artist_album) or (self._cover_art is not None):
             return
-        artist, album = artist_album
-        self._update_cover(pixbuf, artist, album)
+        self._update_cover(pixbuf, artist_album[0], artist_album[1])
         self.queue_draw()
