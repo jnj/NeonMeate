@@ -18,15 +18,22 @@ def gtk_main(func):
 
 # noinspection PyUnresolvedReferences
 class AlbumArt:
+    """
+    Asynchronously resolved album artwork. This will initially
+    be a pixbuf that is the placeholder image, but will change
+    to the album artwork once that has been loaded.
+    """
+    ScaleMode = GdkPixbuf.InterpType.BILINEAR
+
     def __init__(self, artcache, album, placeholder_pixbuf):
-        self._artcache = artcache
+        self._art = artcache
         self._album = album
-        self._placeholder_pixbuf = placeholder_pixbuf
-        self._resolved_pixbuf = None
+        self._resolved = None
+        self._placeholder = placeholder_pixbuf
 
     def get_scaled_pixbuf(self, edge_size):
-        pixbuf = self._resolved_pixbuf or self._placeholder_pixbuf
-        return pixbuf.scale_simple(edge_size, edge_size, GdkPixbuf.InterpType.BILINEAR)
+        pixbuf = self._resolved or self._placeholder
+        return pixbuf.scale_simple(edge_size, edge_size, AlbumArt.ScaleMode)
 
     def resolve(self, on_done, user_data):
         """
@@ -36,15 +43,15 @@ class AlbumArt:
         """
         @gtk_main
         def _on_art_ready(pixbuf, data):
-            self._resolved_pixbuf = pixbuf
+            self._resolved = pixbuf
             on_done(pixbuf, data)
 
         @gtk_main
         def _on_cover_path(cover_path):
             if cover_path:
-                self._artcache.fetch(cover_path, _on_art_ready, user_data)
+                self._art.fetch(cover_path, _on_art_ready, user_data)
 
-        self._artcache.async_resolve_cover_file(self._album.dirpath, _on_cover_path)
+        self._art.async_resolve_cover_file(self._album.dirpath, _on_cover_path)
 
 
 # noinspection PyUnresolvedReferences
@@ -111,10 +118,9 @@ class Table:
     def as_widget(self):
         self.tree = Gtk.TreeView.new_with_model(self.model)
 
-        for i, col_header in enumerate(self.column_names):
+        for i, header in enumerate(self.column_names):
             renderer = Gtk.CellRendererText()
-            column = Gtk.TreeViewColumn(col_header, renderer, text=i)
-            # column.set_sort_column_id(i)
+            column = Gtk.TreeViewColumn(header, renderer, text=i)
             column.set_resizable(True)
             self.tree.append_column(column)
 
