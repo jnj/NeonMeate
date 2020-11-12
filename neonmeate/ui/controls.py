@@ -22,7 +22,9 @@ class PlayModeButton(Gtk.ToggleButton):
             )
             self.add(self._icon)
         else:
-            self.add(Gtk.Label(label))
+            lbl = Gtk.Label()
+            lbl.set_label(label)
+            self.add()
 
 
 # noinspection PyUnresolvedReferences
@@ -62,10 +64,15 @@ class PlayPauseButton(ControlButton):
     def _swap_icons(self):
         child = self.get_child()
         self.remove(child)
-        new_icon = self.play_icon if child == self.pause_icon else self.pause_icon
+        new_icon = self._switch_icon(child)
         self.add(new_icon)
         self.get_child().show()
         self.paused = not self.paused
+
+    def _switch_icon(self, child):
+        if child == self.pause_icon:
+            return self.play_icon
+        return self.pause_icon
 
 
 # noinspection PyUnresolvedReferences
@@ -103,11 +110,30 @@ class ControlButtons(NeonMeateButtonBox):
 
     def __init__(self):
         super(ControlButtons, self).__init__()
-        self._play_pause_button = self._add_button(PlayPauseButton(), 'play_pause', None)
-        self._stop = self._add_button(ControlButton('media-playback-stop'), 'stop', 'neonmeate_stop_playing')
-        self._prev = self._add_button(ControlButton('media-skip-backward'), 'prev', 'neonmeate_prev_song')
-        self._next = self._add_button(ControlButton('media-skip-forward'), 'next', 'neonmeate-next-song')
-        self._play_pause_button.connect('neonmeate_playpause_toggled', self._on_playpause)
+        self._play_pause_button = self._add_button(
+            PlayPauseButton(),
+            'play_pause',
+            None
+        )
+        self._stop = self._add_button(
+            ControlButton('media-playback-stop'),
+            'stop',
+            'neonmeate_stop_playing'
+        )
+        self._prev = self._add_button(
+            ControlButton('media-skip-backward'),
+            'prev',
+            'neonmeate_prev_song'
+        )
+        self._next = self._add_button(
+            ControlButton('media-skip-forward'),
+            'next',
+            'neonmeate-next-song'
+        )
+        self._play_pause_button.connect(
+            'neonmeate_playpause_toggled',
+            self._on_playpause
+        )
 
     def set_paused(self, paused, stopped):
         if stopped:
@@ -126,15 +152,32 @@ class ControlButtons(NeonMeateButtonBox):
 # noinspection PyUnresolvedReferences
 class PlayModeButtons(NeonMeateButtonBox):
     __gsignals__ = {
-        'neonmeate_playmode_toggle': (GObject.SignalFlags.RUN_FIRST, None, (str, bool))
+        'neonmeate_playmode_toggle': (
+            GObject.SignalFlags.RUN_FIRST, None, (str, bool))
     }
 
     def __init__(self):
         super(PlayModeButtons, self).__init__()
-        self._consume = self._add_button(PlayModeButton('view-refresh'), 'consume', None)
-        self._single = self._add_button(PlayModeButton('zoom-original', '1'), 'single', None)
-        self._random = self._add_button(PlayModeButton('media-playlist-shuffle'), 'random', None)
-        self._repeat = self._add_button(PlayModeButton('media-playlist-repeat'), 'repeat', None)
+        self._consume = self._add_button(
+            PlayModeButton('view-refresh'),
+            'consume',
+            None
+        )
+        self._single = self._add_button(
+            PlayModeButton('zoom-original', '1'),
+            'single',
+            None
+        )
+        self._random = self._add_button(
+            PlayModeButton('media-playlist-shuffle'),
+            'random',
+            None
+        )
+        self._repeat = self._add_button(
+            PlayModeButton('media-playlist-repeat'),
+            'repeat',
+            None
+        )
         self._consume.set_tooltip_text('Consume mode')
         self._single.set_tooltip_text('Single mode')
         self._random.set_tooltip_text('Random mode')
@@ -165,7 +208,7 @@ class PlayModeButtons(NeonMeateButtonBox):
 
     def on_mode_change(self, name, active):
         btn = self._byname.get(name, None)
-        if btn is not None and btn.get_active() != active:
+        if btn and btn.get_active() != active:
             signal_name = 'neonmeate_playmode_toggle'
             try:
                 self._disable_emission(signal_name)
