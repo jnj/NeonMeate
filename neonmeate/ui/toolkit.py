@@ -41,6 +41,7 @@ class AlbumArt:
         Calls the user-supplied callback with the new pixbuf when done. The
         user_data is arbitrary data that will be passed along to the callback.
         """
+
         @gtk_main
         def _on_art_ready(pixbuf, data):
             self._resolved = pixbuf
@@ -63,6 +64,18 @@ class Scrollable(Gtk.ScrolledWindow):
 
     def add_content(self, widget):
         self._vp.add(widget)
+
+
+class CenteredLabel(Gtk.Label):
+    def __init__(self, text, markup=False):
+        super(CenteredLabel, self).__init__()
+        self.set_justify(Gtk.Justification.CENTER)
+        self.set_ellipsize(Pango.EllipsizeMode.END)
+        self.set_line_wrap(False)
+        if markup:
+            self.set_markup(text)
+        else:
+            self.set_text(text)
 
 
 # noinspection PyUnresolvedReferences,PyArgumentList

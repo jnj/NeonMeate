@@ -1,44 +1,49 @@
 import functools
 
-from gi.repository import GdkPixbuf, GObject, Gtk, GLib
+from gi.repository import GdkPixbuf, GObject, Gtk, GLib, Pango
 
 from neonmeate.ui import toolkit
-from neonmeate.ui.toolkit import gtk_main, AlbumArt
+from neonmeate.ui.toolkit import gtk_main, AlbumArt, CenteredLabel
 
 
 class AlbumViewOptions:
     def __init__(self):
-        self.num_grid_cols = -1
-        self.album_size = 150
-        self.col_spacing = self.album_size // 15
-        self.row_spacing = self.col_spacing
+        self.num_grid_cols = 1
+        self.album_size = 300
+        self.col_spacing = 10
+        self.row_spacing = 10
 
 
 # noinspection PyArgumentList,PyUnresolvedReferences
 class ArtistsAlbums(Gtk.Frame):
 
-    def __init__(self, mpdclient, art_cache, cfg):
+    def __init__(self, mpdclient, art, cfg):
         super(ArtistsAlbums, self).__init__()
         album_view_opts = AlbumViewOptions()
         self._album_placeholder_pixbuf = Gtk.IconTheme.get_default().load_icon(
             'music-app', album_view_opts.album_size, 0)
-        self._mpdclient = mpdclient
-        self._art_cache = art_cache
+        self._art = art
         self._cfg = cfg
+        self._mpdclient = mpdclient
         self._panes = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
-        self._artists_scrollable = Artists(mpdclient, art_cache)
+        self._artists_scrollable = Artists(mpdclient, art)
 
-        self._albums_songs = AlbumsSongs(self._mpdclient, self._art_cache,
-                                         self._album_placeholder_pixbuf,
-                                         album_view_opts)
+        self._albums_songs = AlbumsSongs(
+            self._mpdclient,
+            self._art,
+            self._album_placeholder_pixbuf,
+            album_view_opts
+        )
+
         self._panes.pack1(self._artists_scrollable)
         self._panes.pack2(self._albums_songs)
         self._panes.set_position(280)
         self.add(self._panes)
-        self._artists_scrollable.connect('artist-selected',
-                                         self._on_artist_clicked)
+        self._artists_scrollable.connect(
+            'artist-selected', self._on_artist_clicked
+        )
 
-    def _on_artist_clicked(self, column_widget, selected_value):
+    def _on_artist_clicked(self, col_widget, selected_value):
         self._albums_songs.on_artist_selected(selected_value)
 
 
@@ -73,7 +78,7 @@ class Albums(toolkit.Scrollable):
         self._placeholder_pixbuf = placeholder_pixbuf
         self._album_width_px = options.album_size
         self._album_spacing = options.col_spacing
-        self._art_cache = art_cache
+        self._art = art_cache
         self._mpdclient = mpdclient
         self._options = options
 
@@ -106,45 +111,55 @@ class Albums(toolkit.Scrollable):
             self._albums_grid.remove(c)
 
     def on_artist_selected(self, artist_name, albums):
-        if artist_name == '' or self._selected_artist == artist_name:
+        if not artist_name or self._selected_artist == artist_name:
             return
+
         self._clear_albums()
         self._selected_artist = artist_name
+        spacing = self._album_spacing
 
         for i, album in enumerate(albums):
-            album_art = AlbumArt(self._art_cache, album, self._placeholder_pixbuf)
-            album_entry = AlbumEntry(i, album, album_art, self._album_width_px, self._album_spacing)
-            self._entries.append(album_entry)
+            aa = AlbumArt(self._art, album, self._placeholder_pixbuf)
+            entry = AlbumEntry(i, album, aa, self._album_width_px, spacing)
+            self._entries.append(entry)
 
         self._on_all_albums_ready()
 
 
 # noinspection PyArgumentList,PyUnresolvedReferences
-class AlbumEntry(Gtk.Box):
+class AlbumEntry(Gtk.VBox):
+
     def __init__(self, index, album, art, width, spacing):
-        super(AlbumEntry, self).__init__(orientation=Gtk.Orientation.VERTICAL,
-                                         spacing=spacing)
+        super(AlbumEntry, self).__init__(
+            spacing=spacing
+        )
+
         self.index = index
         self.width = width
         self.album = album
         self.set_halign(Gtk.Align.START)
         self.img = None
         self._art = art
-        self.update_art()
+        self._label = CenteredLabel(f'{album.title}\n<small>{album.date}</small>', markup=True)
+        self._update_art()
 
         def _on_done(new_pixbuf, _):
-            self.update_art()
+            self._update_art()
 
         art.resolve(_on_done, None)
 
-    def update_art(self):
+    def _update_art(self):
         if self.img:
             self.remove(self.img)
+            self.remove(self._label)
         new_pixbuf = self._art.get_scaled_pixbuf(self.width)
         self.img = Gtk.Image.new_from_pixbuf(new_pixbuf)
-        self.img.show()
-        self.pack_start(self.img, False, False, 0)
-        self.queue_draw()
+        if self.img:
+            self.pack_start(self.img, False, False, 0)
+            self.pack_start(self._label, False, False, 0)
+            self.img.show()
+            self._label.show()
+            self.queue_draw()
 
     def __str__(self):
         return self.album
