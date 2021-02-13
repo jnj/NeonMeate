@@ -83,7 +83,7 @@ class CenteredLabel(Gtk.Label):
         super(CenteredLabel, self).__init__()
         self.set_justify(Gtk.Justification.CENTER)
         self.set_ellipsize(Pango.EllipsizeMode.END)
-        self.set_line_wrap(False)
+        self.set_line_wrap(True)
         if markup:
             self.set_markup(text)
         else:

@@ -109,7 +109,8 @@ class Mpd:
         """
 
         def task():
-            callback([Artist(a) for a in self._client.list('artist') if len(a) > 0])
+            callback(
+                [Artist(a) for a in self._client.list('artist') if len(a) > 0])
 
         self._exec.execute(task)
 
@@ -128,18 +129,49 @@ class Mpd:
                     songlist = Mpd._compute_if_absent(songs_by_album, key, [])
                     dirs = Mpd._compute_if_absent(dirs_by_album, key, [])
                     dirs.append(directory)
-                    s = Song(int(song['track']), int(song.get('disc', 1)), song['title'])
+                    s = Song(
+                        int(song['track']),
+                        int(song.get('disc', 1)),
+                        song['title'],
+                        song['file']
+                    )
                     songlist.append(s)
 
             albums = []
             for key, songs in songs_by_album.items():
-                a = Album(Artist(artist), key[0], key[1], songs, dirs_by_album[key][0])
+                a = Album(Artist(artist), key[0], key[1], songs,
+                          dirs_by_album[key][0])
                 albums.append(a)
 
             ordered_albums = Album.sorted_chrono(albums)
             callback(ordered_albums)
 
         self._exec.execute(task)
+
+    def add_album_to_playlist(self, album):
+        """
+        Appends an album to the queue.
+        :param album: an Album instance containing the songs to add.
+        """
+
+        def task():
+            for song in album.sorted_songs():
+                self._client.add(song.file)
+
+        self._exec.execute(task)
+
+    def remove_album_from_playlist(self, album):
+        files = set(s.file for s in album.sorted_songs())
+
+        def removal_task(playlist):
+            for t in playlist:
+                if t['file'] in files:
+                    self._client.deleteid(t['id'])
+
+        def on_playlist(playlist):
+            self._exec.execute(removal_task(playlist))
+
+        self.playlistinfo(on_playlist)
 
     @staticmethod
     def _compute_if_absent(dictionary, key, value):
@@ -233,9 +265,11 @@ class MpdHeartbeat(GObject.GObject):
         'playlist_changed': (GObject.SignalFlags.RUN_FIRST, None, ()),
         'song_elapsed': (GObject.SignalFlags.RUN_FIRST, None, (float, float)),
         'song_playing_status': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
-        'song_changed': (GObject.SignalFlags.RUN_FIRST, None, (str, str, str, str)),
+        'song_changed': (
+            GObject.SignalFlags.RUN_FIRST, None, (str, str, str, str)),
         'no_song': (GObject.SignalFlags.RUN_FIRST, None, ()),
-        'playback_mode_toggled': (GObject.SignalFlags.RUN_FIRST, None, (str, bool))
+        'playback_mode_toggled': (
+            GObject.SignalFlags.RUN_FIRST, None, (str, bool))
     }
 
     def __init__(self, client, millis_interval, executor):
@@ -277,7 +311,8 @@ class MpdHeartbeat(GObject.GObject):
         class emits. The handler will be called on the main GTK thread.
 
         """
-        thread.signal_subcribe_on_main(super(MpdHeartbeat, self).connect, signal_name, handler, *args)
+        thread.signal_subcribe_on_main(super(MpdHeartbeat, self).connect,
+                                       signal_name, handler, *args)
 
     def _on_hb_interval(self):
         def on_status(status):

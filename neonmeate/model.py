@@ -41,7 +41,8 @@ class Album:
 
 
 class Song:
-    def __init__(self, number, discnum, title):
+    def __init__(self, number, discnum, title, file):
         self.number = number
         self.discnum = discnum
         self.title = title
+        self.file = file

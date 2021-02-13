@@ -2,7 +2,7 @@ import functools
 
 from gi.repository import GdkPixbuf, GObject, Gtk, GLib, Pango
 
-from neonmeate.ui import toolkit
+from neonmeate.ui import toolkit, controls
 from neonmeate.ui.toolkit import gtk_main, AlbumArt, CenteredLabel
 
 
@@ -20,15 +20,16 @@ class ArtistsAlbums(Gtk.Frame):
     def __init__(self, mpdclient, art, cfg):
         super(ArtistsAlbums, self).__init__()
         album_view_opts = AlbumViewOptions()
-        self._album_placeholder_pixbuf = Gtk.IconTheme.get_default().load_icon(
-            'music-app', album_view_opts.album_size, 0)
+        self._album_placeholder_pixbuf = \
+            Gtk.IconTheme.get_default().load_icon(
+                'music-app', album_view_opts.album_size, 0)
         self._art = art
         self._cfg = cfg
         self._mpdclient = mpdclient
         self._panes = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
         self._artists_scrollable = Artists(mpdclient, art)
 
-        self._albums_songs = AlbumsSongs(
+        self._albums_songs = AlbumsPane(
             self._mpdclient,
             self._art,
             self._album_placeholder_pixbuf,
@@ -75,32 +76,29 @@ class Artists(toolkit.Scrollable):
 class Albums(toolkit.Scrollable):
     def __init__(self, mpdclient, art_cache, placeholder_pixbuf, options):
         super(Albums, self).__init__()
+        self.set_border_width(5)
         self._placeholder_pixbuf = placeholder_pixbuf
         self._album_width_px = options.album_size
         self._album_spacing = options.col_spacing
         self._art = art_cache
         self._mpdclient = mpdclient
         self._options = options
-
-        self._albums_grid = Gtk.Grid()
+        self._albums_grid = Gtk.FlowBox()
+        self._albums_grid.set_orientation(Gtk.Orientation.HORIZONTAL)
+        self._albums_grid.set_max_children_per_line(30)
         self._albums_grid.set_valign(Gtk.Align.START)
         self._albums_grid.set_halign(Gtk.Align.START)
-        self._albums_grid.set_column_homogeneous(True)
-        self._albums_grid.set_row_homogeneous(True)
-        self._albums_grid.set_column_spacing(options.col_spacing)
-        self._albums_grid.set_row_spacing(options.col_spacing)
+        self._albums_grid.set_homogeneous(True)
         self.add_content(self._albums_grid)
         self._selected_artist = None
         self._entries = []
+        self.show_all()
 
     def _on_all_albums_ready(self):
-        num_cols = 3
         chrono_order = sorted(self._entries, key=lambda e: e.album.date)
-        for i, entry in enumerate(chrono_order):
+        for _, entry in enumerate(chrono_order):
             entry.show()
-            row = i // num_cols
-            col = i - (num_cols * row)
-            self._albums_grid.attach(entry, col, row, 1, 1)
+            self._albums_grid.add(entry)
         self.queue_draw()
 
     def _clear_albums(self):
@@ -118,62 +116,101 @@ class Albums(toolkit.Scrollable):
 
         for i, album in enumerate(albums):
             aa = AlbumArt(self._art, album, self._placeholder_pixbuf)
-            entry = AlbumEntry(i, album, aa, self._album_width_px, spacing)
+            entry = AlbumEntry(i, album, aa, self._album_width_px, spacing, self._mpdclient)
             self._entries.append(entry)
 
         self._on_all_albums_ready()
 
 
+# noinspection PyUnresolvedReferences
+class AddRemove(Gtk.Popover):
+    __gsignals__ = {
+        'add-clicked': (GObject.SignalFlags.RUN_FIRST, None, ()),
+        'remove-clicked': (GObject.SignalFlags.RUN_FIRST, None, ())
+    }
+
+    def __init__(self, artist, album, parent_widget):
+        super(AddRemove, self).__init__()
+        self._artist = artist
+        self._album = album
+        self._vbox = Gtk.VBox()
+        self._add_btn = controls.ControlButton('list-add')
+        self._rem_btn = controls.ControlButton('list-remove')
+        self._vbox.pack_start(self._add_btn, False, False, 0)
+        self._vbox.pack_start(self._rem_btn, False, False, 0)
+        self.add(self._vbox)
+        self._vbox.show_all()
+        self.set_relative_to(parent_widget)
+        self._add_btn.connect('clicked', self._on_add)
+        self._rem_btn.connect('clicked', self._on_rem)
+
+    def _on_add(self, x):
+        self.emit('add-clicked')
+
+    def _on_rem(self, x):
+        self.emit('remove-clicked')
+
+
 # noinspection PyArgumentList,PyUnresolvedReferences
 class AlbumEntry(Gtk.VBox):
 
-    def __init__(self, index, album, art, width, spacing):
-        super(AlbumEntry, self).__init__(
-            spacing=spacing
-        )
-
+    def __init__(self, index, album, art, width, spacing, mpdclient):
+        super(AlbumEntry, self).__init__(spacing=spacing)
+        self._mpdclient = mpdclient
+        self._btn = Gtk.Button()
+        self._btn.set_relief(Gtk.ReliefStyle.NONE)
+        self._btn.set_always_show_image(True)
+        esc_title = GLib.markup_escape_text(album.title)
+        self._btn.set_tooltip_markup(
+            f'{esc_title}\n<small>{album.date}</small>')
+        self._popover = AddRemove('', album, self)
+        self._popover.connect('add-clicked', self._on_add)
+        self._popover.connect('remove-clicked', self._on_remove)
         self.index = index
         self.width = width
         self.album = album
         self.set_halign(Gtk.Align.START)
-        self.img = None
+        self._img = None
         self._art = art
-        esc_title = GLib.markup_escape_text(album.title)
-        self._label = CenteredLabel(f'{esc_title}\n<small>{album.date}</small>', markup=True)
         self._update_art()
+        self.add(self._btn)
+        self._btn.show()
+        self._btn.connect('clicked', self._img_clicked)
 
         def _on_done(new_pixbuf, _):
             self._update_art()
 
         art.resolve(_on_done, None)
 
+    def _on_add(self, x):
+        self._mpdclient.add_album_to_playlist(self.album)
+
+    def _on_remove(self, x):
+        self._mpdclient.remove_album_from_playlist(self.album)
+
+    def _img_clicked(self, x):
+        self._popover.popup()
+
     def _update_art(self):
-        if self.img:
-            self.remove(self.img)
-            self.remove(self._label)
+        if self._img:
+            self._btn.set_image(None)
+            # self.remove(self._label)
         new_pixbuf = self._art.get_scaled_pixbuf(self.width)
-        self.img = Gtk.Image.new_from_pixbuf(new_pixbuf)
-        if self.img:
-            self.pack_start(self.img, False, False, 0)
-            self.pack_start(self._label, False, False, 0)
-            self.img.show()
-            self._label.show()
+        self._img = Gtk.Image.new_from_pixbuf(new_pixbuf)
+        if self._img:
+            self._btn.set_image(self._img)
             self.queue_draw()
 
     def __str__(self):
         return self.album
 
 
-class Songs(toolkit.Scrollable):
-    def __init__(self):
-        super(Songs, self).__init__()
-
-
 # noinspection PyArgumentList,PyUnresolvedReferences
-class AlbumsSongs(Gtk.Frame):
+class AlbumsPane(Gtk.Frame):
 
-    def __init__(self, mpdclient, art_cache, placeholder_pixbuf, albums_view_options):
-        super(AlbumsSongs, self).__init__()
+    def __init__(self, mpdclient, art_cache, placeholder_pixbuf,
+                 albums_view_options):
+        super(AlbumsPane, self).__init__()
         self._mpdclient = mpdclient
         self._art_cache = art_cache
 

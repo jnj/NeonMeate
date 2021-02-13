@@ -43,7 +43,8 @@ class EventLoopThread(threading.Thread):
         self._running.set(True)
         while self._is_running():
             action = self._queue.get()
-            action()
+            if action:
+                action()
 
     def stop(self):
         self._running.set(False)
