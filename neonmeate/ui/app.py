@@ -77,6 +77,10 @@ class App(Gtk.ApplicationWindow):
         self._mpdhb.connect('no_song', self._no_song)
         self._mpdhb.connect('playlist-changed', self._update_playlist)
         self._mpdhb.connect('playback-mode-toggled', self._on_mode_change())
+        # self.connect('key-press-event', self._on_keypress)
+
+    # def _on_keypress(self, x, eventkey):
+    #     print(f'key pressed: ${eventkey.keyval}')
 
     def _no_song(self, hb):
         self._on_song_changed(hb, None, None, None, None)
@@ -105,9 +109,11 @@ class App(Gtk.ApplicationWindow):
         self._playlist.clear()
         artist_elems = filter(lambda e: 'artist' in e, playqueue)
         for elem in artist_elems:
-            track, artist, album, title = App._track_details_from_queue_elem(elem)
+            track, artist, album, title = App._track_details_from_queue_elem(
+                elem)
             self._playlist.add_playlist_item([artist, album, track, title])
-            cover_path = self._art.resolve_cover_file(os.path.dirname(elem['file']))
+            cover_path = self._art.resolve_cover_file(
+                os.path.dirname(elem['file']))
             self._on_resolved_cover_path(cover_path, artist, album)
 
     def _on_resolved_cover_path(self, cover_path, artist, album):
@@ -127,7 +133,8 @@ class App(Gtk.ApplicationWindow):
         return track, artist, album, title
 
     def _on_song_changed(self, hb, artist, title, album, filepath):
-        self.logger.info(f"Song changed. artist={artist}, title={title}, album={album}, filepath={filepath}")
+        self.logger.info(
+            f"Song changed. artist={artist}, title={title}, album={album}, filepath={filepath}")
         title_text = 'NeonMeate'
         if artist and title:
             title_text = f'{artist} - {title}'

@@ -5,9 +5,19 @@ import functools
 
 def gtk_main(func):
     """
-    Wraps a function so that it will run on the main GTK
-    thread. Intended for use as a decorator with the
-    @ syntax.
+    Decorator for a function that will not run it synchronously, but
+    instead run it on the GTK thread.
+
+    Example:
+    
+    @gtk_main
+    def callback_when_done(obj):
+        pass
+
+    # A service will call the callback when the object has been
+    # obtained, but the callback will be run on the GTK thread.
+    service.fetch_obj(callback_when_done)
+
     """
 
     def f(*args):
@@ -19,9 +29,9 @@ def gtk_main(func):
 # noinspection PyUnresolvedReferences
 class AlbumArt:
     """
-    Asynchronously resolved album artwork. This will initially
-    be a pixbuf that is the placeholder image, but will change
-    to the album artwork once that has been loaded.
+    Asynchronously resolved album artwork. This will initially be a
+    pixbuf that is the placeholder image, but will change to the album
+    artwork once that has been loaded.
     """
     ScaleMode = GdkPixbuf.InterpType.BILINEAR
 
@@ -37,9 +47,11 @@ class AlbumArt:
 
     def resolve(self, on_done, user_data):
         """
-        Asychronously resolves and loads the cover artwork file into a pixbuf.
-        Calls the user-supplied callback with the new pixbuf when done. The
-        user_data is arbitrary data that will be passed along to the callback.
+        Asychronously resolves and loads the cover artwork file into a
+        pixbuf.  Calls the user-supplied callback with the new pixbuf
+        when done. The user_data is arbitrary data that will be passed
+        along to the callback.
+
         """
 
         @gtk_main

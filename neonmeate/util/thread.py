@@ -7,7 +7,7 @@ from gi.repository import GLib
 
 
 def signal_subcribe_on_main(connect_fn, signal_name, callback, *args):
-    """Connects a signal handler so that it will be run on the main GTK thread"""
+    """Subscribes to a signal on the GTK thread."""
 
     def run_on_main_thread(obj, *a):
         GLib.idle_add(callback, obj, *a)
@@ -86,10 +86,8 @@ if __name__ == '__main__':
     def sayhi():
         print("hi!")
 
-
     executor = ScheduledExecutor()
     executor.start()
-
     executor.schedule_periodic(1.0, sayhi)
     print('sleeping...')
     time.sleep(4)

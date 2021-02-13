@@ -10,8 +10,8 @@ class AlbumViewOptions:
     def __init__(self):
         self.num_grid_cols = 1
         self.album_size = 300
-        self.col_spacing = 10
-        self.row_spacing = 10
+        self.col_spacing = 30
+        self.row_spacing = 30
 
 
 # noinspection PyArgumentList,PyUnresolvedReferences
@@ -82,16 +82,11 @@ class Albums(toolkit.Scrollable):
         self._mpdclient = mpdclient
         self._options = options
 
-        self._albums_grid = Gtk.FlowBox()
-        self._albums_grid.set_homogeneous(True)
+        self._albums_grid = Gtk.Grid()
         self._albums_grid.set_valign(Gtk.Align.START)
         self._albums_grid.set_halign(Gtk.Align.START)
-        self._albums_grid.set_selection_mode(Gtk.SelectionMode.SINGLE)
-
-        if options.num_grid_cols > 0:
-            self._albums_grid.set_min_children_per_line(options.num_grid_cols)
-            self._albums_grid.set_max_children_per_line(options.num_grid_cols)
-
+        self._albums_grid.set_column_homogeneous(True)
+        self._albums_grid.set_row_homogeneous(True)
         self._albums_grid.set_column_spacing(options.col_spacing)
         self._albums_grid.set_row_spacing(options.col_spacing)
         self.add_content(self._albums_grid)
@@ -99,10 +94,13 @@ class Albums(toolkit.Scrollable):
         self._entries = []
 
     def _on_all_albums_ready(self):
+        num_cols = 3
         chrono_order = sorted(self._entries, key=lambda e: e.album.date)
-        for entry in chrono_order:
+        for i, entry in enumerate(chrono_order):
             entry.show()
-            self._albums_grid.add(entry)
+            row = i // num_cols
+            col = i - (num_cols * row)
+            self._albums_grid.attach(entry, col, row, 1, 1)
         self.queue_draw()
 
     def _clear_albums(self):
@@ -140,7 +138,8 @@ class AlbumEntry(Gtk.VBox):
         self.set_halign(Gtk.Align.START)
         self.img = None
         self._art = art
-        self._label = CenteredLabel(f'{album.title}\n<small>{album.date}</small>', markup=True)
+        esc_title = GLib.markup_escape_text(album.title)
+        self._label = CenteredLabel(f'{esc_title}\n<small>{album.date}</small>', markup=True)
         self._update_art()
 
         def _on_done(new_pixbuf, _):
