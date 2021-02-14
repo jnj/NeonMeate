@@ -1,6 +1,50 @@
 import neonmeate.ui.toolkit as tk
 
-from gi.repository import Gdk, GObject
+from gi.repository import Gdk, GObject, Gtk
+from neonmeate.ui.controls import NeonMeateButtonBox, ControlButton
+
+
+class PlayListControls(NeonMeateButtonBox):
+    __gsignals__ = {
+        'neonmeate_clear_playlist': (GObject.SignalFlags.RUN_FIRST, None, ())
+    }
+
+    def __init__(self):
+        super(PlayListControls, self).__init__()
+        clear_btn = self._add_button(
+            ControlButton('edit-clear'),
+            'clear',
+            'neonmeate_clear_playlist'
+        )
+        clear_btn.set_tooltip_text('Clear the play queue')
+
+
+class PlaylistContainer(Gtk.Frame):
+    def __init__(self, mpdclient):
+        super(PlaylistContainer, self).__init__()
+        self._mpdclient = mpdclient
+        self._box = Gtk.VBox()
+        self._playlist_controls = Gtk.ActionBar()
+        self._controls = PlayListControls()
+        self._playlist_controls.pack_start(self._controls)
+        self._playlist = Playlist()
+        self.add(self._box)
+        self._box.pack_start(self._playlist, True, True, 0)
+        self._box.pack_end(self._playlist_controls, False, False, 0)
+        self._playlist.show()
+        self._playlist_controls.show()
+        self._box.show_all()
+        self._box.show()
+        self._controls.connect('neonmeate_clear_playlist', self._on_clear)
+
+    def _on_clear(self, _):
+        self._mpdclient.clear_playlist()
+
+    def clear(self):
+        self._playlist.clear()
+
+    def add_playlist_item(self, item):
+        self._playlist.add_playlist_item(item)
 
 
 # noinspection PyUnresolvedReferences

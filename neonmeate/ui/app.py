@@ -6,7 +6,7 @@ from gi.repository import Gtk
 from .artistsalbums import ArtistsAlbums
 from .controls import ControlButtons, PlayModeButtons
 from .nowplaying import NowPlaying
-from .playlist import Playlist
+from .playlist import PlaylistContainer
 from .songprogress import SongProgress
 from .toolkit import gtk_main
 
@@ -42,15 +42,12 @@ class App(Gtk.ApplicationWindow):
         self._actionbar.pack_start(self._ctrl_btns)
         self._actionbar.pack_start(self._progress)
         self._actionbar.pack_start(self._mode_btns)
-        self._main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self._main_box = Gtk.VBox()
         self.add(self._main_box)
         self._stack = Gtk.Stack()
-        self._main_box.pack_start(self._stack, True, True, 0)
-        self._main_box.pack_end(self._actionbar, False, False, 0)
 
         self._artists = ArtistsAlbums(mpdclient, art_cache, cfg)
-        self._playlist = Playlist()
-        self._playlist.connect('neonmeate_clear_playlist', self._clear_playlist)
+        self._playlist = PlaylistContainer(mpdclient)
         self._update_playlist(None)
 
         self._now_playing = NowPlaying(rng, art_cache, executor, cfg)
@@ -60,6 +57,9 @@ class App(Gtk.ApplicationWindow):
         self._stack_switcher = Gtk.StackSwitcher()
         self._stack_switcher.set_stack(self._stack)
         self._titlebar.pack_start(self._stack_switcher)
+
+        self._main_box.pack_start(self._stack, True, True, 0)
+        self._main_box.pack_end(self._actionbar, False, False, 0)
 
         self._ctrl_btns.connect('neonmeate_stop_playing', self._on_stop)
         self._ctrl_btns.connect('neonmeate_start_playing', self._on_start)
@@ -84,9 +84,6 @@ class App(Gtk.ApplicationWindow):
 
     def _no_song(self, hb):
         self._on_song_changed(hb, None, None, None, None)
-
-    def _clear_playlist(self, event):
-        self._mpdclient.clear_playlist()
 
     def _on_user_mode_toggle(self, _, name, is_active):
         self._mpdclient.toggle_play_mode(name, is_active)

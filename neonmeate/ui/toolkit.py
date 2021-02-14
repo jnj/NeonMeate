@@ -155,10 +155,11 @@ class Table:
         return self.tree
 
     def _on_selection_changed(self, select):
-        model, treeiter = select.get_selected()
-        if self.selection_handler:
-            if model and model[treeiter]:
-                self.selection_handler(model[treeiter])
+        pass
+        # model, treeiter = select.get_selected()
+        # if self.selection_handler:
+        #     if model and model[treeiter]:
+        #         self.selection_handler(model[treeiter])
 
     def set_selection_handler(self, handler):
         self.selection_handler = handler
