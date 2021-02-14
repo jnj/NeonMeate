@@ -1,10 +1,81 @@
 import os
 
 import gi
+import heapq
+import time
 
 gi.require_version('GdkPixbuf', '2.0')
 
 from gi.repository import GdkPixbuf, Gio, GLib, GObject
+
+
+class PriorityQueue:
+    def __init__(self, key):
+        self._q = []
+        self._key = key
+
+    def add(self, item):
+        t = (self._key(item), item)
+        self._q.append(t)
+        heapq.heappush(self._q, t)
+
+    def __len__(self):
+        return len(self._q)
+
+    def pop_min(self):
+        _, item = heapq.heappop(self._q)
+        return item
+
+    def update(self, item, key_fn):
+        k = key_fn(item)
+        for i, tup in enumerate(self._q):
+            _, elem = tup
+            if key_fn(elem) == k:
+                del self._q[i]
+                break
+        self.add(item)
+
+
+class LruCoverCache:
+    def __init__(self, max_size):
+        self._max_size = max_size
+        self._q = PriorityQueue(lambda cachekey: cachekey.last_access_time)
+        self._key_by_path = {}
+        self._img_cache = {}
+
+    def __contains__(self, item):
+        return item in self._key_by_path
+
+    def __getitem__(self, item):
+        return self.get(item)
+
+    def __setitem__(self, key, value):
+        self.put(key, value)
+
+    def get(self, file_path):
+        key = self._key_by_path.get(file_path, None)
+        if key:
+            key.update_access_time()
+            self._q.update(key, lambda cachekey: cachekey.file_path)
+            return self._img_cache[key.file_path]
+        return None
+
+    def put(self, file_path, pixbuf):
+        while len(self._q) >= self._max_size:
+            self._q.pop_min()
+        key = CacheKey(file_path)
+        self._key_by_path[file_path] = key
+        self._img_cache[file_path] = pixbuf
+        self._q.add(key)
+
+
+class CacheKey:
+    def __init__(self, file_path):
+        self.file_path = file_path
+        self.last_access_time = time.monotonic_ns()
+
+    def update_access_time(self):
+        self.last_access_time = time.monotonic_ns()
 
 
 # noinspection PyUnresolvedReferences
@@ -23,7 +94,7 @@ class ArtCache(GObject.GObject):
                   for ext in ['jpg', 'png', 'gif']]
 
     def __init__(self, root_music_dir, executor):
-        self._cache = {}
+        self._cache = LruCoverCache(256)
         self._root_music_dir = root_music_dir
         self._pending_requests = {}
         self._cover_file_names = ArtCache.CoverNames
@@ -67,7 +138,8 @@ class ArtCache(GObject.GObject):
             return
         req = self._get_pending_or_create(file_path, callback, user_data)
         gio_file = Gio.File.new_for_path(file_path)
-        gio_file.read_async(GLib.PRIORITY_DEFAULT, None, self._on_stream_ready, req)
+        gio_file.read_async(GLib.PRIORITY_DEFAULT, None, self._on_stream_ready,
+                            req)
 
     def _get_pending_or_create(self, file_path, callback, user_data):
         """
@@ -90,7 +162,9 @@ class ArtCache(GObject.GObject):
             # todo handle better
             print(e)
         else:
-            GdkPixbuf.Pixbuf.new_from_stream_async(stream, None, self._on_pixbuf_ready, art_request)
+            GdkPixbuf.Pixbuf.new_from_stream_async(stream, None,
+                                                   self._on_pixbuf_ready,
+                                                   art_request)
         finally:
             pass
 

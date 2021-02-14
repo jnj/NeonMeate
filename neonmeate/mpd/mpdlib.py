@@ -105,6 +105,35 @@ class Mpd:
 
         self.status(on_status)
 
+    def find_compilations(self, callback):
+
+        def task():
+            results = self._client.list('album', 'group', 'artist')
+            results = [r for r in results if r['artist'] and r['album']]
+
+            for r in results:
+                a = r['album']
+                if not isinstance(a, list):
+                    r['album'] = [a]
+
+            artists_by_album = {}
+
+            for d in results:
+                art = d['artist']
+                albums = d['album']
+                for a in albums:
+                    s = artists_by_album.get(a, set())
+                    s.add(art)
+                    artists_by_album[a] = s
+
+            comps = set()
+            for album, s in artists_by_album.items():
+                if len(s) > 1:
+                    comps.add(album)
+            callback(comps)
+
+        self.exec(task)
+
     def find_artists(self, callback):
         """
         Queries the database for all artists. A list of Artist

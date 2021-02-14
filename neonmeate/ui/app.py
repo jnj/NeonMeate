@@ -18,7 +18,7 @@ class App(Gtk.ApplicationWindow):
         'stop': (False, True)
     }
 
-    # noinspection PyUnresolvedReferences
+    # noinspection PyUnresolvedReferences,PyArgumentList
     def __init__(self, rng, mpdclient, executor, art_cache, mpd_hb, cfg):
         Gtk.ApplicationWindow.__init__(self, title="NeonMeate")
         self.name = 'NeonMeate'
@@ -78,9 +78,15 @@ class App(Gtk.ApplicationWindow):
         self._mpdhb.connect('playlist-changed', self._update_playlist)
         self._mpdhb.connect('playback-mode-toggled', self._on_mode_change())
         # self.connect('key-press-event', self._on_keypress)
+        #self._mpdclient.find_compilations(self._on_comps)
 
     # def _on_keypress(self, x, eventkey):
     #     print(f'key pressed: ${eventkey.keyval}')
+
+    @gtk_main
+    def _on_comps(self, comps):
+        for c in comps:
+            print(c)
 
     def _no_song(self, hb):
         self._on_song_changed(hb, None, None, None, None)
