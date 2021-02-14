@@ -4,6 +4,7 @@ from gi.repository import Gdk, GObject, Gtk
 from neonmeate.ui.controls import NeonMeateButtonBox, ControlButton
 
 
+# noinspection PyUnresolvedReferences
 class PlayListControls(NeonMeateButtonBox):
     __gsignals__ = {
         'neonmeate_clear_playlist': (GObject.SignalFlags.RUN_FIRST, None, ())
@@ -19,6 +20,7 @@ class PlayListControls(NeonMeateButtonBox):
         clear_btn.set_tooltip_text('Clear the play queue')
 
 
+# noinspection PyUnresolvedReferences
 class PlaylistContainer(Gtk.Frame):
     def __init__(self, mpdclient):
         super(PlaylistContainer, self).__init__()

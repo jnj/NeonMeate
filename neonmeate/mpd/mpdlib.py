@@ -28,6 +28,9 @@ class Mpd:
         self._client.idletimeout = None
         self._status = {}
 
+    def exec(self, runnable):
+        self._exec.execute(runnable)
+
     def connect(self):
         """
         Connects to the MPD server, blocking until the server
@@ -55,7 +58,7 @@ class Mpd:
         state = 1 if active else 0
         fn = getattr(self._client, name)
         runnable = partial(fn, state)
-        self._exec.execute(runnable)
+        self.exec(runnable)
 
     def currentsong(self, callback):
         """Fetches the current song."""
@@ -66,7 +69,7 @@ class Mpd:
                 record = self._client.currentsong()
             callback(record)
 
-        self._exec.execute(task)
+        self.exec(task)
 
     def playlistinfo(self, callback):
         """
@@ -79,16 +82,16 @@ class Mpd:
             playqueue = self._client.playlistinfo()
             callback(playqueue)
 
-        self._exec.execute(task)
+        self.exec(task)
 
     def stop_playing(self):
-        self._exec.execute(self._client.stop)
+        self.exec(self._client.stop)
 
     def next_song(self):
-        self._exec.execute(self._client.next)
+        self.exec(self._client.next)
 
     def prev_song(self):
-        self._exec.execute(self._client.previous)
+        self.exec(self._client.previous)
 
     def toggle_pause(self, should_pause):
         def on_status(mpdstatus):
@@ -98,7 +101,7 @@ class Mpd:
                 task = partial(self._client.play, 0)
                 if 'pause' == mpdstatus.get('state', 'stop'):
                     task = partial(self._client.pause, 0)
-            self._exec.execute(task)
+            self.exec(task)
 
         self.status(on_status)
 
@@ -112,7 +115,7 @@ class Mpd:
             callback(
                 [Artist(a) for a in self._client.list('artist') if len(a) > 0])
 
-        self._exec.execute(task)
+        self.exec(task)
 
     def find_albums(self, artist, callback):
         def task():
@@ -146,7 +149,7 @@ class Mpd:
             ordered_albums = Album.sorted_chrono(albums)
             callback(ordered_albums)
 
-        self._exec.execute(task)
+        self.exec(task)
 
     def add_album_to_playlist(self, album):
         """
@@ -158,7 +161,7 @@ class Mpd:
             for song in album.sorted_songs():
                 self._client.add(song.file)
 
-        self._exec.execute(task)
+        self.exec(task)
 
     def remove_album_from_playlist(self, album):
         files = set(s.file for s in album.sorted_songs())
@@ -169,7 +172,7 @@ class Mpd:
                     self._client.deleteid(t['id'])
 
         def on_playlist(playlist):
-            self._exec.execute(removal_task(playlist))
+            self.exec(removal_task(playlist))
 
         self.playlistinfo(on_playlist)
 
@@ -183,13 +186,13 @@ class Mpd:
         def task():
             callback(self._client.status())
 
-        self._exec.execute(task)
+        self.exec(task)
 
     def clear_playlist(self):
         def task():
             self._client.clear()
 
-        self._exec.execute(task)
+        self.exec(task)
 
 
 # noinspection PyUnresolvedReferences
