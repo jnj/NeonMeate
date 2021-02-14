@@ -20,6 +20,9 @@ class ArtistsAlbums(Gtk.Frame):
     def __init__(self, mpdclient, art, cfg):
         super(ArtistsAlbums, self).__init__()
         album_view_opts = AlbumViewOptions()
+        artist_list_position = 280
+        album_view_opts.album_size = 800 - artist_list_position - 40
+
         self._album_placeholder_pixbuf = \
             Gtk.IconTheme.get_default().load_icon(
                 'music-app', album_view_opts.album_size, 0)
@@ -38,7 +41,8 @@ class ArtistsAlbums(Gtk.Frame):
 
         self._panes.pack1(self._artists_scrollable)
         self._panes.pack2(self._albums_songs)
-        self._panes.set_position(280)
+
+        self._panes.set_position(artist_list_position)
         self.add(self._panes)
         self._artists_scrollable.connect(
             'artist-selected', self._on_artist_clicked
@@ -79,6 +83,7 @@ class Albums(toolkit.Scrollable):
         self.set_border_width(5)
         self._placeholder_pixbuf = placeholder_pixbuf
         self._album_width_px = options.album_size
+        print(f'album width is ${self._album_width_px}')
         self._album_spacing = options.col_spacing
         self._art = art_cache
         self._mpdclient = mpdclient

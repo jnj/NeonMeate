@@ -30,7 +30,8 @@ class Playlist(tk.Scrollable):
         return True
 
     def _on_selection(self, treeiter):
-        print(f"selected {treeiter}")
+        pass
+        # print(f"selected {treeiter}")
 
     def clear(self):
         self._playlist_table.clear()
