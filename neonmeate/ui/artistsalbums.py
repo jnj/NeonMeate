@@ -83,7 +83,6 @@ class Albums(toolkit.Scrollable):
         self.set_border_width(5)
         self._placeholder_pixbuf = placeholder_pixbuf
         self._album_width_px = options.album_size
-        print(f'album width is ${self._album_width_px}')
         self._album_spacing = options.col_spacing
         self._art = art_cache
         self._mpdclient = mpdclient
