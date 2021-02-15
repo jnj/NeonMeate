@@ -50,24 +50,23 @@ def main(args):
     music_dir = cfg['media_dir']
     rng = random.Random()
     rng.seed(int(1000 * time.time()))
-    hb_executor = thread.ScheduledExecutor()
 
-    with ThreadPoolExecutor(2) as executor:
-        mpdclient = nmpd.Mpd(hb_executor, cfg.mpd_host(), cfg.mpd_port())
-        hb = nmpd.MpdHeartbeat(mpdclient, 700, hb_executor)
-        mpdclient.connect()
-        hb.start()
-        art_cache = artcache.ArtCache(music_dir, executor)
+    with thread.ScheduledExecutor() as hb_executor:
+        with ThreadPoolExecutor(2) as executor:
+            mpdclient = nmpd.Mpd(hb_executor, cfg.mpd_host(), cfg.mpd_port())
+            hb = nmpd.MpdHeartbeat(mpdclient, 700, hb_executor)
+            mpdclient.connect()
+            hb.start()
+            art_cache = artcache.ArtCache(music_dir, executor)
 
-        main_window = app.App(rng, mpdclient, executor, art_cache, hb, cfg)
-        main_window.connect('destroy', Gtk.main_quit)
-        main_window.set_wmclass('NeonMeate', 'NeonMeate')
-        main_window.set_title('NeonMeate')
-        main_window.show_all()
-        Gtk.main()
-        cfg.save(config.main_config_file())
-        logging.shutdown()
-        hb_executor.stop()
+            main_window = app.App(rng, mpdclient, executor, art_cache, hb, cfg)
+            main_window.connect('destroy', Gtk.main_quit)
+            main_window.set_wmclass('NeonMeate', 'NeonMeate')
+            main_window.set_title('NeonMeate')
+            main_window.show_all()
+            Gtk.main()
+            cfg.save(config.main_config_file())
+            logging.shutdown()
 
 
 if __name__ == '__main__':

@@ -2,7 +2,7 @@ import queue
 import sched
 import threading
 import time
-
+from  concurrent.futures import ThreadPoolExecutor
 from gi.repository import GLib
 
 
@@ -57,12 +57,20 @@ class ScheduledExecutor:
     def __init__(self):
         self._thread = EventLoopThread()
         self._scheduler = sched.scheduler(timefunc=time.monotonic)
+        self._executor = ThreadPoolExecutor()
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop()
 
     def start(self):
         self._thread.start()
 
     def stop(self):
         self._thread.stop()
+        self._executor.shutdown(wait=True)
 
     def execute(self, action):
         self._thread.add(action)
@@ -72,8 +80,7 @@ class ScheduledExecutor:
             self.execute(action)
 
         self._scheduler.enter(delay, 1, run_on_event_thread)
-        t = threading.Thread(target=self._scheduler.run)
-        t.start()
+        self._executor.submit(self._scheduler.run)
 
     def schedule_periodic(self, delay, action):
         def run_and_requeue():
