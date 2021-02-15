@@ -114,7 +114,12 @@ class App(Gtk.ApplicationWindow):
         for elem in artist_elems:
             track, artist, album, title = App._track_details_from_queue_elem(
                 elem)
-            self._playlist.add_playlist_item([artist, album, track, title])
+            self._playlist.add_playlist_item({
+                'track': track,
+                'artist': artist,
+                'album': album,
+                'title': title
+            })
             cover_path = self._art.resolve_cover_file(
                 os.path.dirname(elem['file']))
             self._on_resolved_cover_path(cover_path, artist, album)

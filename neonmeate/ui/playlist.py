@@ -58,8 +58,9 @@ class Playlist(tk.Scrollable):
     def __init__(self):
         super(Playlist, self).__init__()
         self._playlist_table = tk.Table(
-            ['Artist', 'Album', 'Track', 'Title'],
-            [str, str, int, str])
+            ['Track', 'Artist', 'Album', 'Title'],
+            [int, str, str, str]
+        )
         self._widget = self._playlist_table.as_widget()
         self.add_content(self._widget)
         self._playlist_table.set_selection_handler(self._on_selection)
@@ -83,4 +84,5 @@ class Playlist(tk.Scrollable):
         self._playlist_table.clear()
 
     def add_playlist_item(self, item):
-        self._playlist_table.add(item)
+        l = [item['track'], item['artist'], item['album'], item['title']]
+        self._playlist_table.add(l)
