@@ -11,3 +11,4 @@ build
 *.egg-info
 
 
+/dist/neonmeate-1.0-py3.8.egg
