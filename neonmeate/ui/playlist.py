@@ -58,8 +58,8 @@ class Playlist(tk.Scrollable):
     def __init__(self):
         super(Playlist, self).__init__()
         self._playlist_table = tk.Table(
-            ['Track', 'Artist', 'Album', 'Title'],
-            [int, str, str, str]
+            ['Track', 'Artist', 'Album', 'Title', 'Time'],
+            [int, str, str, str, str]
         )
         self._widget = self._playlist_table.as_widget()
         self.add_content(self._widget)
@@ -84,5 +84,17 @@ class Playlist(tk.Scrollable):
         self._playlist_table.clear()
 
     def add_playlist_item(self, item):
-        l = [item['track'], item['artist'], item['album'], item['title']]
+        time = Playlist.format_time(item['seconds'])
+        l = [item['track'], item['artist'], item['album'], item['title'], time]
         self._playlist_table.add(l)
+
+    @staticmethod
+    def format_time(seconds):
+        m, s = divmod(seconds, 60)
+
+        if m > 60:
+            h, m = divmod(m, 60)
+            return f'{h:02}:{m:02}:{s:02}'
+
+        return f'{m:02}:{s:02}'
+

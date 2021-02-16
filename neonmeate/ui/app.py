@@ -112,13 +112,14 @@ class App(Gtk.ApplicationWindow):
         self._playlist.clear()
         artist_elems = filter(lambda e: 'artist' in e, playqueue)
         for elem in artist_elems:
-            track, artist, album, title = App._track_details_from_queue_elem(
-                elem)
+            track, artist, album, title, seconds = \
+                App._track_details_from_queue_elem(elem)
             self._playlist.add_playlist_item({
                 'track': track,
                 'artist': artist,
                 'album': album,
-                'title': title
+                'title': title,
+                'seconds': seconds
             })
             cover_path = self._art.resolve_cover_file(
                 os.path.dirname(elem['file']))
@@ -134,11 +135,13 @@ class App(Gtk.ApplicationWindow):
     def _track_details_from_queue_elem(elem):
         artist, album, title = elem['artist'], elem['album'], elem['title']
         track = int(elem['track'])
+        duration = float(elem['duration'])
+        seconds = int(duration)
 
         if isinstance(title, list):
             title = ' - '.join(title)
 
-        return track, artist, album, title
+        return track, artist, album, title, seconds
 
     def _on_song_changed(self, hb, artist, title, album, filepath):
         self.logger.info(
