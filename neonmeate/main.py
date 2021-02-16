@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import gi
 
 gi.require_version('Gtk', '3.0')
@@ -46,7 +44,9 @@ def configure_logging():
 
 
 # noinspection PyUnresolvedReferences
-def main(args):
+def main(args=None):
+    if not args:
+        args = sys.argv[1:]
     configure_logging()
     cfg = config.Config.load_main_config()
     music_dir = cfg['media_dir']
@@ -69,7 +69,3 @@ def main(args):
             Gtk.main()
             cfg.save(config.main_config_file())
             logging.shutdown()
-
-
-if __name__ == '__main__':
-    main(sys.argv[1:])

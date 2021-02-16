@@ -7,4 +7,7 @@ venv
 .idea/inspectionProfiles
 .idea/ui.iml
 .idea/modules.xml
-run.sh
+build
+*.egg-info
+
+

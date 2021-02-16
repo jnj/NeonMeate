@@ -58,6 +58,7 @@ class ScheduledExecutor:
         self._thread = EventLoopThread()
         self._scheduler = sched.scheduler(timefunc=time.monotonic)
         self._executor = ThreadPoolExecutor()
+        self._stopped = False
 
     def __enter__(self):
         return self
@@ -69,6 +70,7 @@ class ScheduledExecutor:
         self._thread.start()
 
     def stop(self):
+        self._stopped = True
         self._thread.stop()
         self._executor.shutdown(wait=True)
 
@@ -76,6 +78,9 @@ class ScheduledExecutor:
         self._thread.add(action)
 
     def schedule(self, delay, action):
+        if self._stopped:
+            return
+
         def run_on_event_thread():
             self.execute(action)
 
@@ -83,6 +88,9 @@ class ScheduledExecutor:
         self._executor.submit(self._scheduler.run)
 
     def schedule_periodic(self, delay, action):
+        if self._stopped:
+            return
+
         def run_and_requeue():
             action()
             self.schedule_periodic(delay, action)
