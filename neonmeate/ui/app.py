@@ -77,8 +77,9 @@ class App(Gtk.ApplicationWindow):
         self._mpdhb.connect('no_song', self._no_song)
         self._mpdhb.connect('playlist-changed', self._update_playlist)
         self._mpdhb.connect('playback-mode-toggled', self._on_mode_change())
+        self._mpdhb.connect('updatingdb', self._on_updating_db)
         # self.connect('key-press-event', self._on_keypress)
-        #self._mpdclient.find_compilations(self._on_comps)
+        # self._mpdclient.find_compilations(self._on_comps)
 
     # def _on_keypress(self, x, eventkey):
     #     print(f'key pressed: ${eventkey.keyval}')
@@ -99,6 +100,9 @@ class App(Gtk.ApplicationWindow):
             self._mode_btns.on_mode_change(name, is_active)
 
         return handler
+
+    def _on_updating_db(self, obj, value):
+        self._artists.on_db_update(value)
 
     def _update_playlist(self, obj):
 

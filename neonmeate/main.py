@@ -56,7 +56,7 @@ def main(args=None):
     with thread.ScheduledExecutor() as hb_executor:
         with ThreadPoolExecutor(2) as executor:
             mpdclient = nmpd.Mpd(hb_executor, cfg.mpd_host(), cfg.mpd_port())
-            hb = nmpd.MpdHeartbeat(mpdclient, 700, hb_executor)
+            hb = nmpd.MpdHeartbeat(mpdclient, 250, hb_executor)
             mpdclient.connect()
             hb.start()
             art_cache = artcache.ArtCache(music_dir, executor)

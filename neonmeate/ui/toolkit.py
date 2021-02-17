@@ -108,6 +108,11 @@ class Column(Gtk.ListBox):
         else:
             self.set_selection_mode(Gtk.SelectionMode.NONE)
 
+    def clear(self):
+        children = self.get_children()
+        for child in children:
+            self.remove(child)
+
     def add_row(self, text):
         label = Gtk.Label(text, xalign=0)
         label.set_justify(Gtk.Justification.LEFT)

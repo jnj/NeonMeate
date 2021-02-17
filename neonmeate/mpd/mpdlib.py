@@ -242,7 +242,8 @@ class MpdState(GObject.GObject):
     playlistlength = GObject.Property(type=str, default='0')
     songseconds = GObject.Property(type=float, default=1)
     elapsedseconds = GObject.Property(type=float, default=0)
-    synth_props = {'songseconds', 'elapsedseconds'}
+    updatingdb = GObject.Property(type=str, default='0')
+    synth_props = {'songseconds', 'elapsedseconds', 'updatingdb'}
 
     def __init__(self):
         GObject.GObject.__init__(self)
@@ -261,11 +262,16 @@ class MpdState(GObject.GObject):
                 new_val = status.get(p.name, p.default_value)
                 self._update_if_changed(p.name, new_val)
         self._update_elapsed_time()
+        self._check_updating_db(status)
 
     def _update_if_changed(self, name, newval):
         current = self.get_property(name)
         if current != newval:
             self.set_property(name, newval)
+
+    def _check_updating_db(self, status):
+        updating = status.get('updating_db', '0')
+        self._update_if_changed('updatingdb', updating)
 
     def _update_elapsed_time(self):
         elapsed_secs = float(self.get_property('elapsed'))
@@ -301,7 +307,8 @@ class MpdHeartbeat(GObject.GObject):
             GObject.SignalFlags.RUN_FIRST, None, (str, str, str, str)),
         'no_song': (GObject.SignalFlags.RUN_FIRST, None, ()),
         'playback_mode_toggled': (
-            GObject.SignalFlags.RUN_FIRST, None, (str, bool))
+            GObject.SignalFlags.RUN_FIRST, None, (str, bool)),
+        'updatingdb': (GObject.SignalFlags.RUN_FIRST, None, (bool,))
     }
 
     def __init__(self, client, millis_interval, executor):
@@ -320,6 +327,7 @@ class MpdHeartbeat(GObject.GObject):
             'songid': self._on_song_change,
             'playlist': self._on_playlist_change,
             'playlistlength': self._on_playlistlength_change,
+            'updatingdb': self._on_updating,
             'consume': self._on_mode_change,
             'random': self._on_mode_change,
             'repeat': self._on_mode_change,
@@ -387,6 +395,10 @@ class MpdHeartbeat(GObject.GObject):
 
     def _on_playlistlength_change(self, obj, spec):
         self.emit('playlist-changed')
+
+    def _on_updating(self, obj, spec):
+        propval = self._state.get_property(spec.name)
+        self.emit('updatingdb', propval != '0')
 
     def _on_mode_change(self, obj, spec):
         propval = self._state.get_property(spec.name)

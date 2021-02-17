@@ -1,9 +1,20 @@
-import functools
-
-from gi.repository import GdkPixbuf, GObject, Gtk, GLib, Pango
+from gi.repository import GObject, Gtk, GLib
 
 from neonmeate.ui import toolkit, controls
-from neonmeate.ui.toolkit import gtk_main, AlbumArt, CenteredLabel
+from neonmeate.ui.toolkit import gtk_main, AlbumArt
+
+
+class DiffableBoolean:
+    def __init__(self):
+        self.value = False
+
+    def current(self):
+        return self.value
+
+    def update(self, new_value):
+        changed = new_value != self.value
+        self.value = new_value
+        return changed
 
 
 class AlbumViewOptions:
@@ -22,7 +33,7 @@ class ArtistsAlbums(Gtk.Frame):
         album_view_opts = AlbumViewOptions()
         artist_list_position = 280
         album_view_opts.album_size = 800 - artist_list_position - 40
-
+        self._update_pending = DiffableBoolean()
         self._album_placeholder_pixbuf = \
             Gtk.IconTheme.get_default().load_icon(
                 'music-app', album_view_opts.album_size, 0)
@@ -48,6 +59,15 @@ class ArtistsAlbums(Gtk.Frame):
             'artist-selected', self._on_artist_clicked
         )
 
+    def on_db_update(self, is_updating):
+        pending = self._update_pending.current()
+        changed = self._update_pending.update(is_updating)
+        if pending and changed:
+            self._reload()
+
+    def _reload(self):
+        self._artists_scrollable.reload_artists()
+
     def _on_artist_clicked(self, col_widget, selected_value):
         self._albums_songs.on_artist_selected(selected_value)
 
@@ -63,6 +83,11 @@ class Artists(toolkit.Scrollable):
         self._artist_column = toolkit.Column(vmargin=15, selectable_rows=True)
         self.add_content(self._artist_column)
         self._mpd = mpdclient
+        self._artist_column.connect('value-selected', self._on_artist_clicked)
+        self.reload_artists()
+
+    def reload_artists(self):
+        self._artist_column.clear()
 
         @gtk_main
         def on_artists(artists):
@@ -70,7 +95,6 @@ class Artists(toolkit.Scrollable):
                 self._artist_column.add_row(artist.name)
 
         self._mpd.find_artists(on_artists)
-        self._artist_column.connect('value-selected', self._on_artist_clicked)
 
     def _on_artist_clicked(self, obj, value):
         self.emit('artist-selected', value)
@@ -120,7 +144,8 @@ class Albums(toolkit.Scrollable):
 
         for i, album in enumerate(albums):
             aa = AlbumArt(self._art, album, self._placeholder_pixbuf)
-            entry = AlbumEntry(i, album, aa, self._album_width_px, spacing, self._mpdclient)
+            entry = AlbumEntry(i, album, aa, self._album_width_px, spacing,
+                               self._mpdclient)
             self._entries.append(entry)
 
         self._on_all_albums_ready()
