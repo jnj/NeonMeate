@@ -116,15 +116,10 @@ class App(Gtk.ApplicationWindow):
         self._playlist.clear()
         artist_elems = filter(lambda e: 'artist' in e, playqueue)
         for elem in artist_elems:
-            track, artist, album, title, seconds = \
-                App._track_details_from_queue_elem(elem)
-            self._playlist.add_playlist_item({
-                'track': track,
-                'artist': artist,
-                'album': album,
-                'title': title,
-                'seconds': seconds
-            })
+            queue_elem = App._track_details_from_queue_elem(elem)
+            artist = queue_elem['artist']
+            album = queue_elem['album']
+            self._playlist.add_playlist_item(queue_elem)
             cover_path = self._art.resolve_cover_file(
                 os.path.dirname(elem['file']))
             self._on_resolved_cover_path(cover_path, artist, album)
@@ -137,15 +132,26 @@ class App(Gtk.ApplicationWindow):
 
     @staticmethod
     def _track_details_from_queue_elem(elem):
+        """
+        Cleans up the playlist entries that come from MPD.
+        """
         artist, album, title = elem['artist'], elem['album'], elem['title']
         track = int(elem['track'])
+        position = int(elem['pos'])
         duration = float(elem['duration'])
         seconds = int(duration)
 
         if isinstance(title, list):
             title = ' - '.join(title)
 
-        return track, artist, album, title, seconds
+        return {
+            'track': track,
+            'artist': artist,
+            'album': album,
+            'title': title,
+            'seconds': seconds,
+            'position': position
+        }
 
     def _on_song_changed(self, hb, artist, title, album, filepath):
         self.logger.info(

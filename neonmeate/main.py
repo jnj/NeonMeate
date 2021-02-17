@@ -69,3 +69,7 @@ def main(args=None):
             Gtk.main()
             cfg.save(config.main_config_file())
             logging.shutdown()
+
+
+if __name__ == '__main__':
+    main(sys.argv[1:])

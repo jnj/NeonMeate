@@ -227,6 +227,12 @@ class Mpd:
 
         self.exec(task)
 
+    def delete_playlist_item(self, index):
+        def task():
+            self._client.delete(index)
+
+        self.exec(task)
+
 
 # noinspection PyUnresolvedReferences
 class MpdState(GObject.GObject):

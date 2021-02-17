@@ -132,15 +132,21 @@ class Column(Gtk.ListBox):
 
 # noinspection PyUnresolvedReferences,PyArgumentList
 class Table:
-    def __init__(self, column_names, column_types):
-        self.column_names = column_names
-        self.column_types = column_types
+    def __init__(self, column_names, column_types, view_columns):
+        self._model_columns = column_names
+        self._column_types = column_types
+        self._view_columns = view_columns
         self.model = Gtk.ListStore(*column_types)
         self.tree = None
         self.selection_handler = None
+        self._selection_changed_id = None
 
     def clear(self):
-        self.model.clear()
+        try:
+            self._disable_selection_signal()
+            self.model.clear()
+        finally:
+            self._enable_selection_signal()
 
     def add(self, col_values):
         self.model.append(col_values)
@@ -148,23 +154,33 @@ class Table:
     def as_widget(self):
         self.tree = Gtk.TreeView.new_with_model(self.model)
 
-        for i, header in enumerate(self.column_names):
+        for i, header in enumerate(self._view_columns):
             renderer = Gtk.CellRendererText()
             column = Gtk.TreeViewColumn(header, renderer, text=i)
             column.set_resizable(True)
             self.tree.append_column(column)
 
         select = self.tree.get_selection()
-        select.connect('changed', self._on_selection_changed)
+        self._selection_changed_id = select.connect(
+            'changed',
+            self._on_selection_changed
+        )
         self.tree.set_property('fixed_height_mode', True)
         return self.tree
 
+    def _disable_selection_signal(self):
+        sel = self.tree.get_selection()
+        sel.handler_block(self._selection_changed_id)
+
+    def _enable_selection_signal(self):
+        sel = self.tree.get_selection()
+        sel.handler_unblock(self._selection_changed_id)
+
     def _on_selection_changed(self, select):
-        pass
-        # model, treeiter = select.get_selected()
-        # if self.selection_handler:
-        #     if model and model[treeiter]:
-        #         self.selection_handler(model[treeiter])
+        model, treeiter = select.get_selected()
+        if self.selection_handler:
+            if model and model[treeiter]:
+                self.selection_handler(model[treeiter])
 
     def set_selection_handler(self, handler):
         self.selection_handler = handler
