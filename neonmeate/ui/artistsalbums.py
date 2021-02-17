@@ -35,8 +35,8 @@ class ArtistsAlbums(Gtk.Frame):
         album_view_opts.album_size = 800 - artist_list_position - 40
         self._update_pending = DiffableBoolean()
         self._album_placeholder_pixbuf = \
-            Gtk.IconTheme.get_default().load_icon(
-                'music-app', album_view_opts.album_size, 0)
+            Gtk.IconTheme.get_default().load_icon_for_scale(
+                'emblem-music-symbolic', album_view_opts.album_size, 1, 0)
         self._art = art
         self._cfg = cfg
         self._mpdclient = mpdclient
@@ -67,6 +67,7 @@ class ArtistsAlbums(Gtk.Frame):
 
     def _reload(self):
         self._artists_scrollable.reload_artists()
+        self._albums_songs.reload()
 
     def _on_artist_clicked(self, col_widget, selected_value):
         self._albums_songs.on_artist_selected(selected_value)
@@ -121,6 +122,9 @@ class Albums(toolkit.Scrollable):
         self._selected_artist = None
         self._entries = []
         self.show_all()
+
+    def on_reload(self):
+        pass
 
     def _on_all_albums_ready(self):
         chrono_order = sorted(self._entries, key=lambda e: e.album.date)
@@ -252,6 +256,9 @@ class AlbumsPane(Gtk.Frame):
         self.add(self._albums)
         self._albums_list = []
         self._selected_artist = None
+
+    def reload(self):
+        pass
 
     def on_artist_selected(self, artist_name):
         if not artist_name or artist_name == self._selected_artist:

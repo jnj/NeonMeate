@@ -141,8 +141,12 @@ class Mpd:
         """
 
         def task():
-            callback(
-                [Artist(a) for a in self._client.list('artist') if len(a) > 0])
+            artists = []
+            for a in self._client.list('artist'):
+                artist = Artist.create(a)
+                if artist:
+                    artists.append(artist)
+            callback(artists)
 
         self.exec(task)
 

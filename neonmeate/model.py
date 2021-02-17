@@ -10,6 +10,19 @@ class Artist:
             name = '<Unknown>'
         return name
 
+    @staticmethod
+    def create(dictlike):
+        if isinstance(dictlike, dict):
+            name = ''
+            if 'artist' in dictlike:
+                name = dictlike['artist']
+            elif 'name' in dictlike:
+                name = dictlike['name']
+            name = name.strip()
+            if name:
+                return Artist(name)
+        return None
+
     def __init__(self, name):
         if isinstance(name, dict):
             d = name
