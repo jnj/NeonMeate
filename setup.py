@@ -8,8 +8,8 @@ setup(
     packages=find_packages(),
     entry_points={'console_scripts': ['neonmeate=neonmeate.main:main']},
     url='https://github.com/jnj/NeonMeate/',
-    license='',
-    author='josh',
+    license='BSD',
+    author='Josh Joyce',
     author_email='jnjoyce@pobox.com',
     description='A graphical client for mpd',
     install_requires=[
