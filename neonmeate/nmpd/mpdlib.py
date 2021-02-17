@@ -446,6 +446,6 @@ if __name__ == '__main__':
     #     pass
     # print(client.status())
     # client.idle()
-    # album_cache = neonmeate.mpd.cache.AlbumCache()
+    # album_cache = neonmeate.nmpd.cache.AlbumCache()
     # client.populate_cache(album_cache)
     # print(album_cache)

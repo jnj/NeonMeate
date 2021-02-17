@@ -11,7 +11,7 @@ import random
 import sys
 import time
 
-import neonmeate.mpd.mpdlib as nmpd
+import neonmeate.nmpd.mpdlib as nmpd
 import neonmeate.ui.app as app
 import neonmeate.util.art as artcache
 import neonmeate.util.config as config

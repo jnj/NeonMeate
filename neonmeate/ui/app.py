@@ -11,6 +11,21 @@ from .songprogress import SongProgress
 from .toolkit import gtk_main
 
 
+# noinspection PyUnresolvedReferences,PyArgumentList
+class SettingsMenu(Gtk.Popover):
+    def __init__(self):
+        super(SettingsMenu, self).__init__()
+        self._vbox = Gtk.VBox()
+        self._host_entry = Gtk.Entry()
+        self._port_entry = Gtk.Entry()
+        self._host_entry.set_text('localhost')
+        self._port_entry.set_text('6600')
+        self._vbox.pack_start(self._host_entry, True, True, 0)
+        self._vbox.pack_start(self._port_entry, True, True, 0)
+        self.add(self._vbox)
+        self._vbox.show_all()
+
+
 class App(Gtk.ApplicationWindow):
     PlayStatus = {
         'play': (False, False),
@@ -23,7 +38,7 @@ class App(Gtk.ApplicationWindow):
         Gtk.ApplicationWindow.__init__(self, title="NeonMeate")
         self.name = 'NeonMeate'
         self.logger = logging.getLogger(__name__)
-        self.set_default_icon_name('mpd')
+        self.set_default_icon_name('nmpd')
         self._cfg = cfg
         self._executor = executor
         self._mpdhb = mpd_hb
@@ -57,7 +72,11 @@ class App(Gtk.ApplicationWindow):
         self._stack_switcher = Gtk.StackSwitcher()
         self._stack_switcher.set_stack(self._stack)
         self._titlebar.pack_start(self._stack_switcher)
+        self._settings_btn = Gtk.MenuButton()
+        self._settings_btn.set_popover(SettingsMenu())
+        self._settings_btn.set_direction(Gtk.ArrowType.NONE)
 
+        self._titlebar.pack_end(self._settings_btn)
         self._main_box.pack_start(self._stack, True, True, 0)
         self._main_box.pack_end(self._actionbar, False, False, 0)
 

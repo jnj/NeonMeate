@@ -37,7 +37,7 @@ class Config:
 
         'background_cache': {},
 
-        'mpd': {
+        'nmpd': {
             'host': 'localhost',
             'port': 6600
         }
@@ -88,10 +88,10 @@ class Config:
             json.dump(self._config, f)
 
     def mpd_host(self):
-        return self['mpd']['host']
+        return self['nmpd']['host']
 
     def mpd_port(self):
-        return self['mpd']['port']
+        return self['nmpd']['port']
 
     def get_background(self, artist, album, rng):
         cache_ = self['background_cache']
