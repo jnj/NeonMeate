@@ -63,7 +63,6 @@ def main(args=None):
 
             main_window = app.App(rng, mpdclient, executor, art_cache, hb, cfg)
             main_window.connect('destroy', Gtk.main_quit)
-            main_window.set_wmclass('NeonMeate', 'NeonMeate')
             main_window.set_title('NeonMeate')
             main_window.show_all()
             Gtk.main()
