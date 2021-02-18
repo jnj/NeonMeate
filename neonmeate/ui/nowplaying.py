@@ -20,6 +20,10 @@ class NowPlaying(Gtk.Frame):
         self._current = (None, None)
         self._clear_art()
 
+    def on_connection_status(self, connected):
+        if not connected:
+            self.clear()
+
     def on_playing(self, artist, album, covpath):
         if self._current == (artist, album):
             return

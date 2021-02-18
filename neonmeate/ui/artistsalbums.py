@@ -59,6 +59,12 @@ class ArtistsAlbums(Gtk.Frame):
             'artist-selected', self._on_artist_clicked
         )
 
+    def on_mpd_connected(self, connected):
+        if connected:
+            self._reload()
+        if not connected:
+            self._artists_scrollable.clear()
+
     def on_db_update(self, is_updating):
         pending = self._update_pending.current()
         changed = self._update_pending.update(is_updating)
@@ -87,8 +93,11 @@ class Artists(toolkit.Scrollable):
         self._artist_column.connect('value-selected', self._on_artist_clicked)
         self.reload_artists()
 
-    def reload_artists(self):
+    def clear(self):
         self._artist_column.clear()
+
+    def reload_artists(self):
+        self.clear()
 
         @gtk_main
         def on_artists(artists):

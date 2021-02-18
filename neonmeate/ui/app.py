@@ -59,7 +59,9 @@ class App(Gtk.ApplicationWindow):
         self._stack_switcher.set_stack(self._stack)
         self._titlebar.pack_start(self._stack_switcher)
         self._settings_btn = Gtk.MenuButton()
-        self._settings_btn.set_popover(SettingsMenu())
+        settings = SettingsMenu()
+        settings.connect('neonmeate-mpd-connect', self._on_mpd_connect)
+        self._settings_btn.set_popover(settings)
         self._settings_btn.set_direction(Gtk.ArrowType.NONE)
 
         self._titlebar.pack_end(self._settings_btn)
@@ -93,6 +95,21 @@ class App(Gtk.ApplicationWindow):
     def _on_comps(self, comps):
         for c in comps:
             print(c)
+
+    def _on_mpd_connect(self, settings, connected):
+        if connected:
+            self._executor.start()
+            self._mpdclient.connect()
+            self._mpdhb.start()
+            self._artists.on_mpd_connected(True)
+        else:
+            self._titlebar.set_title('NeonMeate')
+            self._artists.on_mpd_connected(False)
+            self._playlist.clear()
+            self._now_playing.on_connection_status(False)
+            self._mpdhb.stop()
+            self._mpdclient.disconnect()
+            self._executor.stop()
 
     def _no_song(self, hb):
         self._on_song_changed(hb, None, None, None, None)

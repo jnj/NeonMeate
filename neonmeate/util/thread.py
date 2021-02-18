@@ -55,7 +55,7 @@ class EventLoopThread(threading.Thread):
 
 class ScheduledExecutor:
     def __init__(self):
-        self._thread = EventLoopThread()
+        self._thread = None
         self._scheduler = sched.scheduler(timefunc=time.monotonic)
         self._executor = ThreadPoolExecutor()
         self._stopped = False
@@ -67,11 +67,15 @@ class ScheduledExecutor:
         self.stop()
 
     def start(self):
+        if self._thread is None:
+            self._thread = EventLoopThread()
         self._thread.start()
 
     def stop(self):
         self._stopped = True
-        self._thread.stop()
+        if self._thread is not None:
+            self._thread.stop()
+            self._thread = None
         self._executor.shutdown(wait=True)
 
     def execute(self, action):

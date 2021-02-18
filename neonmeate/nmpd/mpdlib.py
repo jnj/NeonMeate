@@ -27,6 +27,13 @@ class Mpd:
         self._client.timeout = 10
         self._client.idletimeout = None
         self._status = {}
+        self._connected = False
+
+    def set_host(self, host):
+        self._host = host
+
+    def set_port(self, port):
+        self._port = port
 
     def exec(self, runnable):
         self._exec.execute(runnable)
@@ -42,11 +49,16 @@ class Mpd:
             self._status = s
 
         self.status(set_status)
+        self._connected = True
+
+    def disconnect(self):
+        self._connected = False
+        self._client.disconnect()
 
     def close(self):
         """Shuts down the client and disconnects from the server."""
         self._client.close()
-        self._client.disconnect()
+        self.disconnect()
 
     def toggle_play_mode(self, name, active):
         """
@@ -77,6 +89,9 @@ class Mpd:
         song's tags. A list of dictionaries, one per song,
         will be passed to the callback.
         """
+        if not self._connected:
+            callback([])
+            return
 
         def task():
             playqueue = self._client.playlistinfo()
@@ -139,6 +154,9 @@ class Mpd:
         Queries the database for all artists. A list of Artist
         instances will be provided to the callback.
         """
+        if not self._connected:
+            callback([])
+            return
 
         def task():
             artists = []
@@ -349,7 +367,6 @@ class MpdHeartbeat(GObject.GObject):
             self._state.connect(f'notify::{prop}', fn)
 
     def start(self):
-        self._thread.start()
         self._thread.schedule_periodic(self._delay, self._on_hb_interval)
 
     def stop(self):
