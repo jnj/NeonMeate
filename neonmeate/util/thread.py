@@ -2,7 +2,8 @@ import queue
 import sched
 import threading
 import time
-from  concurrent.futures import ThreadPoolExecutor
+import _thread
+from concurrent.futures import ThreadPoolExecutor
 from gi.repository import GLib
 
 
@@ -55,28 +56,28 @@ class EventLoopThread(threading.Thread):
 
 class ScheduledExecutor:
     def __init__(self):
-        self._thread = None
+        self._thread = EventLoopThread()
         self._scheduler = sched.scheduler(timefunc=time.monotonic)
         self._executor = ThreadPoolExecutor()
         self._stopped = False
 
     def __enter__(self):
+        self.start()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.stop()
 
     def start(self):
-        if self._thread is None:
-            self._thread = EventLoopThread()
         self._thread.start()
 
     def stop(self):
         self._stopped = True
-        if self._thread is not None:
-            self._thread.stop()
-            self._thread = None
+        self._thread.stop()
         self._executor.shutdown(wait=True)
+
+    def submit(self, task, *args, **kwargs):
+        return self._executor.submit(task, *args, **kwargs)
 
     def execute(self, action):
         self._thread.add(action)
@@ -85,32 +86,61 @@ class ScheduledExecutor:
         if self._stopped:
             return
 
-        def run_on_event_thread():
-            self.execute(action)
-
-        self._scheduler.enter(delay, 1, run_on_event_thread)
-        self._executor.submit(self._scheduler.run)
+        return ScheduledTask(delay, action, self._scheduler, self._executor,
+                             self._thread, False)
 
     def schedule_periodic(self, delay, action):
         if self._stopped:
             return
+        return ScheduledTask(delay, action, self._scheduler, self._executor,
+                             self._thread, True)
 
-        def run_and_requeue():
-            action()
-            self.schedule_periodic(delay, action)
 
-        self.schedule(delay, run_and_requeue)
+class ScheduledTask:
+    def __init__(self, delay, action, scheduler, executor, eventloop, repeat):
+        self._delay = delay
+        self._sched = scheduler
+        self._exec = executor
+        self._eventloop = eventloop
+        self._action = action
+
+        def run():
+            self._eventloop.add(action)
+
+        if repeat:
+            self._schedule_periodic(run)
+        else:
+            self._schedule(run)
+
+    def _schedule_periodic(self, to_run):
+        def run():
+            to_run()
+            self._schedule_periodic(to_run)
+
+        self._schedule(run)
+
+    def _schedule(self, to_run):
+        self._event = self._sched.enter(self._delay, -1, to_run)
+        _thread.start_new_thread(self._sched.run, ())
+
+    def cancel(self):
+        try:
+            self._sched.cancel(self._event)
+        except ValueError:
+            pass
 
 
 if __name__ == '__main__':
     def sayhi():
         print("hi!")
 
+
     executor = ScheduledExecutor()
     executor.start()
-    executor.schedule_periodic(1.0, sayhi)
+    e = executor.schedule_periodic(0.5, sayhi)
     print('sleeping...')
-    time.sleep(4)
+    time.sleep(3)
+    e.cancel()
     executor.stop()
     time.sleep(3)
     print("done")

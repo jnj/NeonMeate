@@ -284,6 +284,17 @@ class MpdState(GObject.GObject):
                 s += f'{p.name}={self.get_property(p.name)}\n'
         return s
 
+    def reset(self):
+        self.set_property('duration', '1')
+        for name in ['repeat', 'random', 'elapsed', 'consume',
+                     'single', 'playlistlength', 'updatingdb']:
+            self.set_property(name, '0')
+        for name in ['songid', 'playlist']:
+            self.set_property(name, '-1')
+        self.set_property('state', '')
+        self.set_property('songseconds', 1)
+        self.set_property('elapsedseconds', 0)
+
     def update(self, status):
         for p in self.list_properties():
             if p.name not in self.synth_props:
@@ -350,7 +361,6 @@ class MpdHeartbeat(GObject.GObject):
         self._delay = millis_interval / 1000.0
         self._mpd_status = {}
         self._state = MpdState()
-
         for prop, fn in {
             'songid': self._on_song_change,
             'playlist': self._on_playlist_change,
@@ -365,12 +375,20 @@ class MpdHeartbeat(GObject.GObject):
             'state': self._on_state_change
         }.items():
             self._state.connect(f'notify::{prop}', fn)
+        self._scheduled_hb = None
 
     def start(self):
-        self._thread.schedule_periodic(self._delay, self._on_hb_interval)
+        if self._scheduled_hb is None:
+            self._scheduled_hb = self._thread.schedule_periodic(
+                self._delay,
+                self._on_hb_interval
+            )
 
     def stop(self):
-        self._thread.stop()
+        self._state.reset()
+        if self._scheduled_hb:
+            self._scheduled_hb.cancel()
+            self._scheduled_hb = None
 
     def connect(self, signal_name, handler, *args):
         """

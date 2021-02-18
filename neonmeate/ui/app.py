@@ -98,7 +98,6 @@ class App(Gtk.ApplicationWindow):
 
     def _on_mpd_connect(self, settings, connected):
         if connected:
-            self._executor.start()
             self._mpdclient.connect()
             self._mpdhb.start()
             self._artists.on_mpd_connected(True)
@@ -109,7 +108,6 @@ class App(Gtk.ApplicationWindow):
             self._now_playing.on_connection_status(False)
             self._mpdhb.stop()
             self._mpdclient.disconnect()
-            self._executor.stop()
 
     def _no_song(self, hb):
         self._on_song_changed(hb, None, None, None, None)
