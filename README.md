@@ -8,4 +8,11 @@ NeonMeate is a GTK3 MPD client.
 
 This is a work in progress. 
 
-![Screenshot](https://github.com/jnj/NeonMeate/blob/master/neonmeate.png)
+### Artists view
+![Screenshot](https://github.com/jnj/NeonMeate/blob/master/artists.png)
+
+### Playlist view
+![Screenshot](https://github.com/jnj/NeonMeate/blob/master/playlist.png)
+
+### Now playing view
+![Screenshot](https://github.com/jnj/NeonMeate/blob/master/playing.png)
