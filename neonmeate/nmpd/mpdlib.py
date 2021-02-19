@@ -10,6 +10,23 @@ from functools import partial
 import neonmeate.util.thread as thread
 
 
+class MpdConnectionStatus(GObject.GObject):
+    __gsignals__ = {
+        'mpd_connected': (GObject.SignalFlags.RUN_FIRST, None, (bool,)),
+    }
+
+    def __init__(self):
+        GObject.GObject.__init__(self)
+        self._connected = False
+
+    def set_connected(self, connected):
+        self._connected = connected
+        self.emit('mpd_connected', connected)
+
+    def is_connected(self):
+        return self._connected
+
+
 class Mpd:
     """
     Our client for interacting with the MPD server. The commands are
@@ -19,15 +36,23 @@ class Mpd:
 
     """
 
-    def __init__(self, scheduled_executor, host='localhost', port=6600):
+    def __init__(self, scheduled_executor, configstate, connstatus):
         self._exec = scheduled_executor
+        host, port = configstate.get_host_and_port()
+        self._configstate = configstate
+        self._configstate.connect('notify::host-and-port', self._on_host_chg)
+        self._connstatus = connstatus
         self._host = host
         self._port = port
         self._client = mpd2.MPDClient()
         self._client.timeout = 10
         self._client.idletimeout = None
         self._status = {}
-        self._connected = False
+
+    def _on_host_chg(self, state, _):
+        self.disconnect()
+        self._host, self._port = self._configstate.get_host_and_port()
+        self.connect()
 
     def set_host(self, host):
         self._host = host
@@ -43,17 +68,22 @@ class Mpd:
         Connects to the MPD server, blocking until the server
         status is obtained.
         """
-        self._client.connect(self._host, self._port)
+        try:
+            self._client.connect(self._host, self._port)
+            self._connstatus.set_connected(True)
+        except ConnectionError:
+            logging.error('connection refused')
+            self._connstatus.set_connected(False)
+            return
 
         def set_status(s):
             self._status = s
 
         self.status(set_status)
-        self._connected = True
 
     def disconnect(self):
-        self._connected = False
         self._client.disconnect()
+        self._connstatus.set_connected(False)
 
     def close(self):
         """Shuts down the client and disconnects from the server."""
@@ -89,7 +119,7 @@ class Mpd:
         song's tags. A list of dictionaries, one per song,
         will be passed to the callback.
         """
-        if not self._connected:
+        if not self._connstatus.is_connected():
             callback([])
             return
 
@@ -154,7 +184,7 @@ class Mpd:
         Queries the database for all artists. A list of Artist
         instances will be provided to the callback.
         """
-        if not self._connected:
+        if not self._connstatus.is_connected():
             callback([])
             return
 
@@ -234,6 +264,10 @@ class Mpd:
         return v
 
     def status(self, callback):
+        if not self._connstatus.is_connected():
+            callback({})
+            return
+
         def task():
             callback(self._client.status())
 

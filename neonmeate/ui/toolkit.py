@@ -124,6 +124,8 @@ class Column(Gtk.ListBox):
 
     # noinspection PyUnusedLocal
     def _on_row_selected(self, box, row):
+        if row is None:
+            return
         child = row.get_child()
         if child and isinstance(child, Gtk.Label):
             self.emit('value-selected', child.get_text())

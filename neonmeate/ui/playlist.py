@@ -17,6 +17,8 @@ class PlayListControls(NeonMeateButtonBox):
             'clear',
             'neonmeate_clear_playlist'
         )
+        clear_btn.set_label("Clear")
+        clear_btn.set_always_show_image(True)
         clear_btn.set_tooltip_text('Clear the play queue')
 
 

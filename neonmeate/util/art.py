@@ -22,6 +22,9 @@ class PriorityQueue:
     def __len__(self):
         return len(self._q)
 
+    def clear(self):
+        self._q.clear()
+
     def pop_min(self):
         _, item = heapq.heappop(self._q)
         return item
@@ -51,6 +54,11 @@ class LruCoverCache:
 
     def __setitem__(self, key, value):
         self.put(key, value)
+
+    def clear(self):
+        self._key_by_path = {}
+        self._img_cache = {}
+        self._q.clear()
 
     def get(self, file_path):
         key = self._key_by_path.get(file_path, None)
@@ -93,12 +101,17 @@ class ArtCache(GObject.GObject):
                   for base in ['cover', 'front', 'folder', 'art']
                   for ext in ['jpg', 'png', 'gif']]
 
-    def __init__(self, root_music_dir, executor):
+    def __init__(self, configstate, executor):
+        self._configstate = configstate
+        self._configstate.connect('notify::musicpath', self._on_music_path)
         self._cache = LruCoverCache(256)
-        self._root_music_dir = root_music_dir
+        self._root_music_dir = configstate.get_musicpath()
         self._pending_requests = {}
         self._cover_file_names = ArtCache.CoverNames
         self._thread_pool = executor
+
+    def _on_music_path(self, path):
+        self._root_music_dir = path
 
     def async_resolve_cover_file(self, dirpath, on_ready):
         def runnable():

@@ -2,8 +2,7 @@ import gi
 
 gi.require_version('Gtk', '3.0')
 
-from gi.repository import Gtk
-from concurrent.futures import ThreadPoolExecutor
+from gi.repository import Gtk, GObject
 
 import logging
 import logging.config
@@ -47,20 +46,26 @@ def configure_logging():
 def main(args=None):
     if not args:
         args = sys.argv[1:]
+
     configure_logging()
     cfg = config.Config.load_main_config()
-    music_dir = cfg['media_dir']
+    configstate = config.ConfigState()
+    configstate.init_from_cfg(cfg)
+
     rng = random.Random()
     rng.seed(int(1000 * time.time()))
 
     with thread.ScheduledExecutor() as executor:
-        mpdclient = nmpd.Mpd(executor, cfg.mpd_host(), cfg.mpd_port())
+        connstatus = nmpd.MpdConnectionStatus()
+        mpdclient = nmpd.Mpd(executor, configstate, connstatus)
         hb = nmpd.MpdHeartbeat(mpdclient, 500, executor)
         # mpdclient.connect()
         # hb.start()
-        art_cache = artcache.ArtCache(music_dir, executor)
+        art_cache = artcache.ArtCache(configstate, executor)
 
-        main_window = app.App(rng, mpdclient, executor, art_cache, hb, cfg)
+        main_window = app.App(
+            rng, mpdclient, executor, art_cache, hb, cfg, configstate,
+            connstatus)
         main_window.connect('destroy', Gtk.main_quit)
         main_window.set_title('NeonMeate')
         main_window.show_all()

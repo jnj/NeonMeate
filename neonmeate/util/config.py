@@ -1,6 +1,18 @@
+import gi
+
 import logging
 import json
 import os
+
+from gi.repository import GObject
+
+
+class ConfigKey:
+    MEDIA_DIR = 'media_dir'
+    CONN_SETTINGS = 'nmpd'
+    CONN_HOST = 'host'
+    CONN_PORT = 'port'
+    CONNECTED = 'connected'
 
 
 def main_config_file():
@@ -27,7 +39,7 @@ def user_home():
 class Config:
     Defaults = {
         # Where to find album art
-        'media_dir': os.path.join(user_home(), 'Music'),
+        ConfigKey.MEDIA_DIR: os.path.join(user_home(), 'Music'),
 
         # Whether to persist the computed color gradient backgrounds
         # in configuration so that they can be loaded later (this will
@@ -35,11 +47,13 @@ class Config:
         # gradient can take a little while).
         'cache_backgrounds': True,
 
+        ConfigKey.CONNECTED: False,
+
         'background_cache': {},
 
-        'nmpd': {
-            'host': 'localhost',
-            'port': 6600
+        ConfigKey.CONN_SETTINGS: {
+            ConfigKey.CONN_HOST: 'localhost',
+            ConfigKey.CONN_PORT: 6600
         }
     }
 
@@ -111,3 +125,49 @@ class Config:
         if artist not in cache_:
             cache_[artist] = {}
         cache_[artist][album] = [c.centroid() for c in clusters]
+
+
+# noinspection PyUnresolvedReferences
+class ConfigState(GObject.GObject):
+    """
+    This holds the player's configuration values, like
+    where the user's music is located, and the MPD
+    server connection info.
+    """
+    connected = GObject.Property(type=bool, default=False)
+    musicpath = GObject.Property(type=str, default='')
+    host_and_port = GObject.Property(type=object, default=None)
+
+    def __init__(self):
+        GObject.GObject.__init__(self)
+        pass
+
+    def init_from_cfg(self, cfg):
+        with self.freeze_notify():
+            self.set_property('musicpath', cfg[ConfigKey.MEDIA_DIR])
+            conn = cfg[ConfigKey.CONN_SETTINGS]
+            hostport = [conn[ConfigKey.CONN_HOST], conn[ConfigKey.CONN_PORT]]
+            self.set_property('host_and_port', hostport)
+
+    def set_connected(self, value):
+        self._update_if_changed('connected', value)
+
+    def get_connected(self):
+        return self.get_property('connected')
+
+    def set_musicpath(self, path):
+        self._update_if_changed('musicpath', path)
+
+    def get_musicpath(self):
+        return self.get_property('musicpath')
+
+    def get_host_and_port(self):
+        return self.get_property('host_and_port')
+
+    def set_host_and_port(self, host, port):
+        self._update_if_changed('host_and_port', [host, port])
+
+    # todo use mixin for this, it's also used by MpdState
+    def _update_if_changed(self, propname, newval):
+        if self.get_property(propname) != newval:
+            self.set_property(propname, newval)

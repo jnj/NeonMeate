@@ -20,8 +20,10 @@ class App(Gtk.ApplicationWindow):
     }
 
     # noinspection PyUnresolvedReferences,PyArgumentList
-    def __init__(self, rng, mpdclient, executor, art_cache, mpd_hb, cfg):
+    def __init__(self, rng, mpdclient, executor, art_cache, mpd_hb, cfg,
+                 configstate, connstatus):
         Gtk.ApplicationWindow.__init__(self, title="NeonMeate")
+        self._configstate = configstate
         self.name = 'NeonMeate'
         self.logger = logging.getLogger(__name__)
         self.set_default_icon_name('nmpd')
@@ -59,7 +61,7 @@ class App(Gtk.ApplicationWindow):
         self._stack_switcher.set_stack(self._stack)
         self._titlebar.pack_start(self._stack_switcher)
         self._settings_btn = Gtk.MenuButton()
-        settings = SettingsMenu()
+        settings = SettingsMenu(executor, configstate, connstatus)
         settings.connect('neonmeate-mpd-connect', self._on_mpd_connect)
         self._settings_btn.set_popover(settings)
         self._settings_btn.set_direction(Gtk.ArrowType.NONE)
@@ -96,7 +98,7 @@ class App(Gtk.ApplicationWindow):
         for c in comps:
             print(c)
 
-    def _on_mpd_connect(self, settings, connected):
+    def _on_mpd_connect(self, settings, host, port, connected):
         if connected:
             self._mpdclient.connect()
             self._mpdhb.start()
@@ -175,7 +177,8 @@ class App(Gtk.ApplicationWindow):
 
     def _on_song_changed(self, hb, artist, title, album, filepath):
         self.logger.info(
-            f"Song changed. artist={artist}, title={title}, album={album}, filepath={filepath}")
+            f"Song changed. artist={artist}, title={title}, album={album},"
+            f" filepath={filepath}")
         title_text = 'NeonMeate'
         if artist and title:
             title_text = f'{artist} - {title}'
