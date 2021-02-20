@@ -7,7 +7,7 @@ from ..util.config import ConfigKey, main_config_file
 # noinspection PyUnresolvedReferences,PyArgumentList
 class SettingsMenu(Gtk.Popover):
     __gsignals__ = {
-        'neonmeate-mpd-connect':
+        'neonmeate-connect-attempt':
             (GObject.SignalFlags.RUN_FIRST, None, (str, int, bool,)),
         'neonmeate-musicdir-updated':
             (GObject.SignalFlags.RUN_FIRST, None, (str,)),
@@ -108,6 +108,6 @@ class SettingsMenu(Gtk.Popover):
         host = self._host_entry.get_text()
         port = int(self._port_entry.get_text())
         self._configstate.set_host_and_port(host, port)
-        self.emit('neonmeate-mpd-connect', host, port, connected)
+        self.emit('neonmeate-connect-attempt', host, port, connected)
         label_txt = 'Connected' if connected else 'Connect'
         self._connect_label.set_text(label_txt)

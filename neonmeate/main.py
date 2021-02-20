@@ -63,7 +63,7 @@ def main(args=None):
                                   default_err_handler) as executor:
         connstatus = nmpd.MpdConnectionStatus()
         mpdclient = nmpd.Mpd(executor, configstate, connstatus)
-        hb = nmpd.MpdHeartbeat(mpdclient, 500, executor)
+        hb = nmpd.MpdHeartbeat(mpdclient, 500, executor, connstatus)
         # mpdclient.connect()
         # hb.start()
         art_cache = artcache.ArtCache(configstate, executor)

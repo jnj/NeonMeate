@@ -348,11 +348,12 @@ class MpdHeartbeat(GObject.GObject):
         'updatingdb': (GObject.SignalFlags.RUN_FIRST, None, (bool,))
     }
 
-    def __init__(self, client, millis_interval, executor):
+    def __init__(self, client, millis_interval, executor, connstatus):
         """
         The executor will be used to periodically query the server.
         """
         GObject.GObject.__init__(self)
+        self._connstatus = connstatus
         self.logger = logging.getLogger(__name__)
         self._client = client
         self._thread = executor
@@ -374,6 +375,13 @@ class MpdHeartbeat(GObject.GObject):
         }.items():
             self._state.connect(f'notify::{prop}', fn)
         self._scheduled_hb = None
+        self._connstatus.connect('mpd_connected', self._on_connect)
+
+    def _on_connect(self, statusobj, connected):
+        if connected:
+            self.start()
+        else:
+            self.stop()
 
     def start(self):
         if self._scheduled_hb is None:

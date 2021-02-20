@@ -23,6 +23,7 @@ class App(Gtk.ApplicationWindow):
     def __init__(self, rng, mpdclient, executor, art_cache, mpd_hb, cfg,
                  configstate, connstatus):
         Gtk.ApplicationWindow.__init__(self, title="NeonMeate")
+        self._connstatus = connstatus
         self._configstate = configstate
         self.name = 'NeonMeate'
         self.logger = logging.getLogger(__name__)
@@ -62,7 +63,7 @@ class App(Gtk.ApplicationWindow):
         self._titlebar.pack_start(self._stack_switcher)
         self._settings_btn = Gtk.MenuButton()
         settings = SettingsMenu(executor, configstate, connstatus)
-        settings.connect('neonmeate-mpd-connect', self._on_mpd_connect)
+        settings.connect('neonmeate-connect-attempt', self._on_connect_attempt)
         self._settings_btn.set_popover(settings)
         self._settings_btn.set_direction(Gtk.ArrowType.NONE)
 
@@ -88,17 +89,19 @@ class App(Gtk.ApplicationWindow):
         self._mpdhb.connect('playback-mode-toggled', self._on_mode_change())
         self._mpdhb.connect('updatingdb', self._on_updating_db)
 
-    def _on_mpd_connect(self, settings, host, port, connected):
-        if connected:
+    def _on_connect_attempt(self, settings, host, port, should_connect):
+        if self._connstatus == should_connect:
+            return
+        if should_connect:
             self._mpdclient.connect()
-            self._mpdhb.start()
+            # self._mpdhb.start()
             self._artists.on_mpd_connected(True)
         else:
             self._titlebar.set_title('NeonMeate')
             self._artists.on_mpd_connected(False)
             self._playlist.clear()
             self._now_playing.on_connection_status(False)
-            self._mpdhb.stop()
+            # self._mpdhb.stop()
             self._mpdclient.disconnect()
 
     def _no_song(self, hb):
