@@ -42,6 +42,10 @@ def configure_logging():
     })
 
 
+def default_err_handler(ex):
+    raise ex
+
+
 # noinspection PyUnresolvedReferences
 def main(args=None):
     if not args:
@@ -55,7 +59,8 @@ def main(args=None):
     rng = random.Random()
     rng.seed(int(1000 * time.time()))
 
-    with thread.ScheduledExecutor() as executor:
+    with thread.ScheduledExecutor(default_err_handler,
+                                  default_err_handler) as executor:
         connstatus = nmpd.MpdConnectionStatus()
         mpdclient = nmpd.Mpd(executor, configstate, connstatus)
         hb = nmpd.MpdHeartbeat(mpdclient, 500, executor)

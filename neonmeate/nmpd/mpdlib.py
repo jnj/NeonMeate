@@ -150,35 +150,6 @@ class Mpd:
 
         self.status(on_status)
 
-    def find_compilations(self, callback):
-
-        def task():
-            results = self._client.list('album', 'group', 'artist')
-            results = [r for r in results if r['artist'] and r['album']]
-
-            for r in results:
-                a = r['album']
-                if not isinstance(a, list):
-                    r['album'] = [a]
-
-            artists_by_album = {}
-
-            for d in results:
-                art = d['artist']
-                albums = d['album']
-                for a in albums:
-                    s = artists_by_album.get(a, set())
-                    s.add(art)
-                    artists_by_album[a] = s
-
-            comps = set()
-            for album, s in artists_by_album.items():
-                if len(s) > 1:
-                    comps.add(album)
-            callback(comps)
-
-        self.exec(task)
-
     def find_artists(self, callback):
         """
         Queries the database for all artists. A list of Artist
@@ -190,7 +161,7 @@ class Mpd:
 
         def task():
             artists = []
-            for a in self._client.list('artist'):
+            for a in self._client.list('albumartist'):
                 artist = Artist.create(a)
                 if artist:
                     artists.append(artist)
@@ -200,7 +171,7 @@ class Mpd:
 
     def find_albums(self, artist, callback):
         def task():
-            songs = self._client.find('artist', artist)
+            songs = self._client.find('albumartist', artist.name)
             songs_by_album = {}
             dirs_by_album = {}
 
@@ -222,11 +193,10 @@ class Mpd:
                     songlist.append(s)
 
             albums = []
-            for key, songs in songs_by_album.items():
-                a = Album(Artist(artist), key[0], key[1], songs,
-                          dirs_by_album[key][0])
-                albums.append(a)
 
+            for key, songs in songs_by_album.items():
+                a = Album(artist, key[0], key[1], songs, dirs_by_album[key][0])
+                albums.append(a)
             ordered_albums = Album.sorted_chrono(albums)
             callback(ordered_albums)
 

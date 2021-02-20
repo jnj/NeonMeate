@@ -32,10 +32,11 @@ class AtomicBoolean:
 
 
 class EventLoopThread(threading.Thread):
-    def __init__(self):
-        super(EventLoopThread, self).__init__(daemon=True)
+    def __init__(self, error_handler):
+        super(EventLoopThread, self).__init__(name='EventLoop', daemon=True)
         self._queue = queue.SimpleQueue()
         self._running = AtomicBoolean(False)
+        self._error_handler = error_handler
 
     def add(self, action):
         self._queue.put(action)
@@ -45,7 +46,10 @@ class EventLoopThread(threading.Thread):
         while self._is_running():
             action = self._queue.get()
             if action:
-                action()
+                try:
+                    action()
+                except BaseException as e:
+                    self._error_handler.on_exception(e)
 
     def stop(self):
         self._running.set(False)
@@ -55,9 +59,16 @@ class EventLoopThread(threading.Thread):
 
 
 class ScheduledExecutor:
-    def __init__(self):
-        self._thread = EventLoopThread()
+    """
+    An event loop that supports running tasks as well as
+    scheduling tasks in the future. This also contains a
+    thread pool, which can have jobs submitted to it.
+    The thread pool does not use the event loop thread.
+    """
+    def __init__(self, event_loop_err_handler, executor_err_handler):
+        self._thread = EventLoopThread(event_loop_err_handler)
         self._scheduler = sched.scheduler(timefunc=time.monotonic)
+        self._exec_error_handler = executor_err_handler
         self._executor = ThreadPoolExecutor()
         self._stopped = False
 
@@ -77,12 +88,27 @@ class ScheduledExecutor:
         self._executor.shutdown(wait=True)
 
     def submit(self, task, *args, **kwargs):
-        return self._executor.submit(task, *args, **kwargs)
+        """
+        Submits a task to the thread pool, not to the event loop
+        :return: a future
+        """
+        def wrapped():
+            try:
+                return task(*args, **kwargs)
+            except BaseException as e:
+                self._exec_error_handler.on_exception(e)
+        return self._executor.submit(wrapped)
 
     def execute(self, action):
+        """
+        Executes a task on the event loop thread.
+        """
         self._thread.add(action)
 
     def schedule(self, delay, action):
+        """
+        Schedules a task on the event loop thread.
+        """
         if self._stopped:
             return
 
@@ -90,6 +116,10 @@ class ScheduledExecutor:
                              self._thread, False)
 
     def schedule_periodic(self, delay, action):
+        """
+        Schedules a repeating task on the event loop thread.
+        """
+
         if self._stopped:
             return
         return ScheduledTask(delay, action, self._scheduler, self._executor,

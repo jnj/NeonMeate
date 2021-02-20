@@ -41,7 +41,7 @@ class ArtistsAlbums(Gtk.Frame):
         self._cfg = cfg
         self._mpdclient = mpdclient
         self._panes = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
-        self._artists_scrollable = Artists(mpdclient, art)
+        self._artists = Artists(mpdclient, art)
 
         self._albums_songs = AlbumsPane(
             self._mpdclient,
@@ -50,20 +50,28 @@ class ArtistsAlbums(Gtk.Frame):
             album_view_opts
         )
 
-        self._panes.pack1(self._artists_scrollable)
+        self._panes.pack1(self._artists)
         self._panes.pack2(self._albums_songs)
 
         self._panes.set_position(artist_list_position)
         self.add(self._panes)
-        self._artists_scrollable.connect(
+        self._artists.connect(
             'artist-selected', self._on_artist_clicked
         )
+        self._artists.connect(
+            'artists-loaded',
+            self._on_artists_loaded
+        )
+
+    def _on_artists_loaded(self, _, done):
+        if done:
+            self._albums_songs.set_artists(self._artists.get_artists())
 
     def on_mpd_connected(self, connected):
         if connected:
             self._reload()
         if not connected:
-            self._artists_scrollable.clear()
+            self._artists.clear()
 
     def on_db_update(self, is_updating):
         pending = self._update_pending.current()
@@ -72,7 +80,7 @@ class ArtistsAlbums(Gtk.Frame):
             self._reload()
 
     def _reload(self):
-        self._artists_scrollable.reload_artists()
+        self._artists.reload_artists()
         self._albums_songs.reload()
 
     def _on_artist_clicked(self, col_widget, selected_value):
@@ -82,7 +90,8 @@ class ArtistsAlbums(Gtk.Frame):
 # noinspection PyArgumentList,PyUnresolvedReferences
 class Artists(toolkit.Scrollable):
     __gsignals__ = {
-        'artist-selected': (GObject.SignalFlags.RUN_FIRST, None, (str,))
+        'artist-selected': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
+        'artists-loaded': (GObject.SignalFlags.RUN_FIRST, None, (bool,))
     }
 
     def __init__(self, mpdclient, art_cache):
@@ -91,9 +100,14 @@ class Artists(toolkit.Scrollable):
         self.add_content(self._artist_column)
         self._mpd = mpdclient
         self._artist_column.connect('value-selected', self._on_artist_clicked)
+        self._artists = []
         self.reload_artists()
 
+    def get_artists(self):
+        return self._artists
+
     def clear(self):
+        self._artists.clear()
         self._artist_column.clear()
 
     def reload_artists(self):
@@ -101,8 +115,10 @@ class Artists(toolkit.Scrollable):
 
         @gtk_main
         def on_artists(artists):
+            self._artists.extend(artists)
             for artist in artists:
                 self._artist_column.add_row(artist.name)
+            self.emit('artists-loaded', True)
 
         self._mpd.find_artists(on_artists)
 
@@ -131,6 +147,11 @@ class Albums(toolkit.Scrollable):
         self._selected_artist = None
         self._entries = []
         self.show_all()
+        self._artists = []
+
+    def set_artists(self, artists):
+        self._artists.clear()
+        self._artists.extend(artists)
 
     def on_reload(self):
         pass
@@ -264,7 +285,12 @@ class AlbumsPane(Gtk.Frame):
 
         self.add(self._albums)
         self._albums_list = []
+        self._artist_by_name = {}
         self._selected_artist = None
+
+    def set_artists(self, artists):
+        self._albums.set_artists(artists)
+        self._artist_by_name = {a.name: a for a in artists}
 
     def reload(self):
         pass
@@ -273,6 +299,8 @@ class AlbumsPane(Gtk.Frame):
         if not artist_name or artist_name == self._selected_artist:
             return
 
+        artist_inst = self._artist_by_name[artist_name]
+
         @gtk_main
         def on_albums(albums):
             self._albums_list.clear()
@@ -280,4 +308,4 @@ class AlbumsPane(Gtk.Frame):
             self._selected_artist = artist_name
             self._albums.on_artist_selected(artist_name, albums)
 
-        self._mpdclient.find_albums(artist_name, on_albums)
+        self._mpdclient.find_albums(artist_inst, on_albums)

@@ -1,36 +1,27 @@
-class Artist:
+def get_sanitized_string(dictlike, key):
+    val = None
+    if key in dictlike:
+        val = dictlike[key]
+        val = val.strip()
+    return None if not val else val
 
-    @staticmethod
-    def sanitize_artist_name(name):
-        if name is None:
-            name = ''
-        else:
-            name = name.strip()
-        if name == '':
-            name = '<Unknown>'
-        return name
+
+class Artist:
+    NameKeys = ['albumartist', 'artist', 'name']
 
     @staticmethod
     def create(dictlike):
+        k = ''
         if isinstance(dictlike, dict):
-            name = ''
-            if 'artist' in dictlike:
-                name = dictlike['artist']
-            elif 'name' in dictlike:
-                name = dictlike['name']
-            name = name.strip()
-            if name:
-                return Artist(name)
+            for k in Artist.NameKeys:
+                name = get_sanitized_string(dictlike, k)
+                if name:
+                    return Artist(name, k == 'albumartist')
         return None
 
-    def __init__(self, name):
-        if isinstance(name, dict):
-            d = name
-            for key in ['artist', 'name']:
-                if key in d:
-                    name = d[key]
-                    break
-        self.name = Artist.sanitize_artist_name(name)
+    def __init__(self, name, is_albumartist):
+        self.is_albumartist = is_albumartist
+        self.name = name
 
 
 class Album:
