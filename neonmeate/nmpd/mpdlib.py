@@ -181,8 +181,8 @@ class Mpd:
                     date = int(song['date'])
                     directory = os.path.dirname(song['file'])
                     key = (album_name, date, directory)
-                    songlist = Mpd._compute_if_absent(songs_by_album, key, [])
-                    dirs = Mpd._compute_if_absent(dirs_by_album, key, [])
+                    songlist = songs_by_album.setdefault(key, [])
+                    dirs = dirs_by_album.setdefault(key, [])
                     dirs.append(directory)
                     s = Song(
                         int(song['track']),
@@ -226,12 +226,6 @@ class Mpd:
             self.exec(removal_task(playlist))
 
         self.playlistinfo(on_playlist)
-
-    @staticmethod
-    def _compute_if_absent(dictionary, key, value):
-        v = dictionary.get(key, value)
-        dictionary[key] = v
-        return v
 
     def status(self, callback):
         if not self._connstatus.is_connected():
