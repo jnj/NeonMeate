@@ -180,7 +180,7 @@ class Mpd:
                     album_name = song['album']
                     date = int(song['date'])
                     directory = os.path.dirname(song['file'])
-                    key = (album_name, date)
+                    key = (album_name, date, directory)
                     songlist = Mpd._compute_if_absent(songs_by_album, key, [])
                     dirs = Mpd._compute_if_absent(dirs_by_album, key, [])
                     dirs.append(directory)
