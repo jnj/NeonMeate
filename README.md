@@ -1,5 +1,7 @@
 # Overview #
-NeonMeate is a GTK3 MPD client.
+NeonMeate is a GTK3 MPD client. The name is a reference
+to the Captain Beefheart song _Neon Meate Dream of a Octafish_.
+
 
 ## Features ##
  * Large display of album artwork
