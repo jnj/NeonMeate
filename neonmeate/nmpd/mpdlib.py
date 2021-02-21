@@ -249,6 +249,13 @@ class Mpd:
 
         self.exec(task)
 
+    def update(self):
+        if self._connstatus.is_connected():
+            def task():
+                self._client.update()
+
+            self.exec(task)
+
 
 # noinspection PyUnresolvedReferences
 class MpdState(GObject.GObject):

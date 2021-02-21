@@ -11,6 +11,8 @@ class SettingsMenu(Gtk.Popover):
             (GObject.SignalFlags.RUN_FIRST, None, (str, int, bool,)),
         'neonmeate-musicdir-updated':
             (GObject.SignalFlags.RUN_FIRST, None, (str,)),
+        'neonmeate-update-requested':
+            (GObject.SignalFlags.RUN_FIRST, None, ())
     }
 
     def __init__(self, executor, configstate, connstatus):
@@ -74,9 +76,15 @@ class SettingsMenu(Gtk.Popover):
                                   Gtk.PositionType.RIGHT, 1, 1)
         self._connect_switch.connect('notify::active', self._on_user_connect_change)
 
+        self._update_btn = Gtk.Button(label='Update')
+        self._update_btn.set_tooltip_text('Update the database')
+        self._update_btn.connect('clicked', self._on_update_request)
+        self._grid.attach_next_to(self._update_btn, switch_box,
+                                  Gtk.PositionType.BOTTOM, 1, 1)
+
         self._save_btn = Gtk.Button(label='Save')
         self._save_btn.connect('clicked', self._on_save_settings)
-        self._grid.attach_next_to(self._save_btn, switch_box,
+        self._grid.attach_next_to(self._save_btn, self._update_btn,
                                   Gtk.PositionType.BOTTOM, 1, 1)
 
         self._grid.show_all()
@@ -87,6 +95,9 @@ class SettingsMenu(Gtk.Popover):
         else:
             self._connect_label.set_text('Connect')
             self._connect_switch.set_active(False)
+
+    def _on_update_request(self, btn):
+        self.emit('neonmeate-update-requested')
 
     def _on_save_settings(self, btn):
         def task():

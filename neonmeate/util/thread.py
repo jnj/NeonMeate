@@ -49,7 +49,7 @@ class EventLoopThread(threading.Thread):
                 try:
                     action()
                 except BaseException as e:
-                    self._error_handler.on_exception(e)
+                    self._error_handler(e)
 
     def stop(self):
         self._running.set(False)
