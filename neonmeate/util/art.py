@@ -110,8 +110,9 @@ class ArtCache(GObject.GObject):
         self._cover_file_names = ArtCache.CoverNames
         self._thread_pool = executor
 
-    def _on_music_path(self, path):
-        self._root_music_dir = path
+    def _on_music_path(self, configstate, _):
+        self._root_music_dir = configstate.get_musicpath()
+        self._cache.clear()
 
     def async_resolve_cover_file(self, dirpath, on_ready):
         def runnable():

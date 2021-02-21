@@ -65,6 +65,7 @@ class App(Gtk.ApplicationWindow):
         settings = SettingsMenu(executor, configstate, connstatus)
         settings.connect('neonmeate-connect-attempt', self._on_connect_attempt)
         settings.connect('neonmeate-update-requested', self._on_update_request)
+        settings.connect('neonmeate-musicdir-updated', self._on_music_dir)
         self._settings_btn.set_popover(settings)
         self._settings_btn.set_direction(Gtk.ArrowType.NONE)
 
@@ -89,6 +90,9 @@ class App(Gtk.ApplicationWindow):
         self._mpdhb.connect('playlist-changed', self._update_playlist)
         self._mpdhb.connect('playback-mode-toggled', self._on_mode_change())
         self._mpdhb.connect('updatingdb', self._on_updating_db)
+
+    def _on_music_dir(self, settings, new_dir):
+        pass
 
     def _on_update_request(self, _):
         self._mpdclient.update()
