@@ -41,7 +41,9 @@ class ArtistsAlbums(Gtk.Frame):
         self._cfg = cfg
         self._mpdclient = mpdclient
         self._panes = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
-        self._artists = Artists(mpdclient, art)
+        self._artists = ArtistsPane(mpdclient, art)
+        self._artists.connect('artist_selected', self._on_artist_clicked)
+        self._artists.connect('artists_loaded', self._on_artists_loaded)
 
         self._albums_songs = AlbumsPane(
             self._mpdclient,
@@ -52,16 +54,9 @@ class ArtistsAlbums(Gtk.Frame):
 
         self._panes.pack1(self._artists)
         self._panes.pack2(self._albums_songs)
-
         self._panes.set_position(artist_list_position)
         self.add(self._panes)
-        self._artists.connect(
-            'artist-selected', self._on_artist_clicked
-        )
-        self._artists.connect(
-            'artists-loaded',
-            self._on_artists_loaded
-        )
+        self.show_all()
 
     def _on_artists_loaded(self, _, done):
         if done:
@@ -90,8 +85,8 @@ class ArtistsAlbums(Gtk.Frame):
 # noinspection PyArgumentList,PyUnresolvedReferences
 class Artists(toolkit.Scrollable):
     __gsignals__ = {
-        'artist-selected': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
-        'artists-loaded': (GObject.SignalFlags.RUN_FIRST, None, (bool,))
+        'artist_selected': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
+        'artists_loaded': (GObject.SignalFlags.RUN_FIRST, None, (bool,))
     }
 
     def __init__(self, mpdclient, art_cache):
@@ -118,12 +113,27 @@ class Artists(toolkit.Scrollable):
             self._artists.extend(artists)
             for artist in artists:
                 self._artist_column.add_row(artist.name)
-            self.emit('artists-loaded', True)
+            self.emit('artists_loaded', True)
 
         self._mpd.find_artists(on_artists)
 
     def _on_artist_clicked(self, obj, value):
-        self.emit('artist-selected', value)
+        self.emit('artist_selected', value)
+
+    def set_filter(self, artist_text):
+        if artist_text is None or len(artist_text) == 0:
+            self._artist_column.set_filter_func(None)
+            return
+
+        search_txt = artist_text.lower()
+        self._artist_column.invalidate_filter()
+
+        def filter_fn(listboxrow):
+            label = listboxrow.get_child()
+            txt = label.get_text().lower()
+            return search_txt in txt
+
+        self._artist_column.set_filter_func(filter_fn)
 
 
 # noinspection PyArgumentList,PyUnresolvedReferences
@@ -309,3 +319,47 @@ class AlbumsPane(Gtk.Frame):
             self._albums.on_artist_selected(artist_name, albums)
 
         self._mpdclient.find_albums(artist_inst, on_albums)
+
+
+# noinspection PyArgumentList,PyUnresolvedReferences
+class ArtistsPane(Gtk.Frame):
+    __gsignals__ = {
+        'artist_selected': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
+        'artists_loaded': (GObject.SignalFlags.RUN_FIRST, None, (bool,))
+    }
+
+    def __init__(self, mpdclient, artcache):
+        super(ArtistsPane, self).__init__()
+        self._vbox = Gtk.VBox()
+        self.add(self._vbox)
+        self._artists = Artists(mpdclient, artcache)
+        self._searchbar = Gtk.ActionBar()
+        self._search_entry = Gtk.SearchEntry()
+        self._searchbar.add(self._search_entry)
+        self._vbox.pack_start(self._searchbar, False, False, 0)
+        self._vbox.pack_start(self._artists, True, True, 0)
+        self._artists.show()
+        self._searchbar.show()
+        self._vbox.show_all()
+        self._artists.connect('artist_selected', self._on_artist_selected)
+        self._artists.connect('artists_loaded', self._on_artists_loaded)
+        self._searched_artist = None
+        self._search_entry.connect('search-changed', self._on_artist_searched)
+
+    def _on_artist_searched(self, search_entry):
+        self._artists.set_filter(search_entry.get_text())
+
+    def _on_artists_loaded(self, _, b):
+        self.emit('artists_loaded', b)
+
+    def _on_artist_selected(self, _, artist):
+        self.emit('artist_selected', artist)
+
+    def reload_artists(self):
+        self._artists.reload_artists()
+
+    def get_artists(self):
+        return self._artists.get_artists()
+
+    def clear(self):
+        self._artists.clear()
