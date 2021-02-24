@@ -67,6 +67,7 @@ class ArtistsAlbums(Gtk.Frame):
             self._reload()
         if not connected:
             self._artists.clear()
+            self._albums_songs.clear()
 
     def on_db_update(self, is_updating):
         pending = self._update_pending.current()
@@ -160,20 +161,28 @@ class Albums(toolkit.Scrollable):
         self._artists = []
 
     def set_artists(self, artists):
+        self._selected_artist = None
         self._artists.clear()
         self._artists.extend(artists)
 
     def on_reload(self):
-        pass
+        self.clear()
 
+    def clear(self):
+        self._clear_albums()
+    
     def _on_all_albums_ready(self):
-        chrono_order = sorted(self._entries, key=lambda e: e.album.date)
+        def sort_key(entry):
+            album = entry.album
+            return album.date, album.title, album.artist
+        chrono_order = sorted(self._entries, key=sort_key)
         for _, entry in enumerate(chrono_order):
             entry.show()
             self._albums_grid.add(entry)
         self.queue_draw()
 
     def _clear_albums(self):
+        self._selected_artist = None
         self._entries.clear()
         for c in self._albums_grid.get_children():
             self._albums_grid.remove(c)
@@ -234,8 +243,9 @@ class AlbumEntry(Gtk.VBox):
         self._btn.set_relief(Gtk.ReliefStyle.NONE)
         self._btn.set_always_show_image(True)
         esc_title = GLib.markup_escape_text(album.title)
+        esc_path = GLib.markup_escape_text(album.dirpath)
         self._btn.set_tooltip_markup(
-            f'{esc_title}\n<small>{album.date}</small>')
+            f'{esc_title}\n<small>{album.date}\n{esc_path}</small>')
         self._popover = AddRemove('', album, self)
         self._popover.connect('add-clicked', self._on_add)
         self._popover.connect('remove-clicked', self._on_remove)
@@ -298,6 +308,10 @@ class AlbumsPane(Gtk.Frame):
         self._artist_by_name = {}
         self._selected_artist = None
 
+    def clear(self):
+        self._albums.clear()
+        self._selected_artist = None
+    
     def set_artists(self, artists):
         self._albums.set_artists(artists)
         self._artist_by_name = {a.name: a for a in artists}

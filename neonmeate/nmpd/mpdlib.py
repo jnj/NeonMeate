@@ -243,6 +243,12 @@ class Mpd:
 
         self.exec(task)
 
+    def shuffle_playlist(self):
+        def task():
+            self._client.shuffle()
+
+        self.exec(task)
+        
     def delete_playlist_item(self, index):
         def task():
             self._client.delete(index)

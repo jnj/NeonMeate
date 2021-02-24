@@ -28,7 +28,7 @@ class Album:
 
     @staticmethod
     def sorted_chrono(albums):
-        return sorted(albums, key=lambda album: album.date)
+        return sorted(albums, key=lambda album: (album.date, album.title, album.artist))
 
     def __init__(self, artist, title, date, songs, dirpath):
         self.date = date

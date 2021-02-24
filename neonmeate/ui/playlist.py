@@ -7,7 +7,8 @@ from neonmeate.ui.controls import NeonMeateButtonBox, ControlButton
 # noinspection PyUnresolvedReferences
 class PlayListControls(NeonMeateButtonBox):
     __gsignals__ = {
-        'neonmeate_clear_playlist': (GObject.SignalFlags.RUN_FIRST, None, ())
+        'neonmeate_clear_playlist': (GObject.SignalFlags.RUN_FIRST, None, ()),
+        'neonmeate_shuffle_playlist': (GObject.SignalFlags.RUN_FIRST, None, ()),
     }
 
     def __init__(self):
@@ -20,7 +21,14 @@ class PlayListControls(NeonMeateButtonBox):
         clear_btn.set_label("Clear")
         clear_btn.set_always_show_image(True)
         clear_btn.set_tooltip_text('Clear the play queue')
-
+        shufl_btn = self._add_button(
+            ControlButton('shuffle'),
+            'shuffle',
+            'neonmeate_shuffle_playlist'
+        )
+        shufl_btn.set_label('Shuffle')
+        shufl_btn.set_always_show_image(True)
+        shufl_btn.set_tooltip_text('Shuffle the play queue')
 
 # noinspection PyUnresolvedReferences
 class PlaylistContainer(Gtk.Frame):
@@ -41,10 +49,14 @@ class PlaylistContainer(Gtk.Frame):
         self._box.show_all()
         self._box.show()
         self._controls.connect('neonmeate_clear_playlist', self._on_clear)
+        self._controls.connect('neonmeate_shuffle_playlist', self._on_shuffle)
 
     def _on_del_item(self, pl, idx):
         self._mpdclient.delete_playlist_item(idx)
 
+    def _on_shuffle(self, _):
+        self._mpdclient.shuffle_playlist()
+        
     def _on_clear(self, _):
         self._mpdclient.clear_playlist()
 
@@ -71,10 +83,10 @@ class Playlist(tk.Scrollable):
             ['Track', 'Artist', 'Album', 'Title', 'Time']
         )
         self._selected_row = None
-        self._widget = self._playlist_table.as_widget()
-        self.add_content(self._widget)
+        self._treeview = self._playlist_table.as_widget()
+        self.add_content(self._treeview)
         self._playlist_table.set_selection_handler(self._on_selection)
-        self._widget.connect('key-press-event', self._on_keypress)
+        self._treeview.connect('key-press-event', self._on_keypress)
 
     def _on_keypress(self, treeview, eventkey):
         if eventkey.keyval == Gdk.KEY_Down or \

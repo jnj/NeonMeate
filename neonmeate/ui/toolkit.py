@@ -168,6 +168,7 @@ class Table:
             self._on_selection_changed
         )
         self.tree.set_property('fixed_height_mode', True)
+        self.tree.columns_autosize()
         return self.tree
 
     def _disable_selection_signal(self):
