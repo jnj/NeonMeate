@@ -74,7 +74,8 @@ class SettingsMenu(Gtk.Popover):
         switch_box.pack_end(self._connect_switch, False, False, 0)
         self._grid.attach_next_to(switch_box, self._connect_label,
                                   Gtk.PositionType.RIGHT, 1, 1)
-        self._connect_switch.connect('notify::active', self._on_user_connect_change)
+        self._connect_switch.connect('notify::active',
+                                     self._on_user_connect_change)
 
         self._update_btn = Gtk.Button(label='Update')
         self._update_btn.set_tooltip_text('Update the database')
@@ -90,11 +91,9 @@ class SettingsMenu(Gtk.Popover):
         self._grid.show_all()
 
     def _on_mpd_connection(self, _, success):
-        if success:
-            pass
-        else:
-            self._connect_label.set_text('Connect')
-            self._connect_switch.set_active(False)
+        self._connect_switch.set_active(success)
+        txt = 'Connected' if success else 'Connect'
+        self._connect_label.set_text(txt)
 
     def _on_update_request(self, btn):
         self.emit('neonmeate-update-requested')

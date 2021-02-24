@@ -2,7 +2,7 @@ import gi
 
 gi.require_version('Gtk', '3.0')
 
-from gi.repository import Gtk, GObject
+from gi.repository import Gtk, GObject, GLib
 
 import logging
 import logging.config
@@ -12,6 +12,7 @@ import time
 
 import neonmeate.nmpd.mpdlib as nmpd
 import neonmeate.ui.app as app
+import neonmeate.ui.toolkit as toolkit
 import neonmeate.util.art as artcache
 import neonmeate.util.config as config
 import neonmeate.util.thread as thread
@@ -74,6 +75,18 @@ def main(args=None):
         main_window.connect('destroy', Gtk.main_quit)
         main_window.set_title('NeonMeate')
         main_window.show_all()
+
+        @toolkit.gtk_main
+        def connect():
+            if cfg.is_connected():
+                main_window.on_connect_attempt(
+                    None,
+                    cfg.mpd_host(),
+                    cfg.mpd_port(),
+                    True
+                )
+
+        connect()
         Gtk.main()
         cfg.save(config.main_config_file())
         logging.shutdown()

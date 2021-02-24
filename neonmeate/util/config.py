@@ -102,10 +102,13 @@ class Config:
             json.dump(self._config, f)
 
     def mpd_host(self):
-        return self['nmpd']['host']
+        return self[ConfigKey.CONN_SETTINGS][ConfigKey.CONN_HOST]
 
     def mpd_port(self):
-        return self['nmpd']['port']
+        return self[ConfigKey.CONN_SETTINGS][ConfigKey.CONN_PORT]
+
+    def is_connected(self):
+        return self[ConfigKey.CONNECTED]
 
     def get_background(self, artist, album, rng):
         cache_ = self['background_cache']

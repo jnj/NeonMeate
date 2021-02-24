@@ -63,7 +63,7 @@ class App(Gtk.ApplicationWindow):
         self._titlebar.pack_start(self._stack_switcher)
         self._settings_btn = Gtk.MenuButton()
         settings = SettingsMenu(executor, configstate, connstatus)
-        settings.connect('neonmeate-connect-attempt', self._on_connect_attempt)
+        settings.connect('neonmeate-connect-attempt', self.on_connect_attempt)
         settings.connect('neonmeate-update-requested', self._on_update_request)
         settings.connect('neonmeate-musicdir-updated', self._on_music_dir)
         self._settings_btn.set_popover(settings)
@@ -97,19 +97,17 @@ class App(Gtk.ApplicationWindow):
     def _on_update_request(self, _):
         self._mpdclient.update()
 
-    def _on_connect_attempt(self, settings, host, port, should_connect):
+    def on_connect_attempt(self, settings, host, port, should_connect):
         if self._connstatus == should_connect:
             return
         if should_connect:
             self._mpdclient.connect()
-            # self._mpdhb.start()
             self._artists.on_mpd_connected(True)
         else:
             self._titlebar.set_title('NeonMeate')
             self._artists.on_mpd_connected(False)
             self._playlist.clear()
             self._now_playing.on_connection_status(False)
-            # self._mpdhb.stop()
             self._mpdclient.disconnect()
 
     def _no_song(self, hb):
