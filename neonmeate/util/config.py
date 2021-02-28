@@ -12,6 +12,7 @@ class ConfigKey:
     CONN_SETTINGS = 'nmpd'
     CONN_HOST = 'host'
     CONN_PORT = 'port'
+    CONN_HB = 'hb'
     CONNECTED = 'connected'
 
 
@@ -53,7 +54,8 @@ class Config:
 
         ConfigKey.CONN_SETTINGS: {
             ConfigKey.CONN_HOST: 'localhost',
-            ConfigKey.CONN_PORT: 6600
+            ConfigKey.CONN_PORT: 6600,
+            ConfigKey.CONN_HB: 500
         }
     }
 
@@ -100,6 +102,9 @@ class Config:
             os.makedirs(os.path.basename(file))
         with open(file, 'w') as f:
             json.dump(self._config, f)
+
+    def mpd_hb_interval(self):
+        return self._config.get(ConfigKey.CONN_HB, 500)
 
     def mpd_host(self):
         return self[ConfigKey.CONN_SETTINGS][ConfigKey.CONN_HOST]

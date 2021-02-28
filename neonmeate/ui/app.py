@@ -65,11 +65,12 @@ class App(Gtk.ApplicationWindow):
         self._stack_switcher.set_stack(self._stack)
         self._titlebar.pack_start(self._stack_switcher)
         self._settings_btn = Gtk.MenuButton()
-        settings = SettingsMenu(executor, configstate, connstatus)
-        settings.connect('neonmeate-connect-attempt', self.on_connect_attempt)
-        settings.connect('neonmeate-update-requested', self._on_update_request)
-        settings.connect('neonmeate-musicdir-updated', self._on_music_dir)
-        self._settings_btn.set_popover(settings)
+        self._settings = SettingsMenu(executor, configstate, connstatus)
+        self._connect_handler = self._settings.connect(
+            'neonmeate-connect-attempt', self.on_connect_attempt)
+        self._settings.connect('neonmeate-update-requested', self._on_update_request)
+        self._settings.connect('neonmeate-musicdir-updated', self._on_music_dir)
+        self._settings_btn.set_popover(self._settings)
         self._settings_btn.set_direction(Gtk.ArrowType.NONE)
 
         self._titlebar.pack_end(self._settings_btn)
@@ -101,17 +102,18 @@ class App(Gtk.ApplicationWindow):
         self._mpdclient.update()
 
     def on_connect_attempt(self, settings, host, port, should_connect):
-        if self._connstatus == should_connect:
-            return
-        if should_connect:
-            self._mpdclient.connect()
-            self._artists.on_mpd_connected(True)
-        else:
-            self._titlebar.set_title('NeonMeate')
-            self._artists.on_mpd_connected(False)
-            self._playlist.clear()
-            self._now_playing.on_connection_status(False)
-            self._mpdclient.disconnect()
+        with self._settings.handler_block(self._connect_handler):
+            if self._connstatus == should_connect:
+                return
+            if should_connect:
+                self._mpdclient.connect()
+                self._artists.on_mpd_connected(True)
+            else:
+                self._titlebar.set_title('NeonMeate')
+                self._artists.on_mpd_connected(False)
+                self._playlist.clear()
+                self._now_playing.on_connection_status(False)
+                self._mpdclient.disconnect()
 
     def _no_song(self, hb):
         self._on_song_changed(hb, None, None, None, None)

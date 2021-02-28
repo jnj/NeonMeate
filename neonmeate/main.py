@@ -37,14 +37,14 @@ def configure_logging():
         'loggers': {
             'neonmeate': {
                 'handlers': ['console'],
-                'level': 'INFO'
+                'level': 'DEBUG'
             }
         }
     })
 
 
-def default_err_handler(ex):
-    raise ex
+def log_errors(ex):
+    logging.exception('Exception caught')
 
 
 # noinspection PyUnresolvedReferences
@@ -56,22 +56,27 @@ def main(args=None):
     cfg = config.Config.load_main_config()
     configstate = config.ConfigState()
     configstate.init_from_cfg(cfg)
-
     rng = random.Random()
     rng.seed(int(1000 * time.time()))
 
-    with thread.ScheduledExecutor(default_err_handler,
-                                  default_err_handler) as executor:
+    with thread.ScheduledExecutor(log_errors, log_errors) as executor:
         connstatus = nmpd.MpdConnectionStatus()
         mpdclient = nmpd.Mpd(executor, configstate, connstatus)
-        hb = nmpd.MpdHeartbeat(mpdclient, 500, executor, connstatus)
-        # mpdclient.connect()
-        # hb.start()
+        hb_interval = cfg.mpd_hb_interval()
+        hb = nmpd.MpdHeartbeat(mpdclient, hb_interval, executor, connstatus)
         art_cache = artcache.ArtCache(configstate, executor)
 
         main_window = app.App(
-            rng, mpdclient, executor, art_cache, hb, cfg, configstate,
-            connstatus)
+            rng,
+            mpdclient,
+            executor,
+            art_cache,
+            hb,
+            cfg,
+            configstate,
+            connstatus
+        )
+
         main_window.connect('destroy', Gtk.main_quit)
         main_window.set_title('NeonMeate')
         main_window.show_all()
