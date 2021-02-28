@@ -39,7 +39,7 @@ class ArtistsAlbums(Gtk.Box):
         self._cfg = cfg
         self._mpdclient = mpdclient
         columns = Gtk.HBox()
-        self._artists = ArtistsPane(mpdclient, art)
+        self._artists = ArtistsContainer(mpdclient)
         self._artists.connect('artist_selected', self._on_artist_clicked)
         self._artists.connect('artists_loaded', self._on_artists_loaded)
         columns.pack_start(self._artists, False, False, 0)
@@ -81,16 +81,18 @@ class ArtistsAlbums(Gtk.Box):
 
 
 # noinspection PyArgumentList,PyUnresolvedReferences
-class Artists(toolkit.Scrollable):
+class Artists(Gtk.ScrolledWindow):
     __gsignals__ = {
         'artist_selected': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
         'artists_loaded': (GObject.SignalFlags.RUN_FIRST, None, (bool,))
     }
 
-    def __init__(self, mpdclient, art_cache):
+    def __init__(self, mpdclient):
         super(Artists, self).__init__()
+        self.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        self.set_shadow_type(Gtk.ShadowType.NONE)
         self._artist_column = toolkit.Column(vmargin=15, selectable_rows=True)
-        self.add_content(self._artist_column)
+        self.add(self._artist_column)
         self._mpd = mpdclient
         self._artist_column.connect('value-selected', self._on_artist_clicked)
         self._artists = []
@@ -223,71 +225,6 @@ class Albums(toolkit.Scrollable):
         self._on_all_albums_ready()
 
 
-# noinspection PyUnresolvedReferences
-class AddRemove(Gtk.Popover):
-    __gsignals__ = {
-        'add-clicked': (GObject.SignalFlags.RUN_FIRST, None, ()),
-        'remove-clicked': (GObject.SignalFlags.RUN_FIRST, None, ())
-    }
-
-    def __init__(self, artist, album, parent_widget):
-        super(AddRemove, self).__init__()
-        self.set_constrain_to(Gtk.PopoverConstraint.WINDOW)
-        self._artist = artist
-        self._album = album
-        grid = Gtk.Grid()
-        self._add_btn = controls.ControlButton('list-add')
-        self._rem_btn = controls.ControlButton('list-remove')
-
-        grid.attach(self._add_btn, 0, 0, 1, 1)
-        grid.attach_next_to(self._rem_btn, self._add_btn,
-                            Gtk.PositionType.RIGHT, 1, 1)
-
-        songs = album.sorted_songs()
-
-        def fmt_number(n):
-            if len(songs) < 100:
-                return f'{n:02}'
-            else:
-                return f'{n:03}'
-
-        prev_row = self._add_btn
-        grid.set_column_homogeneous(True)
-        for song in songs:
-            track_label = Gtk.Label()
-            track_label.set_text(fmt_number(song.number))
-            track_label.set_xalign(0)
-            track_label.set_hexpand(False)
-            track_label.set_ellipsize(Pango.EllipsizeMode.END)
-            grid.attach_next_to(track_label, prev_row,
-                                Gtk.PositionType.BOTTOM, 1, 1)
-            prev_row = track_label
-            label_container = FixedWidth(100)
-            title_label = Gtk.Label()
-            title_label.set_text(song.title)
-            title_label.set_xalign(0)
-            title_label.set_hexpand(False)
-            title_label.set_ellipsize(Pango.EllipsizeMode.END)
-            label_container.add(title_label)
-            grid.attach_next_to(label_container, track_label,
-                                Gtk.PositionType.RIGHT, 11, 1)
-
-        # self._vbox.pack_start(songbox, False, False, 0)
-
-        self.add(grid)
-        grid.show_all()
-        # self._vbox.show_all()
-        self.set_relative_to(parent_widget)
-        self._add_btn.connect('clicked', self._on_add)
-        self._rem_btn.connect('clicked', self._on_rem)
-
-    def _on_add(self, x):
-        self.emit('add-clicked')
-
-    def _on_rem(self, x):
-        self.emit('remove-clicked')
-
-
 # noinspection PyArgumentList,PyUnresolvedReferences
 class FixedWidth(Gtk.Bin):
     def __init__(self, max_width):
@@ -319,9 +256,6 @@ class AlbumEntry(Gtk.VBox):
         esc_path = GLib.markup_escape_text(album.dirpath)
         self._btn.set_tooltip_markup(
             f'{esc_title}\n<small>{album.date}\n{esc_path}</small>')
-        self._popover = AddRemove('', album, self)
-        self._popover.connect('add-clicked', self._on_add)
-        self._popover.connect('remove-clicked', self._on_remove)
         self.index = index
         self.width = width
         self.album = album
@@ -399,6 +333,19 @@ class Songs(Gtk.ScrolledWindow):
 
 
 # noinspection PyArgumentList,PyUnresolvedReferences
+class ExpandedButtonBox(Gtk.HButtonBox):
+    def __init__(self):
+        super(ExpandedButtonBox, self).__init__()
+        self.set_layout(Gtk.ButtonBoxStyle.EXPAND)
+
+    def add_labeled(self, label_text):
+        button = Gtk.Button()
+        button.add(Gtk.Label(label_text))
+        self.add(button)
+        return button
+
+
+# noinspection PyArgumentList,PyUnresolvedReferences
 class AlbumsAndSongs(Gtk.HBox):
 
     def __init__(self, mpdclient, art_cache, placeholder_pixbuf,
@@ -423,23 +370,21 @@ class AlbumsAndSongs(Gtk.HBox):
             albums_view_options.album_size +
             albums_view_options.col_spacing + 5)
         self._song_action_bar = Gtk.ActionBar()
-        self._buttonbox = Gtk.ButtonBox()
-        self._buttonbox.set_layout(Gtk.ButtonBoxStyle.START)
-        self._song_action_bar.add(self._buttonbox)
-        self._add_all = Gtk.Button()
-        self._add_all.add(Gtk.Label('Add all'))
-        self._rem_all = Gtk.Button()
-        self._rem_all.add(Gtk.Label('Remove all'))
+
+        self._all_buttonbox = ExpandedButtonBox()
+        self._add_all = self._all_buttonbox.add_labeled('Add all')
+        self._rem_all = self._all_buttonbox.add_labeled('Remove all')
+
+        self._sel_buttonbox = ExpandedButtonBox()
         self._add_sel = controls.ControlButton('list-add')
         self._add_sel.set_tooltip_markup('Add selected')
         self._rem_sel = controls.ControlButton('list-remove')
         self._rem_sel.set_tooltip_markup('Remove selected')
-        self._buttonbox.add(self._add_all)
-        self._buttonbox.add(self._rem_all)
-        self._buttonbox.add(self._add_sel)
-        self._buttonbox.add(self._rem_sel)
-        self._buttonbox.set_child_non_homogeneous(self._add_sel, True)
-        self._buttonbox.set_child_non_homogeneous(self._rem_sel, True)
+        self._sel_buttonbox.add(self._add_sel)
+        self._sel_buttonbox.add(self._rem_sel)
+
+        self._song_action_bar.add(self._all_buttonbox)
+        self._song_action_bar.add(self._sel_buttonbox)
         self._songsbox.pack_end(self._song_action_bar, False, False, 0)
         self._add_all.connect('clicked', self._on_add_all)
         self._rem_all.connect('clicked', self._on_rem_all)
@@ -526,27 +471,27 @@ class AlbumsAndSongs(Gtk.HBox):
 
 
 # noinspection PyArgumentList,PyUnresolvedReferences
-class ArtistsPane(Gtk.Box):
+class ArtistsContainer(Gtk.Bin):
     __gsignals__ = {
         'artist_selected': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
         'artists_loaded': (GObject.SignalFlags.RUN_FIRST, None, (bool,))
     }
 
-    def __init__(self, mpdclient, artcache):
-        super(ArtistsPane, self).__init__()
+    def __init__(self, mpdclient):
+        super(ArtistsContainer, self).__init__()
         self._vbox = Gtk.VBox()
         self.add(self._vbox)
-        self._artists = Artists(mpdclient, artcache)
+        self._artists = Artists(mpdclient)
         self._searchbar = Gtk.ActionBar()
         self._search_entry = Gtk.SearchEntry()
         self._searchbar.add(self._search_entry)
         self._vbox.pack_start(self._searchbar, False, False, 0)
         self._vbox.pack_start(self._artists, True, True, 0)
-        self._vbox.show_all()
         self._artists.connect('artist_selected', self._on_artist_selected)
         self._artists.connect('artists_loaded', self._on_artists_loaded)
         self._searched_artist = None
         self._search_entry.connect('search-changed', self._on_artist_searched)
+        self.show_all()
 
     def _on_artist_searched(self, search_entry):
         self._artists.set_filter(search_entry.get_text())

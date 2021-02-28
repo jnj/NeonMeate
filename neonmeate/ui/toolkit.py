@@ -122,6 +122,7 @@ class Column(Gtk.ListBox):
         label.set_ellipsize(Pango.EllipsizeMode.END)
         label.set_margin_top(self._vmargin)
         label.set_margin_bottom(self._vmargin)
+        label.set_margin_start(self._vmargin)
         label.show()
         self.add(label)
 
