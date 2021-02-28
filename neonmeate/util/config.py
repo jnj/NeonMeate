@@ -112,6 +112,9 @@ class Config:
     def mpd_port(self):
         return self[ConfigKey.CONN_SETTINGS][ConfigKey.CONN_PORT]
 
+    def set_connected(self, connected):
+        self._config[ConfigKey.CONNECTED] = connected
+
     def is_connected(self):
         return self[ConfigKey.CONNECTED]
 
