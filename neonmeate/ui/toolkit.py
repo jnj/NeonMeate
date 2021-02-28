@@ -99,11 +99,14 @@ class Column(Gtk.ListBox):
         'value-selected': (GObject.SignalFlags.RUN_FIRST, None, (str,))
     }
 
-    def __init__(self, vmargin=10, selectable_rows=True):
+    def __init__(self, vmargin=10, selectable_rows=True, multiselect=False):
         super(Column, self).__init__()
         self._vmargin = vmargin
         if selectable_rows:
-            self.set_selection_mode(Gtk.SelectionMode.SINGLE)
+            if multiselect:
+                self.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
+            else:
+                self.set_selection_mode(Gtk.SelectionMode.SINGLE)
             super(Column, self).connect('row-selected', self._on_row_selected)
         else:
             self.set_selection_mode(Gtk.SelectionMode.NONE)

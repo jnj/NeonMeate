@@ -368,8 +368,7 @@ class Songs(Gtk.ScrolledWindow):
     def __init__(self, album):
         super(Songs, self).__init__()
         self._album = album
-        self._box = Gtk.ListBox()
-        self._box.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
+        self._box = toolkit.Column(15, True, True)
         self.add(self._box)
         self._songs = album.sorted_songs()
 
@@ -382,13 +381,8 @@ class Songs(Gtk.ScrolledWindow):
                 return f'{n:03}'
 
         for song in self._songs:
-            label = Gtk.Label()
             text = f'{fmt_number(song.number)}. {song.title}'
-            label.set_text(text)
-            label.set_xalign(0)
-            label.set_hexpand(True)
-            label.set_ellipsize(Pango.EllipsizeMode.END)
-            self._box.add(label)
+            self._box.add_row(text)
 
         self.show_all()
 
