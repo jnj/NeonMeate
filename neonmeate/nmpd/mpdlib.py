@@ -202,20 +202,33 @@ class Mpd:
 
         self.exec(task)
 
+    def add_songs(self, songs):
+        files = [song.file for song in songs]
+        self.add_files_to_playlist(files)
+
+    def remove_songs(self, songs):
+        self.remove_files_from_playlist({song.file for song in songs})
+
     def add_album_to_playlist(self, album):
         """
         Appends an album to the queue.
         :param album: an Album instance containing the songs to add.
         """
+        files = [song.file for song in album.sorted_songs()]
+        self.add_files_to_playlist(files)
 
+    def add_files_to_playlist(self, files):
         def task():
-            for song in album.sorted_songs():
-                self._client.add(song.file)
+            for file in files:
+                self._client.add(file)
 
         self.exec(task)
 
     def remove_album_from_playlist(self, album):
         files = set(s.file for s in album.sorted_songs())
+        self.remove_files_from_playlist(files)
+
+    def remove_files_from_playlist(self, files):
 
         def removal_task(playlist):
             for t in playlist:
@@ -248,7 +261,7 @@ class Mpd:
             self._client.shuffle()
 
         self.exec(task)
-        
+
     def delete_playlist_item(self, index):
         def task():
             self._client.delete(index)

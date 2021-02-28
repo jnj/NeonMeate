@@ -55,7 +55,7 @@ class App(Gtk.ApplicationWindow):
         self._update_playlist(None)
 
         self._now_playing = NowPlaying(rng, art_cache, executor, cfg)
-        self._stack.add_titled(self._artists, 'artists', 'Artists')
+        self._stack.add_titled(self._artists, 'library', 'Library')
         self._stack.add_titled(self._playlist, 'playlist', 'Playlist')
         self._stack.add_titled(self._now_playing, 'now_playing', 'Playing')
         self._stack_switcher = Gtk.StackSwitcher()

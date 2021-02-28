@@ -111,7 +111,7 @@ class Column(Gtk.ListBox):
     def clear(self):
         children = self.get_children()
         for child in children:
-            self.remove(child)
+            child.destroy()
 
     def add_row(self, text):
         label = Gtk.Label(text, xalign=0)
