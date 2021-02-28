@@ -23,12 +23,25 @@ class Artist:
         self.is_albumartist = is_albumartist
         self.name = name
 
+    def __str__(self):
+        return self.name
+
+    def __eq__(self, other):
+        return isinstance(other, Artist) and other.name == self.name
+
+    def __hash__(self):
+        return hash(self.name)
+
 
 class Album:
 
     @staticmethod
+    def chrono_sort_key(album):
+        return album.date, album.title, album.artist
+
+    @staticmethod
     def sorted_chrono(albums):
-        return sorted(albums, key=lambda album: (album.date, album.title, album.artist))
+        return sorted(albums, key=Album.chrono_sort_key)
 
     def __init__(self, artist, title, date, songs, dirpath):
         self.date = date
@@ -38,17 +51,48 @@ class Album:
         self.dirpath = dirpath
 
     def __str__(self):
-        return f'Album:title={self.title}, date={self.date}, artist={self.artist}'
+        return f'Album:title={self.title}, ' \
+               f'date={self.date}, ' \
+               f'artist={self.artist}'
+
+    def __eq__(self, other):
+        return isinstance(other, Album) and other.dirpath == self.dirpath
+
+    def __hash__(self):
+        return hash(self.dirpath)
 
     def sorted_songs(self):
-        return sorted(self.songs, key=lambda song: (song.discnum, song.number))
+        return sorted(self.songs, key=Song.sort_key)
 
 
 class Song:
-    def __init__(self, number, discnum, title, file):
+
+    @staticmethod
+    def sort_key(song):
+        discnumkey = song.discnum or 1
+        return discnumkey, song.number
+
+    def __init__(self, number, discnum, title, file, artist=None):
+        """
+        Creates a Song instance. The artist should only by non-None
+        if this song is part of a compilation album.
+        """
         self.number = number
         self.discnum = discnum
         self.title = title
         if isinstance(self.title, list):
             self.title = self.title[0]
         self.file = file
+
+    def __hash__(self):
+        return hash(self.file)
+
+    def __eq__(self, other):
+        return isinstance(other, Song) and other.file == self.file
+
+    def __str__(self):
+        return f'Song:number={self.number}, ' \
+               f'discnum={self.discnum}, ' \
+               f'title={self.title}, ' \
+               f'artist={self.artist}, ' \
+               f'file={self.file}'
