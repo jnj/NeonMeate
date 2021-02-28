@@ -49,4 +49,6 @@ class Song:
         self.number = number
         self.discnum = discnum
         self.title = title
+        if isinstance(self.title, list):
+            self.title = self.title[0]
         self.file = file
