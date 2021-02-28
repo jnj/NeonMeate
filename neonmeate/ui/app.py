@@ -34,7 +34,7 @@ class App(Gtk.ApplicationWindow):
         self._mpdclient = mpdclient
         self._art = art_cache
         # TODO pick up this size from config
-        self.set_default_size(800, 600)
+        self.set_default_size(860, 860)
         self._titlebar = Gtk.HeaderBar()
         self._titlebar.set_title("NeonMeate")
         self._titlebar.set_show_close_button(True)
