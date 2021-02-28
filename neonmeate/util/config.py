@@ -98,8 +98,8 @@ class Config:
         self._config[key] = item
 
     def save(self, file):
-        if not os.path.exists(os.path.basename(file)):
-            os.makedirs(os.path.basename(file))
+        if not os.path.exists(os.path.dirname(file)):
+            os.makedirs(os.path.dirname(file))
         with open(file, 'w') as f:
             json.dump(self._config, f)
 

@@ -83,6 +83,7 @@ class Song:
         if isinstance(self.title, list):
             self.title = self.title[0]
         self.file = file
+        self.artist = artist
 
     def __hash__(self):
         return hash(self.file)
@@ -96,3 +97,6 @@ class Song:
                f'title={self.title}, ' \
                f'artist={self.artist}, ' \
                f'file={self.file}'
+
+    def is_comp_track(self):
+        return self.artist is not None
