@@ -10,7 +10,7 @@ to the Captain Beefheart song _Neon Meate Dream of a Octafish_.
 
 This is a work in progress. 
 
-### Artists view
+### Library view
 ![Screenshot](https://github.com/jnj/NeonMeate/blob/master/artists.png)
 
 ### Playlist view
