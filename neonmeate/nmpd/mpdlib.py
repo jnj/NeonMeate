@@ -160,47 +160,66 @@ class Mpd:
             return
 
         def task():
-            artists = []
+            artists = set()
             for a in self._client.list('albumartist'):
                 artist = Artist.create(a)
                 if artist:
-                    artists.append(artist)
-            callback(artists)
+                    artists.add(artist)
+            for a in self._client.list('artist'):
+                artist = Artist.create(a)
+                if artist:
+                    artists.add(artist)
+
+            callback(sorted(list(artists)))
 
         self.exec(task)
 
     def find_albums(self, artist, callback):
         def task():
-            songs = self._client.find('albumartist', artist.name)
             songs_by_album = {}
             dirs_by_album = {}
+            songs = set()
+            Mpd._process_songs(
+                self._client.find('albumartist', artist.name),
+                songs_by_album, dirs_by_album, songs
+            )
 
-            for song in songs:
-                if 'album' in song:
-                    album_name = song['album']
-                    date = int(song['date'])
-                    directory = os.path.dirname(song['file'])
-                    key = (album_name, date, directory)
-                    songlist = songs_by_album.setdefault(key, [])
-                    dirs = dirs_by_album.setdefault(key, [])
-                    dirs.append(directory)
-                    s = Song(
-                        int(song['track']),
-                        int(song.get('disc', 1)),
-                        song['title'],
-                        song['file']
-                    )
-                    songlist.append(s)
+            Mpd._process_songs(
+                self._client.find('artist', artist.name),
+                songs_by_album, dirs_by_album, songs
+            )
 
             albums = []
 
             for key, songs in songs_by_album.items():
                 a = Album(artist, key[0], key[1], songs, dirs_by_album[key][0])
                 albums.append(a)
+
             ordered_albums = Album.sorted_chrono(albums)
             callback(ordered_albums)
 
         self.exec(task)
+
+    @staticmethod
+    def _process_songs(songs, songs_by_album, dirs_by_album, songset):
+        for song in songs:
+            if 'album' in song:
+                album_name = song['album']
+                date = int(song['date'])
+                directory = os.path.dirname(song['file'])
+                key = (album_name, date, directory)
+                songlist = songs_by_album.setdefault(key, [])
+                dirs = dirs_by_album.setdefault(key, [])
+                dirs.append(directory)
+                s = Song(
+                    int(song['track']),
+                    int(song.get('disc', 1)),
+                    song['title'],
+                    song['file']
+                )
+                if s not in songset:
+                    songlist.append(s)
+                    songset.add(s)
 
     def add_songs(self, songs):
         files = [song.file for song in songs]

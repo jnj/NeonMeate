@@ -111,11 +111,8 @@ class Artists(Gtk.ScrolledWindow):
         @gtk_main
         def on_artists(artists):
             self._artists.extend(artists)
-            names = set()
             for artist in self._artists:
-                if artist.name not in names:
-                    self._artist_column.add_row(artist.name)
-                    names.add(artist.name)
+                self._artist_column.add_row(artist.name)
             self.emit('artists_loaded', True)
 
         self._mpd.find_artists(on_artists)
@@ -457,7 +454,6 @@ class AlbumsAndSongs(Gtk.HBox):
         if not artist_name or artist_name == self._selected_artist:
             return
         self.clear_songs()
-        artist_inst = self._artist_by_name[artist_name]
         artist_inst = self._artist_by_name[artist_name]
 
         @gtk_main

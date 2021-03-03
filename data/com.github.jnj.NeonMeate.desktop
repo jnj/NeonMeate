@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=NeonMeate
+GenericName=Music Player
+Comment=Client for the Music Player Daemon (MPD)
+Exec=neonmeate
+Terminal=false
+Icon=music
+StartupWMClass=com.github.jnj.NeonMeate
+Type=Application
+Categories=AudioVideo;Audio;Player;GTK;

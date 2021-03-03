@@ -15,5 +15,6 @@ setup(
     install_requires=[
         'python-mpd2>=1.1.0',
         'pycairo>=1.16.2'
-    ]
+    ],
+    shortcuts=['data/com.github.jnj.NeonMeate.desktop']
 )

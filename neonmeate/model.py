@@ -1,3 +1,6 @@
+import functools
+
+
 def get_sanitized_string(dictlike, key):
     val = None
     if key in dictlike:
@@ -6,6 +9,7 @@ def get_sanitized_string(dictlike, key):
     return None if not val else val
 
 
+@functools.total_ordering
 class Artist:
     NameKeys = ['albumartist', 'artist', 'name']
 
@@ -22,6 +26,9 @@ class Artist:
     def __init__(self, name, is_albumartist):
         self.is_albumartist = is_albumartist
         self.name = name
+
+    def __lt__(self, other):
+        return self.name < other.name
 
     def __str__(self):
         return self.name
