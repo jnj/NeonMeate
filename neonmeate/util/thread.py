@@ -16,34 +16,19 @@ def signal_subcribe_on_main(connect_fn, signal_name, callback, *args):
     connect_fn(signal_name, run_on_main_thread, *args)
 
 
-class AtomicBoolean:
-    def __init__(self, initial=False):
-        self._boolean = initial
-        self._lock = threading.RLock()
-        self.set(initial)
-
-    def set(self, b):
-        with self._lock:
-            self._boolean = b
-
-    def get(self):
-        with self._lock:
-            return self._boolean
-
-
 class EventLoopThread(threading.Thread):
     def __init__(self, error_handler):
         super(EventLoopThread, self).__init__(name='EventLoop', daemon=True)
         self._queue = queue.SimpleQueue()
-        self._running = AtomicBoolean(False)
+        self._running = False
         self._error_handler = error_handler
 
     def add(self, action):
         self._queue.put(action)
 
     def run(self):
-        self._running.set(True)
-        while self._is_running():
+        self._running = True
+        while self._running:
             action = self._queue.get()
             if action:
                 try:
@@ -52,10 +37,7 @@ class EventLoopThread(threading.Thread):
                     self._error_handler(e)
 
     def stop(self):
-        self._running.set(False)
-
-    def _is_running(self):
-        return self._running.get()
+        self._running = False
 
 
 class ScheduledExecutor:
@@ -65,6 +47,7 @@ class ScheduledExecutor:
     thread pool, which can have jobs submitted to it.
     The thread pool does not use the event loop thread.
     """
+
     def __init__(self, event_loop_err_handler, executor_err_handler):
         self._thread = EventLoopThread(event_loop_err_handler)
         self._scheduler = sched.scheduler(timefunc=time.monotonic)
@@ -92,11 +75,13 @@ class ScheduledExecutor:
         Submits a task to the thread pool, not to the event loop
         :return: a future
         """
+
         def wrapped():
             try:
                 return task(*args, **kwargs)
             except BaseException as e:
                 self._exec_error_handler.on_exception(e)
+
         return self._executor.submit(wrapped)
 
     def execute(self, action):
