@@ -58,6 +58,7 @@ class ScheduledExecutor:
         self._scheduler = sched.scheduler(timefunc=time.monotonic)
         self._exec_error_handler = executor_err_handler
         self._executor = ThreadPoolExecutor()
+        self._nullScheduledTask = NullCancelable()
         self._stopped = False
 
     def __enter__(self):
@@ -100,20 +101,40 @@ class ScheduledExecutor:
         Schedules a task on the event loop thread.
         """
         if self._stopped:
-            return
+            return self._nullScheduledTask
 
-        return ScheduledTask(delay, action, self._scheduler, self._executor,
-                             self._thread, False)
+        return ScheduledTask(
+            delay,
+            action,
+            self._scheduler,
+            self._executor,
+            self._thread,
+            False
+        )
 
     def schedule_periodic(self, delay, action):
         """
         Schedules a repeating task on the event loop thread.
         """
-
         if self._stopped:
-            return
-        return ScheduledTask(delay, action, self._scheduler, self._executor,
-                             self._thread, True)
+            return self._nullScheduledTask
+
+        return ScheduledTask(
+            delay,
+            action,
+            self._scheduler,
+            self._executor,
+            self._thread,
+            True
+        )
+
+
+class NullCancelable:
+    def __init__(self):
+        pass
+
+    def cancel(self):
+        pass
 
 
 class ScheduledTask:
