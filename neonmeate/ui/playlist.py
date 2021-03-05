@@ -30,6 +30,7 @@ class PlayListControls(NeonMeateButtonBox):
         shufl_btn.set_always_show_image(True)
         shufl_btn.set_tooltip_text('Shuffle the play queue')
 
+
 # noinspection PyUnresolvedReferences
 class PlaylistContainer(Gtk.Frame):
     def __init__(self, mpdclient):
@@ -56,7 +57,7 @@ class PlaylistContainer(Gtk.Frame):
 
     def _on_shuffle(self, _):
         self._mpdclient.shuffle_playlist()
-        
+
     def _on_clear(self, _):
         self._mpdclient.clear_playlist()
 
