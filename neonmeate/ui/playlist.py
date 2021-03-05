@@ -52,8 +52,10 @@ class PlaylistContainer(Gtk.Frame):
         self._controls.connect('neonmeate_clear_playlist', self._on_clear)
         self._controls.connect('neonmeate_shuffle_playlist', self._on_shuffle)
 
-    def _on_del_item(self, pl, idx):
-        self._mpdclient.delete_playlist_item(idx)
+    def _on_del_item(self, pl):
+        indices = pl.get_selected_indices()
+        for i in indices:
+            self._mpdclient.delete_playlist_item(i)
 
     def _on_shuffle(self, _):
         self._mpdclient.shuffle_playlist()
@@ -72,8 +74,7 @@ class PlaylistContainer(Gtk.Frame):
 class Playlist(tk.Scrollable):
     __gsignals__ = {
         'neonmeate_clear_playlist': (GObject.SignalFlags.RUN_FIRST, None, ()),
-        'neonmeate_delitem_playlist':
-            (GObject.SignalFlags.RUN_FIRST, None, (int,))
+        'neonmeate_delitem_playlist': (GObject.SignalFlags.RUN_FIRST, None, ())
     }
 
     def __init__(self):
@@ -83,11 +84,14 @@ class Playlist(tk.Scrollable):
             [int, str, str, str, str, int],
             ['Track', 'Artist', 'Album', 'Title', 'Time']
         )
-        self._selected_row = None
+        self._selected_indices = []
         self._treeview = self._playlist_table.as_widget()
         self.add_content(self._treeview)
         self._playlist_table.set_selection_handler(self._on_selection)
         self._treeview.connect('key-press-event', self._on_keypress)
+
+    def get_selected_indices(self):
+        return sorted(self._selected_indices, reverse=True)
 
     def _on_keypress(self, treeview, eventkey):
         if eventkey.keyval == Gdk.KEY_Down or \
@@ -96,9 +100,17 @@ class Playlist(tk.Scrollable):
                 eventkey.keyval == Gdk.KEY_Right:
             return False
         if eventkey.keyval == Gdk.KEY_Delete:
-            if self._selected_row:
-                index = self._selected_row[5]
-                self.emit('neonmeate_delitem_playlist', index)
+            selection = treeview.get_selection()
+            self._selected_indices.clear()
+
+            def on_selected_row(treemodel, path, iter):
+                row = treemodel[iter]
+                self._selected_indices.append(row[5])
+
+            selection.selected_foreach(on_selected_row)
+
+            if self._selected_indices:
+                self.emit('neonmeate_delitem_playlist')
         return True
 
     def _on_selection(self, row):
