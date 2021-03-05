@@ -1,17 +1,21 @@
+import _thread
 import queue
 import sched
 import threading
 import time
-import _thread
 from concurrent.futures import ThreadPoolExecutor
-from gi.repository import GLib
+
+from ..ui.toolkit import gtk_main
 
 
 def signal_subcribe_on_main(connect_fn, signal_name, callback, *args):
-    """Subscribes to a signal on the GTK thread."""
+    """
+    Subscribes to a signal on the GLib main thread.
+    """
 
+    @gtk_main
     def run_on_main_thread(obj, *a):
-        GLib.idle_add(callback, obj, *a)
+        callback(obj, *a)
 
     connect_fn(signal_name, run_on_main_thread, *args)
 
