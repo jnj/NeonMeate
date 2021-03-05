@@ -55,6 +55,10 @@ class ArtistsAlbums(Gtk.Box):
         self.add(columns)
         self.show_all()
 
+    def on_random_fill(self):
+        songs = self._mpdclient.get_random(50)
+
+
     def _on_artists_loaded(self, _, done):
         if done:
             self._albums_songs.set_artists(self._artists.get_artists())

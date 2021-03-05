@@ -18,7 +18,7 @@ def signal_subcribe_on_main(connect_fn, signal_name, callback, *args):
     def run_on_main_thread(obj, *a):
         callback(obj, *a)
 
-    connect_fn(signal_name, run_on_main_thread, *args)
+    return connect_fn(signal_name, run_on_main_thread, *args)
 
 
 class EventLoopThread(threading.Thread):

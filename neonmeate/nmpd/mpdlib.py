@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import random
 import re
 
 import mpd as mpd2
@@ -221,6 +222,13 @@ class Mpd:
                     songlist.append(s)
                     songset.add(s)
 
+    def get_random(self, count):
+        def task():
+            allsongs = [r for r in self._client.listall() if 'file' in r]
+            selected = [r['file'] for r in random.choices(allsongs, k=count)]
+            self.add_files_to_playlist(selected)
+        self.exec(task)
+
     def add_songs(self, songs):
         files = [song.file for song in songs]
         self.add_files_to_playlist(files)
@@ -382,7 +390,7 @@ class MpdHeartbeat(GObject.GObject):
 
     # These signals will be emitted when player events are detected.
     __gsignals__ = {
-        'playlist_changed': (GObject.SignalFlags.RUN_FIRST, None, ()),
+        'playlist-changed': (GObject.SignalFlags.RUN_FIRST, None, ()),
         'song_elapsed': (GObject.SignalFlags.RUN_FIRST, None, (float, float)),
         'song_playing_status': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
         'song_changed': (
@@ -447,8 +455,12 @@ class MpdHeartbeat(GObject.GObject):
         class emits. The handler will be called on the main GTK thread.
 
         """
-        thread.signal_subcribe_on_main(super(MpdHeartbeat, self).connect,
-                                       signal_name, handler, *args)
+        return thread.signal_subcribe_on_main(
+            super(MpdHeartbeat, self).connect,
+            signal_name,
+            handler,
+            *args
+        )
 
     def _on_hb_interval(self):
         def on_status(status):

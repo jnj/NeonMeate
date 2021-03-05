@@ -9,6 +9,7 @@ class PlayListControls(NeonMeateButtonBox):
     __gsignals__ = {
         'neonmeate_clear_playlist': (GObject.SignalFlags.RUN_FIRST, None, ()),
         'neonmeate_shuffle_playlist': (GObject.SignalFlags.RUN_FIRST, None, ()),
+        'neonmeate_random_fill' : (GObject.SignalFlags.RUN_FIRST, None, ())
     }
 
     def __init__(self):
@@ -29,10 +30,22 @@ class PlayListControls(NeonMeateButtonBox):
         shufl_btn.set_label('Shuffle')
         shufl_btn.set_always_show_image(True)
         shufl_btn.set_tooltip_text('Shuffle the play queue')
+        randm_btn = self._add_button(
+            ControlButton('random'),
+            'random',
+            'neonmeate_random_fill'
+        )
+        randm_btn.set_always_show_image(True)
+        randm_btn.set_tooltip_text("Adds random songs to the playlist")
+        randm_btn.set_label('Random')
 
 
 # noinspection PyUnresolvedReferences
 class PlaylistContainer(Gtk.Frame):
+    __gsignals__ = {
+        'neonmeate_random_fill': (GObject.SignalFlags.RUN_FIRST, None, ())
+    }
+
     def __init__(self, mpdclient):
         super(PlaylistContainer, self).__init__()
         self._mpdclient = mpdclient
@@ -51,6 +64,7 @@ class PlaylistContainer(Gtk.Frame):
         self._box.show()
         self._controls.connect('neonmeate_clear_playlist', self._on_clear)
         self._controls.connect('neonmeate_shuffle_playlist', self._on_shuffle)
+        self._controls.connect('neonmeate_random_fill', self._rand_fill)
 
     def _on_del_item(self, pl):
         indices = pl.get_selected_indices()
@@ -59,6 +73,9 @@ class PlaylistContainer(Gtk.Frame):
 
     def _on_shuffle(self, _):
         self._mpdclient.shuffle_playlist()
+
+    def _rand_fill(self, _):
+        self.emit('neonmeate_random_fill')
 
     def _on_clear(self, _):
         self._mpdclient.clear_playlist()

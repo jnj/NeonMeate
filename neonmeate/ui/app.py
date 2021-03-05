@@ -53,6 +53,7 @@ class App(Gtk.ApplicationWindow):
         self._artists = ArtistsAlbums(mpdclient, art_cache, cfg)
         self._playlist = PlaylistContainer(mpdclient)
         self._update_playlist(None)
+        self._playlist.connect('neonmeate_random_fill', self._on_random_fill)
 
         self._now_playing = NowPlaying(rng, art_cache, executor, cfg)
         self._stack.add_named(self._artists, 'library')
@@ -91,9 +92,16 @@ class App(Gtk.ApplicationWindow):
         self._mpdhb.connect('song_playing_status', self._on_song_playing_status)
         self._mpdhb.connect('song_changed', self._on_song_changed)
         self._mpdhb.connect('no_song', self._no_song)
-        self._mpdhb.connect('playlist-changed', self._update_playlist)
+        self._playlist_change_id = self._mpdhb.connect(
+            'playlist-changed',
+            self._update_playlist
+        )
         self._mpdhb.connect('playback-mode-toggled', self._on_mode_change())
         self._mpdhb.connect('updatingdb', self._on_updating_db)
+
+    def _on_random_fill(self, _):
+        with self._mpdhb.handler_block(self._playlist_change_id):
+            self._artists.on_random_fill()
 
     def _on_music_dir(self, settings, new_dir):
         pass
