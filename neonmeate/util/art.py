@@ -119,7 +119,7 @@ class ArtCache(GObject.GObject):
             path = self.resolve_cover_file(dirpath)
             on_ready(path)
 
-        self._thread_pool.submit(runnable)
+        self._thread_pool.execute_async(runnable)
 
     def resolve_cover_file(self, dirpath):
         """

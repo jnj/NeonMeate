@@ -102,7 +102,7 @@ class SettingsMenu(Gtk.Popover):
         def task():
             cfg.save(main_config_file())
 
-        self._exec.submit(task)
+        self._exec.execute_async(task)
 
     def _on_music_folder(self, chooser):
         current = self._configstate.get_musicpath()

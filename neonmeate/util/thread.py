@@ -75,7 +75,7 @@ class ScheduledExecutor:
         self._thread.stop()
         self._executor.shutdown(wait=True)
 
-    def submit(self, task, *args, **kwargs):
+    def execute_async(self, task, *args, **kwargs):
         """
         Submits a task to the thread pool, not to the event loop
         :return: a future

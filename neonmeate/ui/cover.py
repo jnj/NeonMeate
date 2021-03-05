@@ -86,7 +86,7 @@ class CoverWithGradient(Gtk.DrawingArea):
             a, b = CoverWithGradient.rand_switch(self._rng, border, bg)
             self._update_grad(RGBColor(*a), RGBColor(*b))
         else:
-            cluster_result = executor.submit(
+            cluster_result = executor.execute_async(
                 cluster.clusterize,
                 pixbuf,
                 self._rng,
