@@ -1,7 +1,5 @@
 from gi.repository import GdkPixbuf, GObject, Gtk, Pango, GLib
 
-import functools
-
 
 def gtk_main(func):
     """
@@ -158,16 +156,14 @@ class Table:
 
         for i, header in enumerate(self._view_columns):
             renderer = Gtk.CellRendererText()
+            renderer.set_property('ellipsize', Pango.EllipsizeMode.END)
             column = Gtk.TreeViewColumn(header, renderer, text=i)
             column.set_resizable(True)
+            column.set_expand(True)
             self.tree.append_column(column)
 
         select = self.tree.get_selection()
         select.set_mode(Gtk.SelectionMode.MULTIPLE)
-        # self._selection_changed_id = select.connect(
-        #     'changed',
-        #     self._on_selection_changed
-        # )
         self.tree.set_property('fixed_height_mode', True)
         self.tree.columns_autosize()
         return self.tree
@@ -179,12 +175,6 @@ class Table:
     def _enable_selection_signal(self):
         sel = self.tree.get_selection()
         sel.handler_unblock(self._selection_changed_id)
-
-    # def _on_selection_changed(self, select):
-    #     model, treeiter = select.get_selected()
-    #     if self.selection_handler:
-    #         if model and model[treeiter]:
-    #             self.selection_handler(model[treeiter])
 
     def set_selection_handler(self, handler):
         self.selection_handler = handler
