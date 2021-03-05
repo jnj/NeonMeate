@@ -10,7 +10,8 @@ from ..ui.toolkit import gtk_main
 
 def signal_subcribe_on_main(connect_fn, signal_name, callback, *args):
     """
-    Subscribes to a signal on the GLib main thread.
+    Connects to a signal, but decorates the handler function
+    such that it will be called by the main GLib thread.
     """
 
     @gtk_main
