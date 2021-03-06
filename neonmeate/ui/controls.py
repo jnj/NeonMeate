@@ -28,6 +28,13 @@ class PlayModeButton(Gtk.ToggleButton):
 
 
 # noinspection PyUnresolvedReferences
+class VolumeControl(Gtk.VolumeButton):
+    def __init__(self):
+        super(VolumeControl, self).__init__()
+        self.set_property('use-symbolic', True)
+
+
+# noinspection PyUnresolvedReferences
 class PlayPauseButton(ControlButton):
     __gsignals__ = {
         'neonmeate_playpause_toggled':
@@ -110,6 +117,7 @@ class ControlButtons(NeonMeateButtonBox):
 
     def __init__(self):
         super(ControlButtons, self).__init__()
+
         self._play_pause_button = self._add_button(
             PlayPauseButton(),
             'play_pause',
@@ -178,6 +186,11 @@ class PlayModeButtons(NeonMeateButtonBox):
             'repeat',
             None
         )
+        # self._vol_control = self._add_button(
+        #     VolumeControl(),
+        #     'volume',
+        #     None
+        # )
         self._consume.set_tooltip_text('Consume mode')
         self._single.set_tooltip_text('Single mode')
         self._random.set_tooltip_text('Random mode')

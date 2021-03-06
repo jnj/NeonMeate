@@ -322,6 +322,7 @@ class MpdState(GObject.GObject):
     songseconds = GObject.Property(type=float, default=1)
     elapsedseconds = GObject.Property(type=float, default=0)
     updatingdb = GObject.Property(type=str, default='0')
+    volume = GObject.Property(type=int, default=0)
     synth_props = {'songseconds', 'elapsedseconds', 'updatingdb'}
 
     def __init__(self):
