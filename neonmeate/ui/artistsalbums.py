@@ -1,5 +1,7 @@
 from gi.repository import GObject, Gtk, GLib, Pango
 
+import re
+
 from neonmeate.ui import toolkit, controls
 from neonmeate.ui.toolkit import gtk_main, AlbumArt
 
@@ -130,12 +132,16 @@ class Artists(Gtk.ScrolledWindow):
             return
 
         search_txt = artist_text.lower()
+        terms = search_txt.split()
+        expr = '.*' + '.*'.join([t for t in terms]) + '.*'
+        regex = re.compile(expr)
+
         self._artist_column.invalidate_filter()
 
         def filter_fn(listboxrow):
             label = listboxrow.get_child()
             txt = label.get_text().lower()
-            return search_txt in txt
+            return regex.search(txt) is not None
 
         self._artist_column.set_filter_func(filter_fn)
 
