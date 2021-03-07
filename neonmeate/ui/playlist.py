@@ -137,8 +137,8 @@ class Playlist(tk.Scrollable):
             selection = treeview.get_selection()
             self._selected_indices.clear()
 
-            def on_selected_row(treemodel, path, iter):
-                row = treemodel[iter]
+            def on_selected_row(treemodel, _, model_iter):
+                row = treemodel[model_iter]
                 self._selected_indices.append(row[5])
 
             selection.selected_foreach(on_selected_row)
