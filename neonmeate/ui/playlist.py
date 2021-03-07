@@ -110,15 +110,18 @@ class Playlist(tk.Scrollable):
         self.add_content(self._treeview)
         self._playlist_table.set_selection_handler(self._on_selection)
         self._treeview.connect('key-press-event', self._on_keypress)
+        self._nav_keys = {
+            Gdk.KEY_Down,
+            Gdk.KEY_Up,
+            Gdk.KEY_Left,
+            Gdk.KEY_Right
+        }
 
     def get_selected_indices(self):
         return sorted(self._selected_indices, reverse=True)
 
     def _on_keypress(self, treeview, eventkey):
-        if eventkey.keyval == Gdk.KEY_Down or \
-                eventkey.keyval == Gdk.KEY_Up or \
-                eventkey.keyval == Gdk.KEY_Left or \
-                eventkey.keyval == Gdk.KEY_Right:
+        if eventkey.keyval in self._nav_keys:
             return False
         if eventkey.keyval == Gdk.KEY_Delete:
             selection = treeview.get_selection()
