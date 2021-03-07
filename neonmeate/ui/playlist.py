@@ -98,6 +98,16 @@ class Playlist(tk.Scrollable):
     def format_track_no(track_no):
         return f'{int(track_no):02}'
 
+    @staticmethod
+    def format_time(seconds):
+        m, s = divmod(seconds, 60)
+
+        if m > 60:
+            h, m = divmod(m, 60)
+            return f'{h:02}:{m:02}:{s:02}'
+
+        return f'{m:02}:{s:02}'
+
     def __init__(self):
         super(Playlist, self).__init__()
         self._playlist_table = tk.Table(
@@ -153,13 +163,3 @@ class Playlist(tk.Scrollable):
             item['position']
         ]
         self._playlist_table.add(l)
-
-    @staticmethod
-    def format_time(seconds):
-        m, s = divmod(seconds, 60)
-
-        if m > 60:
-            h, m = divmod(m, 60)
-            return f'{h:02}:{m:02}:{s:02}'
-
-        return f'{m:02}:{s:02}'
