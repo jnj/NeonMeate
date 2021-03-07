@@ -9,7 +9,7 @@ class PlayListControls(NeonMeateButtonBox):
     __gsignals__ = {
         'neonmeate_clear_playlist': (GObject.SignalFlags.RUN_FIRST, None, ()),
         'neonmeate_shuffle_playlist': (GObject.SignalFlags.RUN_FIRST, None, ()),
-        'neonmeate_random_fill' : (GObject.SignalFlags.RUN_FIRST, None, ())
+        'neonmeate_random_fill': (GObject.SignalFlags.RUN_FIRST, None, ())
     }
 
     def __init__(self):
@@ -94,11 +94,15 @@ class Playlist(tk.Scrollable):
         'neonmeate_delitem_playlist': (GObject.SignalFlags.RUN_FIRST, None, ())
     }
 
+    @staticmethod
+    def format_track_no(track_no):
+        return f'{int(track_no):02}'
+
     def __init__(self):
         super(Playlist, self).__init__()
         self._playlist_table = tk.Table(
             ['Track', 'Artist', 'Album', 'Title', 'Time', 'Index'],
-            [int, str, str, str, str, int],
+            [str, str, str, str, str, int],
             ['Track', 'Artist', 'Album', 'Title', 'Time']
         )
         self._selected_indices = []
@@ -138,11 +142,11 @@ class Playlist(tk.Scrollable):
 
     def add_playlist_item(self, item):
         l = [
-            item['track'],
+            Playlist.format_track_no(item['track']),
             item['artist'],
             item['album'],
             item['title'],
-            (Playlist.format_time(item['seconds'])),
+            Playlist.format_time(item['seconds']),
             item['position']
         ]
         self._playlist_table.add(l)
