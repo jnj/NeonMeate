@@ -36,7 +36,7 @@ class ArtistsAlbums(Gtk.Box):
         self._update_pending = DiffableBoolean()
         self._album_placeholder_pixbuf = \
             Gtk.IconTheme.get_default().load_icon_for_scale(
-                'emblem-music-symbolic', album_view_opts.album_size, 1, 0)
+                'image-missing', album_view_opts.album_size, 1, 0)
         self._art = art
         self._cfg = cfg
         self._mpdclient = mpdclient
