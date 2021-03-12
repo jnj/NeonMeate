@@ -33,6 +33,7 @@ class App(Gtk.ApplicationWindow):
         self._mpdhb = mpd_hb
         self._mpdclient = mpdclient
         self._art = art_cache
+        self._playlist_updated = False
         # TODO pick up this size from config
         self.set_default_size(860, 860)
         self._titlebar = Gtk.HeaderBar()
@@ -59,11 +60,24 @@ class App(Gtk.ApplicationWindow):
         self._stack.add_named(self._artists, 'library')
         self._stack.add_named(self._playlist, 'playlist')
         self._stack.add_named(self._now_playing, 'now_playing')
-        self._stack.child_set_property(self._artists, 'icon-name', 'emblem-music-symbolic')
-        self._stack.child_set_property(self._playlist, 'icon-name', 'view-list-symbolic')
-        self._stack.child_set_property(self._now_playing, 'icon-name', 'mediaplayer-app-symbolic')
+        self._stack.child_set_property(
+            self._artists,
+            'icon-name',
+            'emblem-music-symbolic'
+        )
+        self._stack.child_set_property(
+            self._playlist,
+            'icon-name',
+            'view-list-symbolic'
+        )
+        self._stack.child_set_property(
+            self._now_playing,
+            'icon-name',
+            'mediaplayer-app-symbolic'
+        )
         self._stack_switcher = Gtk.StackSwitcher()
         self._stack_switcher.set_stack(self._stack)
+        self._stack.connect('notify::visible-child', self._on_stack_change)
         self._titlebar.pack_start(self._stack_switcher)
         self._settings_btn = Gtk.MenuButton()
         self._settings = SettingsMenu(executor, configstate, connstatus)
@@ -98,6 +112,14 @@ class App(Gtk.ApplicationWindow):
         )
         self._mpdhb.connect('playback-mode-toggled', self._on_mode_change())
         self._mpdhb.connect('updatingdb', self._on_updating_db)
+
+    def _on_stack_change(self, s, obj):
+        if 'playlist' == self._stack.get_visible_child_name():
+            self._stack.child_set_property(
+                self._playlist,
+                'needs-attention',
+                False
+            )
 
     def _on_random_fill(self, _):
         with self._mpdhb.handler_block(self._playlist_change_id):
@@ -143,6 +165,15 @@ class App(Gtk.ApplicationWindow):
         @gtk_main
         def on_current_queue(playqueue):
             self._update_play_queue(playqueue)
+            # only set needs-attention after the first time
+            # we've updated the playlist
+            if self._playlist_updated and playqueue:
+                self._stack.child_set_property(
+                    self._playlist,
+                    'needs-attention',
+                    True
+                )
+            self._playlist_updated = True
 
         self._mpdclient.playlistinfo(on_current_queue)
 
