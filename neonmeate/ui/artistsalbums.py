@@ -381,6 +381,11 @@ class AlbumsAndSongs(Gtk.HBox):
             albums_view_options.album_size +
             albums_view_options.col_spacing + 5)
         self._song_action_bar = Gtk.ActionBar()
+        self._song_info_bar = Gtk.Label()
+        self._song_info_bar.set_justify(Gtk.Justification.CENTER)
+        #self._song_info_bar.set_ellipsize(Pango.EllipsizeMode.END)
+        self._song_info_bar.set_line_wrap(True)
+        self._song_info_bar.set_padding(10, 10)
 
         self._all_buttonbox = ExpandedButtonBox()
         self._add_all = self._all_buttonbox.add_labeled('Add all')
@@ -396,6 +401,7 @@ class AlbumsAndSongs(Gtk.HBox):
 
         self._song_action_bar.add(self._all_buttonbox)
         self._song_action_bar.add(self._sel_buttonbox)
+        self._songsbox.pack_start(self._song_info_bar, False, False, 0)
         self._songsbox.pack_end(self._song_action_bar, False, False, 0)
         self._add_all.connect('clicked', self._on_add_all)
         self._rem_all.connect('clicked', self._on_rem_all)
@@ -440,18 +446,25 @@ class AlbumsAndSongs(Gtk.HBox):
     def _on_album_selected(self, albums, index):
         album = albums.get_selected_album()
         self._selected_album = album
+        self._update_song_info()
         self.clear_songs()
         self._current_songs = Songs(album)
         self._current_songs.show()
-        self._songsbox.pack_start(self._current_songs, True, True, 0)
+        self._songsbox.pack_end(self._current_songs, True, True, 0)
         self.queue_draw()
+
+    def _update_song_info(self):
+        title = GLib.markup_escape_text(self._selected_album.title)
+        year = GLib.markup_escape_text(str(self._selected_album.date))
+        self._song_info_bar.set_markup(f'<b><big>{title}</big></b>\n<small>{year}</small>')
 
     def clear_songs(self):
         for c in self._songsbox.get_children():
-            if c != self._song_action_bar:
+            if c != self._song_action_bar and c != self._song_info_bar:
                 c.destroy()
 
     def clear(self):
+        self._song_info_bar.set_markup('')
         self._albums.clear()
         self.clear_songs()
         self._selected_artist = None
@@ -468,6 +481,7 @@ class AlbumsAndSongs(Gtk.HBox):
         if not artist_name or artist_name == self._selected_artist:
             return
         self.clear_songs()
+        self._song_info_bar.set_markup('')
         artist_inst = self._artist_by_name[artist_name]
 
         @gtk_main
