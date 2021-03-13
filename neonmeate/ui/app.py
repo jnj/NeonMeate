@@ -12,22 +12,24 @@ from .toolkit import gtk_main
 from .settings import SettingsMenu
 
 
+# noinspection PyUnresolvedReferences,PyArgumentList
 class App(Gtk.ApplicationWindow):
+    Title = 'NeonMeate'
+
     PlayStatus = {
         'play': (False, False),
         'pause': (True, False),
         'stop': (False, True)
     }
 
-    # noinspection PyUnresolvedReferences,PyArgumentList
     def __init__(self, rng, mpdclient, executor, art_cache, mpd_hb, cfg,
                  configstate, connstatus):
-        Gtk.ApplicationWindow.__init__(self, title="NeonMeate")
+        Gtk.ApplicationWindow.__init__(self, title=App.Title)
         self._connstatus = connstatus
         self._configstate = configstate
-        self.name = 'NeonMeate'
+        self.name = App.Title
         self.logger = logging.getLogger(__name__)
-        self.set_default_icon_name('nmpd')
+        self.set_default_icon_name('multimedia-audio-player')
         self._cfg = cfg
         self._executor = executor
         self._mpdhb = mpd_hb
@@ -50,12 +52,10 @@ class App(Gtk.ApplicationWindow):
         self._main_box = Gtk.VBox()
         self.add(self._main_box)
         self._stack = Gtk.Stack()
-
         self._artists = ArtistsAlbums(mpdclient, art_cache, cfg)
         self._playlist = PlaylistContainer(mpdclient)
         self._update_playlist(None)
         self._playlist.connect('neonmeate_random_fill', self._on_random_fill)
-
         self._now_playing = NowPlaying(rng, art_cache, executor, cfg)
         self._stack.add_named(self._artists, 'library')
         self._stack.add_named(self._playlist, 'playlist')
@@ -83,7 +83,8 @@ class App(Gtk.ApplicationWindow):
         self._settings = SettingsMenu(executor, configstate, connstatus)
         self._connect_handler = self._settings.connect(
             'neonmeate-connect-attempt', self.on_connect_attempt)
-        self._settings.connect('neonmeate-update-requested', self._on_update_request)
+        self._settings.connect('neonmeate-update-requested',
+                               self._on_update_request)
         self._settings.connect('neonmeate-musicdir-updated', self._on_music_dir)
         self._settings_btn.set_popover(self._settings)
         self._settings_btn.set_direction(Gtk.ArrowType.NONE)
@@ -179,7 +180,7 @@ class App(Gtk.ApplicationWindow):
 
     def _update_play_queue(self, playqueue):
         self._playlist.clear()
-        artist_elems = filter(lambda e: 'artist' in e, playqueue)
+        artist_elems = [e for e in playqueue if 'artist' in e]
         for elem in artist_elems:
             queue_elem = App._track_details_from_queue_elem(elem)
             artist = queue_elem['artist']
