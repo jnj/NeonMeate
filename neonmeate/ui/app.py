@@ -1,7 +1,7 @@
 import logging
 import os
 
-from gi.repository import Gtk
+from gi.repository import Gtk, Gdk
 
 from .artistsalbums import ArtistsAlbums
 from .controls import ControlButtons, PlayModeButtons
@@ -36,7 +36,6 @@ class App(Gtk.ApplicationWindow):
         self._mpdclient = mpdclient
         self._art = art_cache
         self._playlist_updated = False
-        # TODO pick up this size from config
         self.set_default_size(860, 860)
         self._titlebar = Gtk.HeaderBar()
         self._titlebar.set_title("NeonMeate")
@@ -168,12 +167,12 @@ class App(Gtk.ApplicationWindow):
             self._update_play_queue(playqueue)
             # only set needs-attention after the first time
             # we've updated the playlist
-            if self._playlist_updated and playqueue:
-                self._stack.child_set_property(
-                    self._playlist,
-                    'needs-attention',
-                    True
-                )
+            # if self._playlist_updated and playqueue:
+            #     self._stack.child_set_property(
+            #         self._playlist,
+            #         'needs-attention',
+            #         True
+            #     )
             self._playlist_updated = True
 
         self._mpdclient.playlistinfo(on_current_queue)
