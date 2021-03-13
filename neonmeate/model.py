@@ -79,7 +79,19 @@ class Song:
         discnumkey = song.discnum or 1
         return discnumkey, song.number
 
-    def __init__(self, number, discnum, title, file, artist=None):
+    @staticmethod
+    def create(mpd_song_item):
+        return Song(
+            int(mpd_song_item['track']),
+            int(mpd_song_item.get('disc', 1)),
+            mpd_song_item['title'],
+            mpd_song_item['file'],
+            mpd_song_item['artist'],
+            mpd_song_item.get('albumartist', None)
+        )
+
+    def __init__(self, number, discnum, title, file, artist=None,
+                 albumartist=None):
         """
         Creates a Song instance. The artist should only by non-None
         if this song is part of a compilation album.
@@ -91,6 +103,10 @@ class Song:
             self.title = self.title[0]
         self.file = file
         self.artist = artist
+        self.albumartist = albumartist
+
+    def is_compilation_track(self):
+        return self.artist != self.albumartist and self.albumartist is not None
 
     def __hash__(self):
         return hash(self.file)
@@ -104,6 +120,3 @@ class Song:
                f'title={self.title}, ' \
                f'artist={self.artist}, ' \
                f'file={self.file}'
-
-    def is_comp_track(self):
-        return self.artist is not None

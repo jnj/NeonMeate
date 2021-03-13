@@ -212,12 +212,7 @@ class Mpd:
                 songlist = songs_by_album.setdefault(key, [])
                 dirs = dirs_by_album.setdefault(key, [])
                 dirs.append(directory)
-                s = Song(
-                    int(song['track']),
-                    int(song.get('disc', 1)),
-                    song['title'],
-                    song['file']
-                )
+                s = Song.create(song)
                 if s not in songset:
                     songlist.append(s)
                     songset.add(s)

@@ -322,7 +322,11 @@ class Songs(Gtk.ScrolledWindow):
                 return f'{n:03}'
 
         for song in self._songs:
-            text = f'{fmt_number(song.number)}. {song.title}'
+            trackno = fmt_number(song.number)
+            if song.is_compilation_track():
+                text = f'{trackno}. {song.artist} - {song.title}'
+            else:
+                text = f'{trackno}. {song.title}'
             self._box.add_row(text)
 
         self.show_all()
