@@ -25,6 +25,35 @@ def gtk_main(func):
 
 
 # noinspection PyUnresolvedReferences
+class TimedInfoBar(Gtk.InfoBar):
+    """
+    An InfoBar that briefly shows a message and then hides itself.
+    """
+    def __init__(self):
+        super(TimedInfoBar, self).__init__()
+        self.set_revealed(False)
+        self._source_id = None
+
+    def temp_reveal(self, message):
+        content_box = self.get_content_area()
+        for child in content_box.get_children():
+            child.destroy()
+        label = Gtk.Label()
+        label.set_ellipsize(Pango.EllipsizeMode.END)
+        label.set_text(GLib.markup_escape_text(message))
+        label.set_padding(5, 5)
+        label.show()
+        content_box.add(label)
+        self.set_revealed(True)
+
+        def unreveal():
+            self.set_revealed(False)
+            return False
+
+        self._source_id = GLib.timeout_add_seconds(1, unreveal)
+
+
+# noinspection PyUnresolvedReferences
 class AlbumArt:
     """
     Asynchronously resolved album artwork. This will initially be a

@@ -3,7 +3,7 @@ from gi.repository import GObject, Gtk, GLib, Pango
 import re
 
 from neonmeate.ui import toolkit, controls
-from neonmeate.ui.toolkit import gtk_main, AlbumArt
+from neonmeate.ui.toolkit import gtk_main, AlbumArt, TimedInfoBar
 
 
 class DiffableBoolean:
@@ -28,11 +28,13 @@ class AlbumViewOptions:
 
 
 # noinspection PyArgumentList,PyUnresolvedReferences
-class ArtistsAlbums(Gtk.Box):
+class ArtistsAlbums(Gtk.VBox):
 
     def __init__(self, mpdclient, art, cfg):
         super(ArtistsAlbums, self).__init__()
         album_view_opts = AlbumViewOptions()
+        self._infobar = TimedInfoBar()
+        self.pack_start(self._infobar, False, False, 0);
         self._update_pending = DiffableBoolean()
         self._album_placeholder_pixbuf = \
             Gtk.IconTheme.get_default().load_icon_for_scale(
@@ -52,14 +54,16 @@ class ArtistsAlbums(Gtk.Box):
             self._album_placeholder_pixbuf,
             album_view_opts
         )
-
+        self._albums_songs.connect('playlist-modified', self._on_playlist_mod)
         columns.pack_end(self._albums_songs, True, True, 0)
-        self.add(columns)
+        self.pack_end(columns, True, True, 0)
         self.show_all()
 
     def on_random_fill(self):
         songs = self._mpdclient.get_random(50)
 
+    def _on_playlist_mod(self, widget):
+        self._infobar.temp_reveal("Playlist updated")
 
     def _on_artists_loaded(self, _, done):
         if done:
@@ -248,7 +252,7 @@ class FixedWidth(Gtk.Bin):
 
 
 # noinspection PyArgumentList,PyUnresolvedReferences
-class AlbumEntry(Gtk.VBox):
+class AlbumEntry(Gtk.Box):
     __gsignals__ = {
         'clicked': (GObject.SignalFlags.RUN_FIRST, None, ()),
     }
@@ -358,6 +362,9 @@ class ExpandedButtonBox(Gtk.HButtonBox):
 
 # noinspection PyArgumentList,PyUnresolvedReferences
 class AlbumsAndSongs(Gtk.HBox):
+    __gsignals__ = {
+        'playlist-modified': (GObject.SignalFlags.RUN_FIRST, None, ()),
+    }
 
     def __init__(self, mpdclient, art_cache, placeholder_pixbuf,
                  albums_view_options):
@@ -383,7 +390,7 @@ class AlbumsAndSongs(Gtk.HBox):
         self._song_action_bar = Gtk.ActionBar()
         self._song_info_bar = Gtk.Label()
         self._song_info_bar.set_justify(Gtk.Justification.CENTER)
-        #self._song_info_bar.set_ellipsize(Pango.EllipsizeMode.END)
+        # self._song_info_bar.set_ellipsize(Pango.EllipsizeMode.END)
         self._song_info_bar.set_line_wrap(True)
         self._song_info_bar.set_padding(10, 10)
 
@@ -429,19 +436,23 @@ class AlbumsAndSongs(Gtk.HBox):
         songs = self._get_selected_songs()
         if songs:
             self._mpdclient.add_songs(songs)
+            self.emit('playlist-modified')
 
     def _on_rem_sel(self, btn):
         songs = self._get_selected_songs()
         if songs:
             self._mpdclient.remove_songs(songs)
+            self.emit('playlist-modified')
 
     def _on_add_all(self, btn):
         if self._selected_album:
             self._mpdclient.add_album_to_playlist(self._selected_album)
+            self.emit('playlist-modified')
 
     def _on_rem_all(self, btn):
         if self._selected_album:
             self._mpdclient.remove_album_from_playlist(self._selected_album)
+            self.emit('playlist-modified')
 
     def _on_album_selected(self, albums, index):
         album = albums.get_selected_album()
@@ -456,7 +467,8 @@ class AlbumsAndSongs(Gtk.HBox):
     def _update_song_info(self):
         title = GLib.markup_escape_text(self._selected_album.title)
         year = GLib.markup_escape_text(str(self._selected_album.date))
-        self._song_info_bar.set_markup(f'<b><big>{title}</big></b>\n<small>{year}</small>')
+        self._song_info_bar.set_markup(
+            f'<b><big>{title}</big></b>\n<small>{year}</small>')
 
     def clear_songs(self):
         for c in self._songsbox.get_children():
@@ -480,6 +492,9 @@ class AlbumsAndSongs(Gtk.HBox):
     def on_artist_selected(self, artist_name):
         if not artist_name or artist_name == self._selected_artist:
             return
+        self._selected_artist = None
+        self._selected_album = None
+        self._current_songs = None
         self.clear_songs()
         self._song_info_bar.set_markup('')
         artist_inst = self._artist_by_name[artist_name]
