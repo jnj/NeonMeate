@@ -6,7 +6,7 @@ from gi.repository import GdkPixbuf, Gtk, Gdk
 
 from neonmeate.util import cluster
 from neonmeate.util.color import RGBColor
-from neonmeate.ui.toolkit import gtk_main
+from neonmeate.ui.toolkit import glib_main
 
 gi.require_version('Gtk', '3.0')
 gi.require_foreign('cairo')
@@ -97,7 +97,7 @@ class CoverWithGradient(Gtk.DrawingArea):
                 'rgb')
             cluster_result.add_done_callback(on_gradient_ready)
 
-    @gtk_main
+    @glib_main
     def _update_grad(self, rgb, border_rgb):
         if self._is_default_grad:
             self._is_default_grad = False

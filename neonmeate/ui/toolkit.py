@@ -1,19 +1,19 @@
 from gi.repository import GdkPixbuf, GObject, Gtk, Pango, GLib
 
 
-def gtk_main(func):
+def glib_main(func):
     """
     Decorator for a function that will not run it synchronously, but
-    instead run it on the GTK thread.
+    instead run it on the main GLib thread.
 
     Example:
     
-    @gtk_main
+    @glib_main
     def callback_when_done(obj):
         pass
 
     # A service will call the callback when the object has been
-    # obtained, but the callback will be run on the GTK thread.
+    # obtained, but the callback will be run on the GLib thread.
     service.fetch_obj(callback_when_done)
 
     """
@@ -81,12 +81,12 @@ class AlbumArt:
 
         """
 
-        @gtk_main
+        @glib_main
         def _on_art_ready(pixbuf, data):
             self._resolved = pixbuf
             on_done(pixbuf, data)
 
-        @gtk_main
+        @glib_main
         def _on_cover_path(cover_path):
             if cover_path:
                 self._art.fetch(cover_path, _on_art_ready, user_data)

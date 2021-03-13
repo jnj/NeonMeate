@@ -5,7 +5,7 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 
-from ..ui.toolkit import gtk_main
+from ..ui.toolkit import glib_main
 
 
 def signal_subcribe_on_main(connect_fn, signal_name, callback, *args):
@@ -14,7 +14,7 @@ def signal_subcribe_on_main(connect_fn, signal_name, callback, *args):
     such that it will be called by the main GLib thread.
     """
 
-    @gtk_main
+    @glib_main
     def run_on_main_thread(obj, *a):
         callback(obj, *a)
 

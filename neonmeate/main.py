@@ -81,7 +81,7 @@ def main(args=None):
         main_window.set_title('NeonMeate')
         main_window.show_all()
 
-        @toolkit.gtk_main
+        @toolkit.glib_main
         def connect():
             if cfg.is_connected():
                 main_window.on_connect_attempt(

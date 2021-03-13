@@ -8,7 +8,7 @@ from .controls import ControlButtons, PlayModeButtons
 from .nowplaying import NowPlaying
 from .playlist import PlaylistContainer
 from .songprogress import SongProgress
-from .toolkit import gtk_main
+from .toolkit import glib_main
 from .settings import SettingsMenu
 
 
@@ -162,7 +162,7 @@ class App(Gtk.ApplicationWindow):
 
     def _update_playlist(self, obj):
 
-        @gtk_main
+        @glib_main
         def on_current_queue(playqueue):
             self._update_play_queue(playqueue)
             # only set needs-attention after the first time

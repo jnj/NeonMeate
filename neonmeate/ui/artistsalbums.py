@@ -3,7 +3,7 @@ from gi.repository import GObject, Gtk, GLib, Pango
 import re
 
 from neonmeate.ui import toolkit, controls
-from neonmeate.ui.toolkit import gtk_main, AlbumArt, TimedInfoBar
+from neonmeate.ui.toolkit import glib_main, AlbumArt, TimedInfoBar
 
 
 class DiffableBoolean:
@@ -118,7 +118,7 @@ class Artists(Gtk.ScrolledWindow):
     def reload_artists(self):
         self.clear()
 
-        @gtk_main
+        @glib_main
         def on_artists(artists):
             self._artists.extend(artists)
             for artist in self._artists:
@@ -499,7 +499,7 @@ class AlbumsAndSongs(Gtk.HBox):
         self._song_info_bar.set_markup('')
         artist_inst = self._artist_by_name[artist_name]
 
-        @gtk_main
+        @glib_main
         def on_albums(albums):
             self._albums_list.clear()
             self._albums_list.extend(albums)
