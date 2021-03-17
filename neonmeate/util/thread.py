@@ -1,4 +1,3 @@
-import _thread
 import queue
 import sched
 import threading
@@ -58,6 +57,7 @@ class ScheduledExecutor:
         self._scheduler = sched.scheduler(timefunc=time.monotonic)
         self._exec_error_handler = executor_err_handler
         self._executor = ThreadPoolExecutor()
+        self._single_exec = ThreadPoolExecutor(max_workers=1)
         self._nullScheduledTask = NullCancelable()
         self._stopped = False
 
@@ -107,7 +107,7 @@ class ScheduledExecutor:
             delay,
             action,
             self._scheduler,
-            self._executor,
+            self._single_exec,
             self._thread,
             False
         )
@@ -123,7 +123,7 @@ class ScheduledExecutor:
             delay,
             action,
             self._scheduler,
-            self._executor,
+            self._single_exec,
             self._thread,
             True
         )
@@ -162,7 +162,11 @@ class ScheduledTask:
 
     def _schedule(self, to_run):
         self._event = self._sched.enter(self._delay, -1, to_run)
-        _thread.start_new_thread(self._sched.run, ())
+
+        def task():
+            self._sched.run()
+
+        self._exec.submit(task)
 
     def cancel(self):
         try:
@@ -175,8 +179,10 @@ if __name__ == '__main__':
     def sayhi():
         print("hi!")
 
+    def print_exception(e):
+        print(str(e))
 
-    executor = ScheduledExecutor()
+    executor = ScheduledExecutor(print_exception, print_exception)
     executor.start()
     e = executor.schedule_periodic(0.5, sayhi)
     print('sleeping...')

@@ -93,6 +93,7 @@ def main(args=None):
 
         connect()
         Gtk.main()
+        hb.stop()
         cfg.set_connected(connstatus.is_connected())
         cfg.save(config.main_config_file())
         logging.shutdown()
