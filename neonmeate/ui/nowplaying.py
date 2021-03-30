@@ -13,6 +13,7 @@ class NowPlaying(Gtk.Frame):
         self._art = art_cache
         self._cover_art = None
         self._current = (None, None)
+        self._covpath = None
         self._box = Gtk.VBox()
         self.add(self._box)
 
@@ -25,11 +26,17 @@ class NowPlaying(Gtk.Frame):
             self.clear()
 
     def on_playing(self, artist, album, covpath):
+        self._covpath = covpath
         if self._current == (artist, album):
             return
         self._clear_art()
         self._current = (artist, album)
         self._art.fetch(covpath, self._on_art_ready, (artist, album))
+
+    def switch_art(self):
+        artist, album = self._current
+        self._current = (None, None)
+        self.on_playing(artist, album, self._covpath)
 
     def _clear_art(self):
         if self._cover_art is not None:

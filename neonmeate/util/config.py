@@ -118,6 +118,12 @@ class Config:
     def is_connected(self):
         return self[ConfigKey.CONNECTED]
 
+    def set_music_dir(self, value):
+        self._config[ConfigKey.MEDIA_DIR] = value
+
+    def clear_background_cache(self):
+        self._config['background_cache'] = {}
+
     def get_background(self, artist, album, rng):
         cache_ = self['background_cache']
         if artist in cache_:

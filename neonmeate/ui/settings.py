@@ -1,7 +1,6 @@
 from gi.repository import Gtk, GObject
 
-from .controls import ControlButton
-from ..util.config import ConfigKey, main_config_file
+from ..util.config import main_config_file
 
 
 # noinspection PyUnresolvedReferences,PyArgumentList
@@ -15,9 +14,10 @@ class SettingsMenu(Gtk.Popover):
             (GObject.SignalFlags.RUN_FIRST, None, ())
     }
 
-    def __init__(self, executor, configstate, connstatus):
+    def __init__(self, executor, configstate, connstatus, cfg):
         super(SettingsMenu, self).__init__()
         self._exec = executor
+        self._cfg = cfg
         self._configstate = configstate
         self._connstatus = connstatus
         self._connstatus.connect('mpd_connected', self._on_mpd_connection)
@@ -88,7 +88,15 @@ class SettingsMenu(Gtk.Popover):
         self._grid.attach_next_to(self._save_btn, self._update_btn,
                                   Gtk.PositionType.BOTTOM, 1, 1)
 
+        self._clear_colors_btn = Gtk.Button(label='Clear Cache')
+        self._clear_colors_btn.connect('clicked', self._on_clear_colors)
+        self._grid.attach_next_to(self._clear_colors_btn, self._save_btn,
+                                  Gtk.PositionType.BOTTOM, 1, 1)
         self._grid.show_all()
+
+    def _on_clear_colors(self, btn):
+        self._cfg.clear_background_cache()
+        self._save()
 
     def _on_mpd_connection(self, _, success):
         self._connect_switch.set_active(success)
@@ -99,14 +107,16 @@ class SettingsMenu(Gtk.Popover):
         self.emit('neonmeate-update-requested')
 
     def _on_save_settings(self, btn):
-        def task():
-            cfg.save(main_config_file())
+        self._save()
 
-        self._exec.execute_async(task)
+    def _save(self):
+        self._cfg.save(main_config_file())
 
     def _on_music_folder(self, chooser):
         current = self._configstate.get_musicpath()
         chosen = chooser.get_filename()
+        self._cfg.set_music_dir(chosen)
+        self._save()
         if current != chosen:
             self._configstate.set_musicpath(chosen)
             self.emit('neonmeate-musicdir-updated', chosen)

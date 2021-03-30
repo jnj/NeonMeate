@@ -165,25 +165,28 @@ class Albums(toolkit.Scrollable):
         super(Albums, self).__init__()
         self.set_hexpand(True)
         self.set_vexpand(True)
-        self.set_border_width(5)
+        border_width = 5
+        self.set_border_width(border_width)
         self._placeholder_pixbuf = placeholder_pixbuf
         self._album_width_px = options.album_size
+        self._max_width = self._album_width_px + 20 + border_width
         self._album_spacing = options.col_spacing
         self._art = art_cache
         self._mpdclient = mpdclient
         self._options = options
-        self._albums_grid = Gtk.FlowBox()
-        self._albums_grid.set_orientation(Gtk.Orientation.HORIZONTAL)
-        self._albums_grid.set_max_children_per_line(30)
-        self._albums_grid.set_valign(Gtk.Align.START)
-        self._albums_grid.set_halign(Gtk.Align.START)
-        self._albums_grid.set_homogeneous(True)
-        self.add_content(self._albums_grid)
+        self._albums_column = Gtk.VBox()
+        self._albums_column.set_valign(Gtk.Align.START)
+        self._albums_column.set_halign(Gtk.Align.START)
+        self._albums_column.set_homogeneous(True)
+        self.add_content(self._albums_column)
         self._selected_artist = None
         self._selected_album = None
         self._entries = []
         self.show_all()
         self._artists = []
+
+    def do_get_preferred_width(self):
+        return self._max_width, self._max_width
 
     def set_artists(self, artists):
         self._selected_artist = None
@@ -206,7 +209,7 @@ class Albums(toolkit.Scrollable):
     def _on_all_albums_ready(self):
         for i, entry in enumerate(self._entries):
             entry.show()
-            self._albums_grid.add(entry)
+            self._albums_column.add(entry)
             entry.connect('clicked', self._on_album_selected, i)
         self.queue_draw()
 
@@ -214,7 +217,7 @@ class Albums(toolkit.Scrollable):
         self._selected_artist = None
         self._selected_album = None
         self._entries.clear()
-        for c in self._albums_grid.get_children():
+        for c in self._albums_column.get_children():
             c.destroy()
 
     def on_artist_selected(self, artist_name, albums):
@@ -373,24 +376,21 @@ class AlbumsAndSongs(Gtk.HBox):
         self.set_vexpand(True)
         self._mpdclient = mpdclient
         self._art_cache = art_cache
-        self._paned = Gtk.Paned()
-        self.add(self._paned)
+        self._container = Gtk.HBox()
+        self.add(self._container)
         self._albums = Albums(
             self._mpdclient,
             self._art_cache,
             placeholder_pixbuf,
             albums_view_options)
         self._albums.connect('album-selected', self._on_album_selected)
-        self._paned.pack1(self._albums, True, True)
+        self._container.pack_start(self._albums, False, True, 0)
         self._songsbox = Gtk.VBox()
-        self._paned.pack2(self._songsbox, True, True)
-        self._paned.set_position(
-            albums_view_options.album_size +
-            albums_view_options.col_spacing + 5)
+        self._container.pack_end(self._songsbox, True, True, 0)
+        self._container.add(self._songsbox)
         self._song_action_bar = Gtk.ActionBar()
         self._song_info_bar = Gtk.Label()
         self._song_info_bar.set_justify(Gtk.Justification.CENTER)
-        # self._song_info_bar.set_ellipsize(Pango.EllipsizeMode.END)
         self._song_info_bar.set_line_wrap(True)
         self._song_info_bar.set_padding(10, 10)
 
@@ -510,7 +510,7 @@ class AlbumsAndSongs(Gtk.HBox):
 
 
 # noinspection PyArgumentList,PyUnresolvedReferences
-class ArtistsContainer(Gtk.Bin):
+class ArtistsContainer(Gtk.HBox):
     __gsignals__ = {
         'artist_selected': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
         'artists_loaded': (GObject.SignalFlags.RUN_FIRST, None, (bool,))
@@ -518,6 +518,7 @@ class ArtistsContainer(Gtk.Bin):
 
     def __init__(self, mpdclient):
         super(ArtistsContainer, self).__init__()
+        # super(ArtistsContainer, self).set_preferred_size(300, -1)
         self._vbox = Gtk.VBox()
         self.add(self._vbox)
         self._artists = Artists(mpdclient)

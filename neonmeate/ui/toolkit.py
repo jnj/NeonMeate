@@ -105,6 +105,7 @@ class Scrollable(Gtk.ScrolledWindow):
         self._vp.add(widget)
 
 
+# noinspection PyUnresolvedReferences
 class CenteredLabel(Gtk.Label):
     def __init__(self, text, markup=False):
         super(CenteredLabel, self).__init__()
@@ -115,6 +116,14 @@ class CenteredLabel(Gtk.Label):
             self.set_markup(text)
         else:
             self.set_text(text)
+
+
+class MaxWidthLabel(Gtk.Label):
+    def __init__(self, text):
+        super(MaxWidthLabel, self).__init__(text, xalign=0)
+
+    def do_get_preferred_width(self):
+        return 260
 
 
 # noinspection PyUnresolvedReferences,PyArgumentList

@@ -79,7 +79,7 @@ class App(Gtk.ApplicationWindow):
         self._stack.connect('notify::visible-child', self._on_stack_change)
         self._titlebar.pack_start(self._stack_switcher)
         self._settings_btn = Gtk.MenuButton()
-        self._settings = SettingsMenu(executor, configstate, connstatus)
+        self._settings = SettingsMenu(executor, configstate, connstatus, cfg)
         self._connect_handler = self._settings.connect(
             'neonmeate-connect-attempt', self.on_connect_attempt)
         self._settings.connect('neonmeate-update-requested',
