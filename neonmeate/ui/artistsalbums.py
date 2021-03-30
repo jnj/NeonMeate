@@ -108,6 +108,10 @@ class Artists(Gtk.ScrolledWindow):
         self._artists = []
         self.reload_artists()
 
+    def do_get_preferred_width(self):
+        w = 240
+        return w, w
+
     def get_artists(self):
         return self._artists
 
@@ -378,13 +382,15 @@ class AlbumsAndSongs(Gtk.HBox):
         self._art_cache = art_cache
         self._container = Gtk.HBox()
         self.add(self._container)
+        self._albums_frame = Gtk.Frame()
         self._albums = Albums(
             self._mpdclient,
             self._art_cache,
             placeholder_pixbuf,
             albums_view_options)
         self._albums.connect('album-selected', self._on_album_selected)
-        self._container.pack_start(self._albums, False, True, 0)
+        self._albums_frame.add(self._albums)
+        self._container.pack_start(self._albums_frame, False, True, 0)
         self._songsbox = Gtk.VBox()
         self._container.pack_end(self._songsbox, True, True, 0)
         self._container.add(self._songsbox)
