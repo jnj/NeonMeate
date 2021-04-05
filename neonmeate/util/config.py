@@ -1,6 +1,4 @@
-import gi
-
-import logging
+import hashlib
 import json
 import os
 
@@ -71,6 +69,13 @@ class Config:
         with open(file, 'r') as f:
             return Config(json.load(f))
 
+    @staticmethod
+    def hash_file(filepath):
+        m = hashlib.sha1()
+        with open(filepath, 'rb') as f:
+            m.update(f.read())
+        return m.hexdigest()
+
     def __init__(self, dictlike):
         self._config = dictlike
         self._merge_with_defaults()
@@ -124,24 +129,26 @@ class Config:
     def clear_background_cache(self):
         self._config['background_cache'] = {}
 
-    def get_background(self, artist, album, rng):
-        cache_ = self['background_cache']
-        if artist in cache_:
-            clusters = cache_.get(artist, {}).get(album, None)
-            logging.info(f'clusters for {album} = {clusters}')
-            if clusters is not None:
-                fore = rng.choice(clusters)
-                back = rng.choice(clusters)
-                while fore == back:
+    def get_background(self, artist, album, rng, covpath):
+        cache = self['background_cache']
+        covdict = cache.get(covpath, None)
+        if covdict is not None:
+            saved_hash = covdict.get('hash', None)
+            if saved_hash and Config.hash_file(covpath) == saved_hash:
+                clusters = covdict['clusters']
+                if clusters:
+                    fore = rng.choice(clusters)
                     back = rng.choice(clusters)
-                return fore, back
+                    while fore == back:
+                        back = rng.choice(clusters)
+                    return fore, back
         return None, None
 
-    def save_clusters(self, artist, album, clusters):
-        cache_ = self['background_cache']
-        if artist not in cache_:
-            cache_[artist] = {}
-        cache_[artist][album] = [c.centroid() for c in clusters]
+    def save_clusters(self, artist, album, clusters, covpath):
+        cache = self['background_cache']
+        cover_hash = Config.hash_file(covpath)
+        d = {'hash': cover_hash, 'clusters': [c.centroid() for c in clusters]}
+        cache[covpath] = d
 
 
 # noinspection PyUnresolvedReferences

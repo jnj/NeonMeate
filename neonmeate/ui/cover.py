@@ -42,7 +42,7 @@ class CoverWithGradient(Gtk.DrawingArea):
         else:
             return b, a
 
-    def __init__(self, pixbuf, rng, executor, cfg, artist, album):
+    def __init__(self, pixbuf, rng, executor, cfg, artist, album, covpath):
         super(CoverWithGradient, self).__init__()
         self.logger = logging.getLogger(__name__)
         self._rng = rng
@@ -60,6 +60,7 @@ class CoverWithGradient(Gtk.DrawingArea):
         self._border_thickness = 5
         self.artist = artist
         self.album = album
+        self.covpath = covpath
 
         def on_gradient_ready(fut):
             ex = fut.exception(timeout=1)
@@ -78,9 +79,10 @@ class CoverWithGradient(Gtk.DrawingArea):
 
                 bordercolor, start = result.complementary(), result.dominant()
                 self._update_grad(start, bordercolor)
-                self._cfg.save_clusters(self.artist, self.album, clusters)
+                self._cfg.save_clusters(self.artist, self.album, clusters,
+                                        self.covpath)
 
-        border, bg = self._cfg.get_background(artist, album, rng)
+        border, bg = self._cfg.get_background(artist, album, covpath, rng)
 
         if border is not None and bg is not None:
             a, b = CoverWithGradient.rand_switch(self._rng, border, bg)

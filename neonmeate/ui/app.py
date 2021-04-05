@@ -191,7 +191,7 @@ class App(Gtk.ApplicationWindow):
 
     def _on_resolved_cover_path(self, cover_path, artist, album):
         if cover_path is None:
-            print(f"Cover not found for {artist} {album}")
+            self.logger.warning(f"Cover not found for {artist} {album}")
         else:
             self._art.fetch(cover_path, None, None)
 

@@ -31,7 +31,7 @@ class NowPlaying(Gtk.Frame):
             return
         self._clear_art()
         self._current = (artist, album)
-        self._art.fetch(covpath, self._on_art_ready, (artist, album))
+        self._art.fetch(covpath, self._on_art_ready, (artist, album, covpath))
 
     def switch_art(self):
         artist, album = self._current
@@ -43,20 +43,22 @@ class NowPlaying(Gtk.Frame):
             self._cover_art.destroy()
             self._cover_art = None
 
-    def _update_cover(self, pixbuf, artist, album):
+    def _update_cover(self, pixbuf, artist, album, covpath):
         self._cover_art = CoverWithGradient(
             pixbuf,
             self._rng,
             self._executor,
             self._cfg,
             artist,
-            album)
+            album,
+            covpath)
         self._box.pack_start(self._cover_art, True, True, 0)
         self._box.show()
         self._cover_art.show()
 
-    def _on_art_ready(self, pixbuf, artist_album):
-        if (self._current != artist_album) or (self._cover_art is not None):
+    def _on_art_ready(self, pixbuf, artist_album_covpath):
+        artist, album, covpath = artist_album_covpath
+        if (self._current != (artist, album)) or (self._cover_art is not None):
             return
-        self._update_cover(pixbuf, artist_album[0], artist_album[1])
+        self._update_cover(pixbuf, artist, album, covpath)
         self.queue_draw()
