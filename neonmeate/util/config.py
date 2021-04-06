@@ -129,12 +129,13 @@ class Config:
     def clear_background_cache(self):
         self._config['background_cache'] = {}
 
-    def get_background(self, artist, album, rng, covpath):
+    def get_background(self, artist, album, covpath, rng):
         cache = self['background_cache']
         covdict = cache.get(covpath, None)
         if covdict is not None:
             saved_hash = covdict.get('hash', None)
-            if saved_hash and Config.hash_file(covpath) == saved_hash:
+            calc_hash = Config.hash_file(covpath)
+            if saved_hash and calc_hash == saved_hash:
                 clusters = covdict['clusters']
                 if clusters:
                     fore = rng.choice(clusters)

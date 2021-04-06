@@ -85,9 +85,11 @@ class CoverWithGradient(Gtk.DrawingArea):
         border, bg = self._cfg.get_background(artist, album, covpath, rng)
 
         if border is not None and bg is not None:
+            self.logger.info(f'Found cached clusters for {covpath}')
             a, b = CoverWithGradient.rand_switch(self._rng, border, bg)
             self._update_grad(RGBColor(*a), RGBColor(*b))
         else:
+            self.logger.info(f'Cached clusters not found for {covpath}')
             cluster_result = executor.execute_async(
                 cluster.clusterize,
                 pixbuf,
