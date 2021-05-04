@@ -36,7 +36,7 @@ class PlayListControls(NeonMeateButtonBox):
             'neonmeate_random_fill'
         )
         randm_btn.set_always_show_image(True)
-        randm_btn.set_tooltip_text("Adds random songs to the playlist")
+        randm_btn.set_tooltip_text("Add random songs to the play queue")
         randm_btn.set_label('Random')
 
 

@@ -94,7 +94,7 @@ class CoverWithGradient(Gtk.DrawingArea):
                 cluster.clusterize,
                 pixbuf,
                 self._rng,
-                200,
+                25,
                 7,
                 0.001,
                 200,

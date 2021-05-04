@@ -135,8 +135,10 @@ class ColorClusterer:
         def getcolor(px, py):
             return ColorClusterer.color_at(img, px, py, self._colorspace)
 
-        x, y = self._rng.randrange(0, img.width), self._rng.randrange(0, img.height)
-        cluster = Cluster(f'Cluster 0', getcolor(x, y), triplet_mean, self._colorspace)
+        x, y = self._rng.randrange(0, img.width), self._rng.randrange(0,
+                                                                      img.height)
+        cluster = Cluster(f'Cluster 0', getcolor(x, y), triplet_mean,
+                          self._colorspace)
         self.clusters.append(cluster)
 
         points = []
@@ -164,7 +166,8 @@ class ColorClusterer:
                         max_dsquared = ds
                         max_p = p
             i = len(self.clusters)
-            cent = Cluster(f'Cluster {i}', getcolor(max_p[0], max_p[1]), triplet_mean, self._colorspace)
+            cent = Cluster(f'Cluster {i}', getcolor(max_p[0], max_p[1]),
+                           triplet_mean, self._colorspace)
             self.clusters.append(cent)
             cluster_points.add(max_p)
 
@@ -172,7 +175,8 @@ class ColorClusterer:
     def each_img_color(img, colorspace):
         for x in range(img.width):
             for y in range(img.height):
-                yield x, y, colorspace.as_3_tuple(RGBColor.from_256(*img.color(y, x)))
+                yield x, y, colorspace.as_3_tuple(
+                    RGBColor.from_256(*img.color(y, x)))
 
     def _nearest_cluster(self, color):
         n = None
@@ -231,10 +235,12 @@ class ColorClusterer:
 
         while itercount < maxiters:
             orig_means = [c.centroid() for c in self.clusters]
-            iteration = [self._colorspace.to_rgbcolor(*c.centroid()) for c in self.clusters]
+            iteration = [self._colorspace.to_rgbcolor(*c.centroid()) for c in
+                         self.clusters]
             self.rounds.append(iteration)
 
-            for x, y, components in ColorClusterer.each_img_color(img, self._colorspace):
+            for x, y, components in ColorClusterer.each_img_color(img,
+                                                                  self._colorspace):
                 c = self._add_to_nearest(components)
                 self.cluster_assignments[(x, y)] = c
 
@@ -244,7 +250,8 @@ class ColorClusterer:
             new_means = [c.centroid() for c in self.clusters]
 
             # If the clusters haven't changed much since the last round, we're done.
-            if all(self._colorspace.distance(u[0], u[1], u[2], v[0], v[1], v[2]) < thresh for u, v in
+            if all(self._colorspace.distance(u[0], u[1], u[2], v[0], v[1],
+                                             v[2]) < thresh for u, v in
                    zip(orig_means, new_means)):
                 break
 
@@ -293,12 +300,14 @@ def space_for(space):
     return RGBColorSpace if space == 'rgb' else HSVColorSpace
 
 
-def clusterize(pixbuf, rng, maxedge=200, k=7, cluster_thresh=0.6, max_iters=200, space='hsv'):
+def clusterize(pixbuf, rng, percent=25, k=7, cluster_thresh=0.6, max_iters=200,
+               space='hsv'):
     assert pixbuf.get_bits_per_sample() == 8
     assert pixbuf.get_colorspace() == GdkPixbuf.Colorspace.RGB
 
-    if pixbuf.get_height() > maxedge and pixbuf.get_width() > maxedge:
-        pixbuf = pixbuf.scale_simple(maxedge, maxedge, GdkPixbuf.InterpType.BILINEAR)
+    if pixbuf.get_height() > 200 and pixbuf.get_width() > 200:
+        sw, sh = scale_dimensions(pixbuf, percent)
+        pixbuf = pixbuf.scale_simple(sw, sh, GdkPixbuf.InterpType.BILINEAR)
 
     img = Image(pixbuf)
     color_space = space_for(space)
@@ -306,8 +315,10 @@ def clusterize(pixbuf, rng, maxedge=200, k=7, cluster_thresh=0.6, max_iters=200,
     clusterer.cluster(img)
     clusters = clusterer.clusters
 
-    white = Cluster('white', color_space.as_3_tuple(RGBColor(1, 1, 1)), triplet_mean, color_space)
-    black = Cluster('black', color_space.as_3_tuple(RGBColor(0, 0, 0)), triplet_mean, color_space)
+    white = Cluster('white', color_space.as_3_tuple(RGBColor(1, 1, 1)),
+                    triplet_mean, color_space)
+    black = Cluster('black', color_space.as_3_tuple(RGBColor(0, 0, 0)),
+                    triplet_mean, color_space)
 
     def black_or_white(c):
         return c.similar(white, 0.15) or c.similar(black, 0.15)
@@ -324,7 +335,9 @@ def clusterize(pixbuf, rng, maxedge=200, k=7, cluster_thresh=0.6, max_iters=200,
             if not c.similar(d):
                 kept.add(d.label)
 
-    return clusterer, img, sorted([c for c in clusters if c.label in kept], key=lambda c: c.count(), reverse=True), clusterer.rounds
+    return clusterer, img, sorted([c for c in clusters if c.label in kept],
+                                  key=lambda c: c.count(),
+                                  reverse=True), clusterer.rounds
 
 
 class ClusteringResult:
@@ -341,29 +354,45 @@ class ClusteringResult:
         return self._color_space.to_rgbcolor(*choice.centroid())
 
 
+def scale_dimensions(pixbuf, percentage):
+    new_width = int(0.01 * percentage * pixbuf.get_width())
+    new_height = int(0.01 * percentage * pixbuf.get_height())
+    return new_width, new_height
+
+
 def main(args):
     from PIL import Image
     import argparse
     import time
 
-    parser = argparse.ArgumentParser(prog='cluster', description='Clusterize an image using k-means',
+    parser = argparse.ArgumentParser(prog='cluster',
+                                     description='Clusterize an image using k-means',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('file', help='jpg file path')
-    parser.add_argument('-e', '--edge', help='edge_size', default=200, type=int)
-    parser.add_argument('-k', '--k', help='number of clusters', default=7, type=int)
-    parser.add_argument('-t', '--thresh', help='cluster distance threshold', default=0.001, type=float)
-    parser.add_argument('-i', '--iters', help='max number of iterations', default=100, type=int)
-    parser.add_argument('-s', '--space', help='color space for distance', choices=['rgb', 'hsv'], default='hsv')
+    parser.add_argument('-p', '--pct', help='percentage', default=25, type=int)
+    parser.add_argument('-k', '--k', help='number of clusters', default=7,
+                        type=int)
+    parser.add_argument('-t', '--thresh', help='cluster distance threshold',
+                        default=0.001, type=float)
+    parser.add_argument('-i', '--iters', help='max number of iterations',
+                        default=100, type=int)
+    parser.add_argument('-s', '--space', help='color space for distance',
+                        choices=['rgb', 'hsv'], default='hsv')
     parsed = parser.parse_args(args)
+
+    if parsed.pct < 0 or parsed.pct > 100:
+        raise Exception(f'invalid percentage option: {parsed.pct}')
 
     with open(parsed.file, 'rb') as f:
         pixbuf = pixbuf_from_file(f)
 
+    scaled_width, scaled_height = scale_dimensions(pixbuf, parsed.pct)
     rng = random.Random()
     rng.seed(int(1000 * time.time()))
 
     clusterer, pixbuf_img, clusters, rounds = \
-        clusterize(pixbuf, rng, parsed.edge, parsed.k, parsed.thresh, parsed.iters, parsed.space)
+        clusterize(pixbuf, rng, parsed.pct, parsed.k, parsed.thresh,
+                   parsed.iters, parsed.space)
     colorspace = space_for(parsed.space)
     for c in clusters:
         dist_dict = {}
@@ -376,10 +405,10 @@ def main(args):
             )
         c.dist_dict = dist_dict
 
-    im = Image.new('RGB', (parsed.edge, parsed.edge))
+    im = Image.new('RGB', (scaled_width, scaled_height))
 
-    for row in range(parsed.edge):
-        for col in range(parsed.edge):
+    for row in range(scaled_height):
+        for col in range(scaled_width):
             clust = clusterer.cluster_assignments[(col, row)]
             a, b, c = clust.centroid()
             rgb = colorspace.to_rgb_256_tuple(a, b, c)
