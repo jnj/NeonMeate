@@ -68,6 +68,9 @@ class Album:
     def __hash__(self):
         return hash(self.dirpath)
 
+    def is_compilation(self):
+        return any(s.is_compilation_track for s in self.songs)
+
     def sorted_songs(self):
         return sorted(self.songs, key=Song.sort_key)
 
