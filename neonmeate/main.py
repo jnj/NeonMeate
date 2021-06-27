@@ -4,6 +4,7 @@ gi.require_version('Gtk', '3.0')
 
 from gi.repository import Gtk, GObject, GLib
 
+import argparse
 import logging
 import logging.config
 import random
@@ -18,13 +19,16 @@ import neonmeate.util.config as config
 import neonmeate.util.thread as thread
 
 
-def configure_logging():
+def configure_logging(debug_enabled):
+    level = 'WARN'
+    if debug_enabled:
+        level = 'DEBUG'
     logging.config.dictConfig({
         'version': 1,
         'handlers': {
             'console': {
                 'class': 'logging.StreamHandler',
-                'level': 'DEBUG',
+                'level': level,
                 'formatter': 'default',
                 'stream': 'ext://sys.stdout'
             }
@@ -37,7 +41,7 @@ def configure_logging():
         'loggers': {
             'neonmeate': {
                 'handlers': ['console'],
-                'level': 'DEBUG'
+                'level': level
             }
         }
     })
@@ -47,12 +51,20 @@ def log_errors(ex):
     logging.exception('Exception caught')
 
 
+def parseargs(args):
+    fmtclass = argparse.ArgumentDefaultsHelpFormatter
+    p = argparse.ArgumentParser('neonmeate', formatter_class=fmtclass)
+    p.add_argument('-d', '--debug', help='enabled debug output',
+                   action='store_const', default=False, const=True)
+    return p.parse_args(args)
+
+
 # noinspection PyUnresolvedReferences
 def main(args=None):
     if not args:
         args = sys.argv[1:]
-
-    configure_logging()
+    options = parseargs(args)
+    configure_logging(options.debug)
     cfg = config.Config.load_main_config()
     configstate = config.ConfigState()
     configstate.init_from_cfg(cfg)
