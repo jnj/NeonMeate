@@ -219,7 +219,7 @@ class App(Gtk.ApplicationWindow):
         }
 
     def _on_song_changed(self, hb, artist, title, album, filepath):
-        self.logger.info(
+        self.logger.debug(
             f"Song changed. artist={artist}, title={title}, album={album},"
             f" filepath={filepath}")
         title_text = 'NeonMeate'

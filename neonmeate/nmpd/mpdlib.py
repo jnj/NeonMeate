@@ -482,7 +482,7 @@ class MpdHeartbeat(GObject.GObject):
             return
 
         def on_current_song(song_info):
-            self.logger.info(f'current song: {str(song_info)}')
+            self.logger.debug(f'current song: {str(song_info)}')
             try:
                 self.emit('song_changed',
                           song_info['artist'],
