@@ -472,6 +472,9 @@ class AlbumsAndSongs(Gtk.HBox):
 
     def _update_song_info(self):
         title = GLib.markup_escape_text(self._selected_album.title)
+        if self._selected_album.is_compilation:
+            # todo add button to jump to comp album
+            pass
         year = GLib.markup_escape_text(str(self._selected_album.date))
         self._song_info_bar.set_markup(
             f'<b><big>{title}</big></b>\n<small>{year}</small>')
