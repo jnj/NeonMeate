@@ -267,7 +267,8 @@ class Albums(Gtk.ScrolledWindow):
         self._view = Gtk.IconView(self._model)
         self._view.set_hexpand(True)
         self._view.set_selection_mode(Gtk.SelectionMode.NONE)
-        # self._view.set_spacing(self._album_spacing)
+        self._view.set_column_spacing(options.col_spacing)
+        self._view.set_row_spacing(options.row_spacing)
         self._view.set_has_tooltip(True)
         self._view.connect('query-tooltip', self._on_tooltip)
         self.add(self._view)
@@ -312,7 +313,7 @@ class Albums(Gtk.ScrolledWindow):
             album = model[iter][0]
             esc_title = GLib.markup_escape_text(album.title)
             esc_date = GLib.markup_escape_text(str(album.date))
-            markup = f'<b>{esc_title}</b>\n<small>{esc_date}</small>'
+            markup = f'{esc_title}\n<small>{esc_date}</small>'
             cell.set_property('markup', markup)
 
         txt_render = Gtk.CellRendererText()
