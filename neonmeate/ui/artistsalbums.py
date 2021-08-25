@@ -10,7 +10,7 @@ from neonmeate.ui.toolkit import glib_main, AlbumArt, TimedInfoBar, \
 class AlbumViewOptions:
     def __init__(self):
         self.num_grid_cols = 1
-        self.album_size = 280
+        self.album_size = 560
         self.col_spacing = 30
         self.row_spacing = 30
 
@@ -36,6 +36,9 @@ class ArtistsAlbums(Gtk.VBox):
         self._artists.connect('artist_selected', self._on_artist_clicked)
         self._artists.connect('artists_loaded', self._on_artists_loaded)
         columns.pack_start(self._artists, False, False, 0)
+
+        separator = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
+        columns.pack_start(separator, False, False, 0)
 
         self._albums_songs = AlbumsAndSongs(
             self._mpdclient,
@@ -256,6 +259,7 @@ class Albums(Gtk.ScrolledWindow):
         self._placeholder_pixbuf = placeholder_pixbuf
         self._album_width_px = options.album_size
         self._album_spacing = options.col_spacing
+        self.set_min_content_width(self._album_width_px + self._album_spacing)
         self._art = art_cache
         self._mpdclient = mpdclient
         self._options = options
