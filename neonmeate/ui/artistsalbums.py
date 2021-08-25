@@ -10,7 +10,7 @@ from neonmeate.ui.toolkit import glib_main, AlbumArt, TimedInfoBar, \
 class AlbumViewOptions:
     def __init__(self):
         self.num_grid_cols = 1
-        self.album_size = 560
+        self.album_size = 160
         self.col_spacing = 30
         self.row_spacing = 30
 
@@ -267,7 +267,7 @@ class Albums(Gtk.ScrolledWindow):
         self._view = Gtk.IconView(self._model)
         self._view.set_hexpand(True)
         self._view.set_selection_mode(Gtk.SelectionMode.NONE)
-        self._view.set_spacing(self._album_spacing)
+        # self._view.set_spacing(self._album_spacing)
         self._view.set_has_tooltip(True)
         self._view.connect('query-tooltip', self._on_tooltip)
         self.add(self._view)
