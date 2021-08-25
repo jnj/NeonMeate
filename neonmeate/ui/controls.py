@@ -118,6 +118,11 @@ class ControlButtons(NeonMeateButtonBox):
     def __init__(self):
         super(ControlButtons, self).__init__()
 
+        self._prev = self._add_button(
+            ControlButton('media-skip-backward'),
+            'prev',
+            'neonmeate_prev_song'
+        )
         self._play_pause_button = self._add_button(
             PlayPauseButton(),
             'play_pause',
@@ -127,11 +132,6 @@ class ControlButtons(NeonMeateButtonBox):
             ControlButton('media-playback-stop'),
             'stop',
             'neonmeate_stop_playing'
-        )
-        self._prev = self._add_button(
-            ControlButton('media-skip-backward'),
-            'prev',
-            'neonmeate_prev_song'
         )
         self._next = self._add_button(
             ControlButton('media-skip-forward'),
