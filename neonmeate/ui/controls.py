@@ -123,15 +123,15 @@ class ControlButtons(NeonMeateButtonBox):
             'prev',
             'neonmeate_prev_song'
         )
-        self._play_pause_button = self._add_button(
-            PlayPauseButton(),
-            'play_pause',
-            None
-        )
         self._stop = self._add_button(
             ControlButton('media-playback-stop'),
             'stop',
             'neonmeate_stop_playing'
+        )
+        self._play_pause_button = self._add_button(
+            PlayPauseButton(),
+            'play_pause',
+            None
         )
         self._next = self._add_button(
             ControlButton('media-skip-forward'),
