@@ -219,3 +219,16 @@ class Table:
 
     def set_selection_handler(self, handler):
         self.selection_handler = handler
+
+
+class DiffableBoolean:
+    def __init__(self):
+        self.value = False
+
+    def current(self):
+        return self.value
+
+    def update(self, new_value):
+        changed = new_value != self.value
+        self.value = new_value
+        return changed

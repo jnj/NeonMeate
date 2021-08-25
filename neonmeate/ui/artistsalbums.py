@@ -2,21 +2,9 @@ from gi.repository import GObject, Gtk, GLib, Pango, GdkPixbuf, Gdk
 
 import re
 
-from neonmeate.ui import toolkit, controls
-from neonmeate.ui.toolkit import glib_main, AlbumArt, TimedInfoBar
-
-
-class DiffableBoolean:
-    def __init__(self):
-        self.value = False
-
-    def current(self):
-        return self.value
-
-    def update(self, new_value):
-        changed = new_value != self.value
-        self.value = new_value
-        return changed
+from neonmeate.ui import toolkit
+from neonmeate.ui.toolkit import glib_main, AlbumArt, TimedInfoBar, \
+    DiffableBoolean
 
 
 class AlbumViewOptions:
@@ -27,7 +15,7 @@ class AlbumViewOptions:
         self.row_spacing = 30
 
 
-# noinspection PyArgumentList,PyUnresolvedReferences
+# noinspection PyUnresolvedReferences
 class ArtistsAlbums(Gtk.VBox):
 
     def __init__(self, mpdclient, art, cfg):
@@ -91,7 +79,7 @@ class ArtistsAlbums(Gtk.VBox):
         self._albums_songs.on_artist_selected(selected_value)
 
 
-# noinspection PyArgumentList,PyUnresolvedReferences
+# noinspection PyUnresolvedReferences
 class SongsMenu(Gtk.Popover):
 
     def __init__(self, album, mpdclient):
@@ -142,6 +130,7 @@ class SongsMenu(Gtk.Popover):
                     self._selected_songs.append(current_song)
                 if not button.get_active() and included:
                     self._selected_songs.remove(current_song)
+
             checkbox.connect('toggled', toggle_handler)
 
             self._songslist.add(checkbox)
@@ -175,25 +164,20 @@ class SongsMenu(Gtk.Popover):
         self._scrollable.show_all()
 
     def _get_selected_songs(self):
-        print(f'selected songs:')
-        for song in self._selected_songs:
-            print(f'{song.zero_padded_number()}. {song.title}\n')
         return self._selected_songs
 
     def _on_add_sel(self, btn):
         songs = self._get_selected_songs()
         if songs:
             self._mpdclient.add_songs(songs)
-            # self.emit('playlist-modified')
 
     def _on_rem_sel(self, btn):
         songs = self._get_selected_songs()
         if songs:
             self._mpdclient.remove_songs(songs)
-            # self.emit('playlist-modified')
 
 
-# noinspection PyArgumentList,PyUnresolvedReferences
+# noinspection PyUnresolvedReferences
 class Artists(Gtk.ScrolledWindow):
     __gsignals__ = {
         'artist_selected': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
@@ -211,9 +195,9 @@ class Artists(Gtk.ScrolledWindow):
         self._artists = []
         self.reload_artists()
 
-    def do_get_preferred_width(self):
-        w = 240
-        return w, w
+    # def do_get_preferred_width(self):
+    #     w = 240
+    #     return w, w
 
     def get_artists(self):
         return self._artists
@@ -394,14 +378,6 @@ class Albums(Gtk.ScrolledWindow):
         self._selected_album = entry.album
         self.emit('album-selected', index)
 
-    def _on_all_albums_ready(self):
-        pass
-        # for i, entry in enumerate(self._entries):
-        #     entry.show()
-        #     self._container.add(entry)
-        #     entry.connect('clicked', self._on_album_selected, i)
-        # self.queue_draw()
-
     def _clear_albums(self):
         self._selected_artist = None
         self._selected_album = None
@@ -414,215 +390,6 @@ class Albums(Gtk.ScrolledWindow):
         self._selected_artist = artist_name
         for album in sorted(list(albums), key=Albums.album_sort_key):
             self._model.append([album])
-
-        # for i, album in enumerate(albums):
-        # art = AlbumArt(self._art, album, self._placeholder_pixbuf)
-        # entry = AlbumEntry(i, album, art, self._album_width_px, self._mpdclient)
-        # entries.append(entry)
-
-        self._on_all_albums_ready()
-
-
-class AlbumInfoText(Gtk.Box):
-    def __init__(self, width):
-        super(AlbumInfoText, self).__init__(0)
-        self._width = width
-        self._label = Gtk.Label()
-        # self._label.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
-        self._label.set_line_wrap(True)
-        self._label.set_selectable(False)
-        self.add(self._label)
-
-    def do_get_preferred_width(self):
-        w = self._width + 6
-        return w, w
-
-    def set_text(self, txt):
-        self._label.set_markup(txt)
-
-
-class ExpanderFrame(Gtk.Frame):
-    def __init__(self, length):
-        super(ExpanderFrame, self).__init__()
-        self._length = length
-
-    def do_get_preferred_size(self):
-        t = (self._length, self._length)
-        return t, t
-
-
-# noinspection PyArgumentList,PyUnresolvedReferences
-class AlbumThumbnail(Gtk.Box):
-    __gsignals__ = {
-        'clicked': (GObject.SignalFlags.RUN_FIRST, None, ()),
-    }
-
-    def __init__(self, album, art, size):
-        super(AlbumThumbnail, self).__init__()
-        self._size = size
-        self._img = None
-        self._art = art
-        self._album = album
-        self._eventbox = Gtk.EventBox()
-        self._eventbox.connect('button-press-event', self._img_clicked)
-        self.add(self._eventbox)
-        self._update_art()
-
-        def _on_done(new_pixbuf, _):
-            self._update_art()
-
-        art.resolve(_on_done, None)
-
-    def do_get_preferred_width_for_height(self, height):
-        return (self._size, self._size)
-
-    def do_get_preferred_width(self):
-        return (self._size, self._size)
-
-    def do_get_preferred_height(self):
-        return (self._size, self._size)
-
-    def do_get_preferred_height_for_width(self, width):
-        return (self._size, self._size)
-
-    def _img_clicked(self, x, y):
-        self.emit('clicked')
-
-    def _update_art(self):
-        if self._img:
-            self._img.clear()
-        new_pixbuf = self._art.get_scaled_pixbuf(self._size)
-
-        if self._img:
-            self._img.set_from_pixbuf(new_pixbuf)
-        else:
-            self._img = Gtk.Image.new_from_pixbuf(new_pixbuf)
-            self._eventbox.add(self._img)
-
-        self.queue_draw()
-
-
-# noinspection PyArgumentList,PyUnresolvedReferences
-class AlbumEntry(Gtk.VBox):
-    __gsignals__ = {
-        'clicked': (GObject.SignalFlags.RUN_FIRST, None, ()),
-    }
-
-    def __init__(self, index, album, art, width, mpdclient):
-        super(AlbumEntry, self).__init__()
-        self._mpdclient = mpdclient
-        self.index = index
-        self.width = width
-        self.album = album
-        self._thumb = AlbumThumbnail(album, art, width)
-        self._art = art
-        # self._frame = frame
-        self.add(self._thumb)
-        self.set_margin_start(16)
-        self.set_margin_end(16)
-        self.set_spacing(0)
-        # self._img_event_box.connect('button-press-event', self._img_clicked)
-
-        title = AlbumInfoText(self.width)
-        esc_title = GLib.markup_escape_text(album.title)
-        esc_date = GLib.markup_escape_text(str(album.date))
-        info_markup = f'<b>{esc_title}</b>\n{esc_date}'
-        title.set_margin_top(16)
-        title.set_halign(Gtk.Align.CENTER)
-        title.set_text(info_markup)
-        self.add(title)
-
-        # self.set_margin_bottom(48)
-        # self._update_art()
-        self.show_all()
-
-        # def _on_done(new_pixbuf, _):
-        #     self._update_art()
-        #
-        # art.resolve(_on_done, None)
-
-    def do_get_preferred_width(self):
-        return self.width, self.width
-
-    def _on_add(self, x):
-        self._mpdclient.add_album_to_playlist(self.album)
-
-    def _on_remove(self, x):
-        self._mpdclient.remove_album_from_playlist(self.album)
-
-    def _on_right_click(self, x):
-        print('right clicked')
-
-    def _img_clicked(self, x, y):
-        self.emit('clicked')
-
-    def _update_art(self):
-        if self._img:
-            self._img.clear()
-        new_pixbuf = self._art.get_scaled_pixbuf(self.width)
-        if self._img:
-            self._img.set_from_pixbuf(new_pixbuf)
-        else:
-            self._img = Gtk.Image.new_from_pixbuf(new_pixbuf)
-        if self._img:
-            if self._frame.get_child() is None:
-                self._frame.add(self._img)
-            self.queue_draw()
-
-    def __str__(self):
-        return self.album
-
-
-# noinspection PyArgumentList,PyUnresolvedReferences
-class Songs(Gtk.ScrolledWindow):
-    def __init__(self, album):
-        super(Songs, self).__init__()
-        self._album = album
-        self._box = toolkit.Column(15, True, True)
-        self.add(self._box)
-        self._songs = album.sorted_songs()
-
-        # todo bind model
-
-        def fmt_number(n):
-            if len(self._songs) < 100:
-                return f'{n:02}'
-            else:
-                return f'{n:03}'
-
-        for song in self._songs:
-            trackno = fmt_number(song.number)
-            if song.is_compilation_track():
-                text = f'{trackno}. {song.artist} - {song.title}'
-            else:
-                text = f'{trackno}. {song.title}'
-            self._box.add_row(text)
-
-        self.show_all()
-
-    def for_each_selected_song(self, fn):
-        def callback(box, row, *data):
-            i = row.get_index()
-            song = self._songs[i]
-            fn(song)
-
-        rows = self._box.get_selected_rows()
-        for row in rows:
-            callback(self._box, row)
-        del rows
-
-
-# noinspection PyArgumentList,PyUnresolvedReferences
-class ExpandedButtonBox(Gtk.HButtonBox):
-    def __init__(self):
-        super(ExpandedButtonBox, self).__init__()
-        self.set_layout(Gtk.ButtonBoxStyle.EXPAND)
-
-    def add_labeled(self, label_text):
-        button = Gtk.Button()
-        button.add(Gtk.Label(label_text))
-        self.add(button)
-        return button
 
 
 # noinspection PyArgumentList,PyUnresolvedReferences
@@ -638,10 +405,6 @@ class AlbumsAndSongs(Gtk.Box):
         self.set_vexpand(True)
         self._mpdclient = mpdclient
         self._art_cache = art_cache
-
-        # self._container = Gtk.HBox()
-        # self.add(self._container)
-
         self._albums = Albums(
             self._mpdclient,
             self._art_cache,
@@ -649,76 +412,12 @@ class AlbumsAndSongs(Gtk.Box):
             albums_view_options)
         self._albums.connect('album-selected', self._on_album_selected)
         self.add(self._albums)
-
-        # self._container.pack_start(self._albums_frame, False, True, 0)
-        # self._songsbox = Gtk.VBox()
-        # self._container.pack_end(self._songsbox, True, True, 0)
-        # self._container.add(self._songsbox)
-        # self._song_action_bar = Gtk.ActionBar()
-        # self._song_info_bar = Gtk.Label()
-        # self._song_info_bar.set_justify(Gtk.Justification.CENTER)
-        # self._song_info_bar.set_line_wrap(True)
-        # self._song_info_bar.set_padding(10, 10)
-        #
-        # self._all_buttonbox = ExpandedButtonBox()
-        # self._add_all = self._all_buttonbox.add_labeled('Add all')
-        # self._rem_all = self._all_buttonbox.add_labeled('Remove all')
-        #
-        # self._sel_buttonbox = ExpandedButtonBox()
-        # self._add_sel = controls.ControlButton('list-add')
-        # self._add_sel.set_tooltip_markup('Add selected')
-        # self._rem_sel = controls.ControlButton('list-remove')
-        # self._rem_sel.set_tooltip_markup('Remove selected')
-        # self._sel_buttonbox.add(self._add_sel)
-        # self._sel_buttonbox.add(self._rem_sel)
-        #
-        # self._song_action_bar.add(self._all_buttonbox)
-        # self._song_action_bar.add(self._sel_buttonbox)
-        # self._songsbox.pack_start(self._song_info_bar, False, False, 0)
-        # self._songsbox.pack_end(self._song_action_bar, False, False, 0)
-        # self._add_all.connect('clicked', self._on_add_all)
-        # self._rem_all.connect('clicked', self._on_rem_all)
-        # self._add_sel.connect('clicked', self._on_add_sel)
-        # self._rem_sel.connect('clicked', self._on_rem_sel)
         self._albums_list = []
         self._artist_by_name = {}
         self._selected_artist = None
         self._selected_album = None
         self._current_songs = None
         self.show_all()
-
-    def _get_selected_songs(self):
-        if self._current_songs:
-            songs = []
-
-            def on_song(song):
-                songs.append(song)
-
-            self._current_songs.for_each_selected_song(on_song)
-            return songs
-        return []
-
-    def _on_add_sel(self, btn):
-        songs = self._get_selected_songs()
-        if songs:
-            self._mpdclient.add_songs(songs)
-            self.emit('playlist-modified')
-
-    def _on_rem_sel(self, btn):
-        songs = self._get_selected_songs()
-        if songs:
-            self._mpdclient.remove_songs(songs)
-            self.emit('playlist-modified')
-
-    def _on_add_all(self, btn):
-        if self._selected_album:
-            self._mpdclient.add_album_to_playlist(self._selected_album)
-            self.emit('playlist-modified')
-
-    def _on_rem_all(self, btn):
-        if self._selected_album:
-            self._mpdclient.remove_album_from_playlist(self._selected_album)
-            self.emit('playlist-modified')
 
     def _on_album_selected(self, albums, index):
         album = albums.get_selected_album()
@@ -730,25 +429,8 @@ class AlbumsAndSongs(Gtk.Box):
         self._songsbox.pack_end(self._current_songs, True, True, 0)
         self.queue_draw()
 
-    def _update_song_info(self):
-        title = GLib.markup_escape_text(self._selected_album.title)
-        if self._selected_album.is_compilation:
-            # todo add button to jump to comp album
-            pass
-        year = GLib.markup_escape_text(str(self._selected_album.date))
-        self._song_info_bar.set_markup(
-            f'<b><big>{title}</big></b>\n<small>{year}</small>')
-
-    def clear_songs(self):
-        # for c in self._songsbox.get_children():
-        #     if c != self._song_action_bar and c != self._song_info_bar:
-        #         c.destroy()
-        pass
-
     def clear(self):
-        self._song_info_bar.set_markup('')
         self._albums.clear()
-        self.clear_songs()
         self._selected_artist = None
         self._selected_album = None
 
@@ -765,8 +447,6 @@ class AlbumsAndSongs(Gtk.Box):
         self._selected_artist = None
         self._selected_album = None
         self._current_songs = None
-        self.clear_songs()
-        # self._song_info_bar.set_markup('')
         artist_inst = self._artist_by_name[artist_name]
 
         @glib_main
@@ -788,7 +468,6 @@ class ArtistsContainer(Gtk.HBox):
 
     def __init__(self, mpdclient):
         super(ArtistsContainer, self).__init__()
-        # super(ArtistsContainer, self).set_preferred_size(300, -1)
         self._vbox = Gtk.VBox()
         self.add(self._vbox)
         self._artists = Artists(mpdclient)
@@ -820,52 +499,3 @@ class ArtistsContainer(Gtk.HBox):
 
     def clear(self):
         self._artists.clear()
-
-
-if __name__ == '__main__':
-    main_window = Gtk.Window()
-    main_window.connect('destroy', Gtk.main_quit)
-    main_window.set_title('NeonMeate')
-
-    album_pixbuf = GdkPixbuf.Pixbuf.new_from_file(
-        '/media/josh/Music/Neurosis/Through Silver in Blood/cover.jpg')
-    scaled_pixbuf = album_pixbuf.scale_simple(160, 160,
-                                              GdkPixbuf.InterpType.BILINEAR)
-    album_img = Gtk.Image.new_from_pixbuf(scaled_pixbuf)
-
-    toplevel_album_box = Gtk.VBox()
-    toplevel_album_box.set_margin_start(160)
-    toplevel_album_box.set_margin_end(160)
-    toplevel_album_box.set_margin_bottom(48)
-    toplevel_album_box.set_margin_top(48)
-
-    album_info_box = Gtk.VBox()
-    album_info_box.set_property('can-focus', False)
-    album_info_box.set_halign(Gtk.Align.FILL)
-    album_info_box.set_hexpand(True)
-    album_info_box.set_property('spacing', 32)
-
-    img_box = Gtk.Box()
-    img_box.set_property('can-focus', False)
-    img_box.set_halign(Gtk.Align.CENTER)
-    img_box.set_valign(Gtk.Align.START)
-    img_box.set_homogeneous(False)
-    img_box.add(album_img)
-
-    album_details = Gtk.VBox()
-    album_details.set_property('can-focus', False)
-    album_details.set_halign(Gtk.Align.CENTER)
-    album_details.set_valign(Gtk.Align.START)
-    album_details.set_margin_top(18)
-    title_label = Gtk.Label()
-    title_label.set_halign(Gtk.Align.START)
-    title_label.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
-    title_label.set_margin_bottom(18)
-    title_label.set_markup('Through Silver in Blood')
-    album_details.add(title_label)
-    album_info_box.add(img_box)
-    album_info_box.add(album_details)
-    toplevel_album_box.add(album_info_box)
-    main_window.add(toplevel_album_box)
-    main_window.show_all()
-    Gtk.main()
