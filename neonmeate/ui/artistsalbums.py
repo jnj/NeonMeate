@@ -270,6 +270,7 @@ class Albums(Gtk.ScrolledWindow):
         self._view.set_column_spacing(options.col_spacing)
         self._view.set_row_spacing(options.row_spacing)
         self._view.set_has_tooltip(True)
+        self._view.set_item_width(self._album_width_px)
         self._view.connect('query-tooltip', self._on_tooltip)
         self.add(self._view)
         self._surface_cache = {}
