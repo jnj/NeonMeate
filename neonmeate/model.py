@@ -56,6 +56,7 @@ class Album:
         self.artist = artist
         self.title = title
         self.dirpath = dirpath
+        self.art = None
 
     def __str__(self):
         return f'Album:title={self.title}, ' \
@@ -107,6 +108,9 @@ class Song:
         self.file = file
         self.artist = artist
         self.albumartist = albumartist
+
+    def zero_padded_number(self):
+        return f'{self.number:02}'
 
     def is_compilation_track(self):
         return self.artist != self.albumartist and self.albumartist is not None

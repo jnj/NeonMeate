@@ -68,8 +68,11 @@ class AlbumArt:
         self._resolved = None
         self._placeholder = placeholder_pixbuf
 
+    def is_resolved(self):
+        return self._resolved is not None
+
     def get_scaled_pixbuf(self, edge_size):
-        pixbuf = self._resolved or self._placeholder
+        pixbuf = self._resolved if self.is_resolved() else self._placeholder
         return pixbuf.scale_simple(edge_size, edge_size, AlbumArt.ScaleMode)
 
     def resolve(self, on_done, user_data):
