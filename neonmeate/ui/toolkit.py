@@ -1,5 +1,6 @@
-from gi.repository import GdkPixbuf, GObject, Gtk, Pango, GLib
+from gi.repository import GdkPixbuf, GObject, Gtk, Pango, GLib, Gdk
 
+import cairo
 
 def glib_main(func):
     """
@@ -232,3 +233,21 @@ class DiffableBoolean:
         changed = new_value != self.value
         self.value = new_value
         return changed
+
+
+def add_pixbuf_border(pixbuf, color, border_width=1):
+    w, h = pixbuf.get_width(), pixbuf.get_height()
+    w += border_width * 2
+    h += border_width * 2
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
+    ctx = cairo.Context(surface)
+    ctx.new_path()
+    ctx.rectangle(0, 0, w, h)
+    ctx.close_path()
+    Gdk.cairo_set_source_pixbuf(ctx, pixbuf, border_width, border_width)
+    ctx.clip_preserve()
+    ctx.paint()
+    ctx.set_source_rgba(color.red, color.green, color.blue, color.alpha)
+    ctx.set_line_width(border_width * 2)
+    ctx.stroke()
+    return Gdk.pixbuf_get_from_surface(surface, 0, 0, w, h)

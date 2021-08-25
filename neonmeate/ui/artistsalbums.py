@@ -4,7 +4,7 @@ import re
 
 from neonmeate.ui import toolkit
 from neonmeate.ui.toolkit import glib_main, AlbumArt, TimedInfoBar, \
-    DiffableBoolean
+    DiffableBoolean, add_pixbuf_border
 
 
 class AlbumViewOptions:
@@ -275,8 +275,10 @@ class Albums(Gtk.ScrolledWindow):
 
         renderer = Gtk.CellRendererPixbuf()
         self._view.pack_start(renderer, False)
+        context = self.get_style_context()
+        border_color = context.get_color(context.get_state())
         self._placeholder_surface = self.pixbuf_surface(
-            self._placeholder_pixbuf)
+            add_pixbuf_border(self._placeholder_pixbuf, border_color))
 
         def render_cover(view, cell, model, iter, placeholder_pb):
             album = model[iter][0]
@@ -297,7 +299,10 @@ class Albums(Gtk.ScrolledWindow):
                 album.art.resolve(on_art_ready, None)
             elif album.art.is_resolved():
                 pb = album.art.get_scaled_pixbuf(self._album_width_px)
-                surface = self.pixbuf_surface(pb)
+                context = self.get_style_context()
+                border_color = context.get_color(context.get_state())
+                surface = self.pixbuf_surface(
+                    add_pixbuf_border(pb, border_color))
                 self._surface_cache[album] = surface
             cell.set_property('surface', surface)
 
