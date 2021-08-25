@@ -263,6 +263,7 @@ class Albums(Gtk.ScrolledWindow):
         self._view = Gtk.IconView(self._model)
         self._view.set_hexpand(True)
         self._view.set_selection_mode(Gtk.SelectionMode.NONE)
+        self._view.set_spacing(self._album_spacing)
         self._view.set_has_tooltip(True)
         self._view.connect('query-tooltip', self._on_tooltip)
         self.add(self._view)
@@ -320,7 +321,7 @@ class Albums(Gtk.ScrolledWindow):
 
     def _on_right_click(self, widget, event):
         path, path_iter = self._get_path_at_position(event, widget)
-        if event.button == Gdk.BUTTON_SECONDARY and path:
+        if path: #event.button == Gdk.BUTTON_PRIMARY and path:
             popover = SongsMenu(self._model[path_iter][0], self._mpdclient)
             ok, rect = self._view.get_cell_rect(path)
             if ok:
