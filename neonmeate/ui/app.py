@@ -62,7 +62,7 @@ class App(Gtk.ApplicationWindow):
         self._stack.child_set_property(
             self._artists,
             'icon-name',
-            'emblem-music-symbolic'
+            'multimedia-player-symbolic'
         )
         self._stack.child_set_property(
             self._playlist,
@@ -72,7 +72,7 @@ class App(Gtk.ApplicationWindow):
         self._stack.child_set_property(
             self._now_playing,
             'icon-name',
-            'mediaplayer-app-symbolic'
+            'emblem-music-symbolic'
         )
         self._stack_switcher = Gtk.StackSwitcher()
         self._stack_switcher.set_stack(self._stack)
