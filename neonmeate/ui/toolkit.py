@@ -37,14 +37,17 @@ class TimedInfoBar(Gtk.InfoBar):
 
     def temp_reveal(self, message):
         content_box = self.get_content_area()
+        content_box.set_hexpand(True)
         for child in content_box.get_children():
             child.destroy()
+        label_container = Gtk.Grid()
+        label_container.set_hexpand(True)
         label = Gtk.Label()
-        label.set_ellipsize(Pango.EllipsizeMode.END)
         label.set_text(GLib.markup_escape_text(message))
         label.set_padding(5, 5)
-        label.show()
-        content_box.add(label)
+        label_container.add(label)
+        label_container.show_all()
+        content_box.add(label_container)
         self.set_revealed(True)
 
         def unreveal():

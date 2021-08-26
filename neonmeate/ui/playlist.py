@@ -88,7 +88,7 @@ class PlaylistContainer(Gtk.Frame):
 
 
 # noinspection PyUnresolvedReferences
-class Playlist(tk.Scrollable):
+class Playlist(Gtk.ScrolledWindow):
     __gsignals__ = {
         'neonmeate_clear_playlist': (GObject.SignalFlags.RUN_FIRST, None, ()),
         'neonmeate_delitem_playlist': (GObject.SignalFlags.RUN_FIRST, None, ())
@@ -117,7 +117,7 @@ class Playlist(tk.Scrollable):
         )
         self._selected_indices = []
         self._treeview = self._playlist_table.as_widget()
-        self.add_content(self._treeview)
+        self.add(self._treeview)
         self._playlist_table.set_selection_handler(self._on_selection)
         self._treeview.connect('key-press-event', self._on_keypress)
         self._nav_keys = {

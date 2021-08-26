@@ -16,13 +16,20 @@ class AlbumViewOptions:
 
 
 # noinspection PyUnresolvedReferences
-class ArtistsAlbums(Gtk.VBox):
+class ArtistsAlbums(Gtk.Overlay):
 
     def __init__(self, mpdclient, art, cfg):
         super(ArtistsAlbums, self).__init__()
         album_view_opts = AlbumViewOptions()
+        self.set_hexpand(True)
+        self.set_vexpand(True)
+        self._box = Gtk.VBox()
+        self.add(self._box)
         self._infobar = TimedInfoBar()
-        self.pack_start(self._infobar, False, False, 0)
+        self._infobar.set_halign(Gtk.Align.START)
+        self._infobar.set_valign(Gtk.Align.START)
+        self.add_overlay(self._infobar)
+        # self.pack_start(self._infobar, False, False, 0)
         self._update_pending = DiffableBoolean()
         self._album_placeholder_pixbuf = \
             Gtk.IconTheme.get_default().load_icon_for_scale(
@@ -48,7 +55,7 @@ class ArtistsAlbums(Gtk.VBox):
         )
         self._albums_songs.connect('playlist-modified', self._on_playlist_mod)
         columns.pack_end(self._albums_songs, True, True, 0)
-        self.pack_end(columns, True, True, 0)
+        self._box.pack_end(columns, True, True, 0)
         self.show_all()
 
     def on_random_fill(self):
@@ -84,6 +91,9 @@ class ArtistsAlbums(Gtk.VBox):
 
 # noinspection PyUnresolvedReferences
 class SongsMenu(Gtk.Popover):
+    __gsignals__ = {
+        'playlist-modified': (GObject.SignalFlags.RUN_FIRST, None, ())
+    }
 
     def __init__(self, album, mpdclient):
         super(SongsMenu, self).__init__()
@@ -173,11 +183,13 @@ class SongsMenu(Gtk.Popover):
         songs = self._get_selected_songs()
         if songs:
             self._mpdclient.add_songs(songs)
+            self.emit('playlist-modified')
 
     def _on_rem_sel(self, btn):
         songs = self._get_selected_songs()
         if songs:
             self._mpdclient.remove_songs(songs)
+            self.emit('playlist-modified')
 
 
 # noinspection PyUnresolvedReferences
@@ -248,6 +260,7 @@ class Artists(Gtk.ScrolledWindow):
 class Albums(Gtk.ScrolledWindow):
     __gsignals__ = {
         'album-selected': (GObject.SignalFlags.RUN_FIRST, None, (int,)),
+        'playlist-modified': (GObject.SignalFlags.RUN_FIRST, None, ())
     }
 
     @staticmethod
@@ -256,6 +269,7 @@ class Albums(Gtk.ScrolledWindow):
 
     def __init__(self, mpdclient, art_cache, placeholder_pixbuf, options):
         super(Albums, self).__init__()
+        self.set_shadow_type(Gtk.ShadowType.NONE)
         self._placeholder_pixbuf = placeholder_pixbuf
         self._album_width_px = options.album_size
         self._album_spacing = options.col_spacing
@@ -330,10 +344,14 @@ class Albums(Gtk.ScrolledWindow):
         self._artists = []
         self.show_all()
 
+    def _on_playlist_modified(self, _):
+        self.emit('playlist-modified')
+
     def _on_right_click(self, widget, event):
         path, path_iter = self._get_path_at_position(event, widget)
         if path: #event.button == Gdk.BUTTON_PRIMARY and path:
             popover = SongsMenu(self._model[path_iter][0], self._mpdclient)
+            popover.connect('playlist-modified', self._on_playlist_modified)
             ok, rect = self._view.get_cell_rect(path)
             if ok:
                 popover.set_pointing_to(rect)
@@ -423,6 +441,7 @@ class AlbumsAndSongs(Gtk.Box):
             placeholder_pixbuf,
             albums_view_options)
         self._albums.connect('album-selected', self._on_album_selected)
+        self._albums.connect('playlist-modified', self._on_playlist_modified)
         self.add(self._albums)
         self._albums_list = []
         self._artist_by_name = {}
@@ -470,9 +489,12 @@ class AlbumsAndSongs(Gtk.Box):
 
         self._mpdclient.find_albums(artist_inst, on_albums)
 
+    def _on_playlist_modified(self, _):
+        self.emit('playlist-modified')
+
 
 # noinspection PyArgumentList,PyUnresolvedReferences
-class ArtistsContainer(Gtk.HBox):
+class ArtistsContainer(Gtk.VBox):
     __gsignals__ = {
         'artist_selected': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
         'artists_loaded': (GObject.SignalFlags.RUN_FIRST, None, (bool,))
@@ -480,14 +502,13 @@ class ArtistsContainer(Gtk.HBox):
 
     def __init__(self, mpdclient):
         super(ArtistsContainer, self).__init__()
-        self._vbox = Gtk.VBox()
-        self.add(self._vbox)
         self._artists = Artists(mpdclient)
         self._searchbar = Gtk.ActionBar()
         self._search_entry = Gtk.SearchEntry()
+        self._search_entry.set_has_frame(True)
         self._searchbar.add(self._search_entry)
-        self._vbox.pack_start(self._searchbar, False, False, 0)
-        self._vbox.pack_start(self._artists, True, True, 0)
+        self.pack_start(self._searchbar, False, False, 0)
+        self.pack_start(self._artists, True, True, 0)
         self._artists.connect('artist_selected', self._on_artist_selected)
         self._artists.connect('artists_loaded', self._on_artists_loaded)
         self._searched_artist = None
