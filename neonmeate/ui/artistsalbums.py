@@ -164,10 +164,11 @@ class SongsMenu(Gtk.Popover):
         self._scrollable.set_overlay_scrolling(True)
         self._scrollable.set_shadow_type(Gtk.ShadowType.NONE)
         self._scrollable.add(self._songslist)
+        multidisc = len(set(song.discnum for song in self._songs)) > 1
         last_discnum = None
 
         for song in self._songs:
-            if song.discnum != last_discnum:
+            if multidisc and song.discnum != last_discnum:
                 disc_label = Gtk.Label()
                 disc_label.set_markup(f'<b>Disc {song.discnum}</b>')
                 disc_label.set_xalign(0)
