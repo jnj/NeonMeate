@@ -142,6 +142,7 @@ class SongsMenu(Gtk.Popover):
         row_spacing = 10
         self._selected_songs = []
         self._mpdclient = mpdclient
+        self.set_can_focus(False)
         self._album = album
 
         self._vbox = Gtk.VBox()
