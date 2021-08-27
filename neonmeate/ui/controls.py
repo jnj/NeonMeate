@@ -1,5 +1,6 @@
 from gi.repository import Gtk, GObject
 
+from .songprogress import SongProgress
 
 # noinspection PyUnresolvedReferences
 class ControlButton(Gtk.Button):
@@ -228,3 +229,55 @@ class PlayModeButtons(NeonMeateButtonBox):
                 btn.set_active(active)
             finally:
                 self._enable_emission(signal_name)
+
+
+# noinspection PyUnresolvedReferences,PyArgumentList,PyTypeChecker
+class ControlsBar(Gtk.ActionBar):
+    __gsignals__ = {
+        'neonmeate_stop_playing': (GObject.SignalFlags.RUN_FIRST, None, ()),
+        'neonmeate_start_playing': (GObject.SignalFlags.RUN_FIRST, None, ()),
+        'neonmeate_toggle_pause': (GObject.SignalFlags.RUN_FIRST, None, ()),
+        'neonmeate_prev_song': (GObject.SignalFlags.RUN_FIRST, None, ()),
+        'neonmeate_next_song': (GObject.SignalFlags.RUN_FIRST, None, ()),
+        'neonmeate_playmode_toggle': (
+            GObject.SignalFlags.RUN_FIRST, None, (str, bool))
+    }
+
+    def __init__(self):
+        super(ControlsBar, self).__init__()
+        self._ctrl_btns = ControlButtons()
+        self._mode_btns = PlayModeButtons()
+        self._progress = SongProgress()
+        self.pack_start(self._ctrl_btns)
+        self.pack_start(self._progress)
+        self.pack_start(self._mode_btns)
+
+        for signame in ['neonmeate_stop_playing',
+                        'neonmeate_start_playing',
+                        'neonmeate_toggle_pause',
+                        'neonmeate_prev_song',
+                        'neonmeate_next_song']:
+            self._reemit(self._ctrl_btns, signame)
+
+        self._mode_btns.subscribe_to_signal(
+            'neonmeate_playmode_toggle',
+            self._on_user_mode_toggle
+        )
+
+    def _reemit(self, object, signame):
+        def _emit(_):
+            self.emit(signame)
+
+        object.connect(signame, _emit)
+
+    def set_paused(self, paused, stopped):
+        self._ctrl_btns.set_paused(paused, stopped)
+
+    def _on_user_mode_toggle(self, mode, enabled):
+        self.emit('neonmeate_playmode_toggle', mode, enabled)
+
+    def set_mode(self, name, is_active):
+        self._mode_btns.on_mode_change(name, is_active)
+
+    def set_song_progress(self, elapsed, total):
+        self._progress.set_elapsed(elapsed, total)

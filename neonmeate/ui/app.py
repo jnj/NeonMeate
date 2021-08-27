@@ -1,15 +1,14 @@
 import logging
 import os
 
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk
 
 from .artistsalbums import ArtistsAlbums
-from .controls import ControlButtons, PlayModeButtons
+from .controls import ControlsBar
 from .nowplaying import NowPlaying
 from .playlist import PlaylistContainer
-from .songprogress import SongProgress
-from .toolkit import glib_main
 from .settings import SettingsMenu
+from .toolkit import glib_main
 
 
 # noinspection PyUnresolvedReferences,PyArgumentList
@@ -41,13 +40,18 @@ class App(Gtk.ApplicationWindow):
         self._titlebar.set_title("NeonMeate")
         self._titlebar.set_show_close_button(True)
         self.set_titlebar(self._titlebar)
-        self._ctrl_btns = ControlButtons()
-        self._mode_btns = PlayModeButtons()
-        self._progress = SongProgress()
-        self._actionbar = Gtk.ActionBar()
-        self._actionbar.pack_start(self._ctrl_btns)
-        self._actionbar.pack_start(self._progress)
-        self._actionbar.pack_start(self._mode_btns)
+
+        self._controlsbar = ControlsBar()
+        self._controlsbar.connect(
+            'neonmeate_playmode_toggle',
+            self._on_user_mode_toggle
+        )
+        self._controlsbar.connect('neonmeate_start_playing', self._on_start)
+        self._controlsbar.connect('neonmeate_stop_playing', self._on_stop)
+        self._controlsbar.connect('neonmeate_toggle_pause', self._on_pause)
+        self._controlsbar.connect('neonmeate_prev_song', self._on_prev_song)
+        self._controlsbar.connect('neonmeate_next_song', self._on_next_song)
+
         self._main_box = Gtk.VBox()
         self.add(self._main_box)
         self._stack = Gtk.Stack()
@@ -90,17 +94,7 @@ class App(Gtk.ApplicationWindow):
 
         self._titlebar.pack_end(self._settings_btn)
         self._main_box.pack_start(self._stack, True, True, 0)
-        self._main_box.pack_end(self._actionbar, False, False, 0)
-
-        self._ctrl_btns.connect('neonmeate_stop_playing', self._on_stop)
-        self._ctrl_btns.connect('neonmeate_start_playing', self._on_start)
-        self._ctrl_btns.connect('neonmeate_toggle_pause', self._on_pause)
-        self._ctrl_btns.connect('neonmeate_prev_song', self._on_prev_song)
-        self._ctrl_btns.connect('neonmeate_next_song', self._on_next_song)
-
-        self._mode_btns.subscribe_to_signal(
-            'neonmeate_playmode_toggle', self._on_user_mode_toggle
-        )
+        self._main_box.pack_end(self._controlsbar, False, False, 0)
 
         self._mpdhb.connect('song_elapsed', self._on_song_elapsed)
         self._mpdhb.connect('song_playing_status', self._on_song_playing_status)
@@ -153,7 +147,7 @@ class App(Gtk.ApplicationWindow):
 
     def _on_mode_change(self):
         def handler(_, name, is_active):
-            self._mode_btns.on_mode_change(name, is_active)
+            self._controlsbar.set_mode(name, is_active)
 
         return handler
 
@@ -238,23 +232,23 @@ class App(Gtk.ApplicationWindow):
 
     def _on_song_playing_status(self, hb, status):
         paused, stopped = App.PlayStatus.get(status, (False, False))
-        self._ctrl_btns.set_paused(paused, stopped)
+        self._controlsbar.set_paused(paused, stopped)
 
     def _on_song_elapsed(self, hb, elapsed, total):
-        self._progress.set_elapsed(elapsed, total)
+        self._controlsbar.set_song_progress(elapsed, total)
 
-    def _on_start(self, widget):
+    def _on_start(self, _):
         self._mpdclient.toggle_pause(0)
 
-    def _on_pause(self, widget):
+    def _on_pause(self, _):
         self._mpdclient.toggle_pause(1)
 
-    def _on_stop(self, widget):
+    def _on_stop(self, _):
         self._mpdclient.stop_playing()
-        self._progress.set_fraction(0)
+        self._controlsbar.set_song_progress(0, 1)
 
-    def _on_prev_song(self, widget):
+    def _on_prev_song(self, _):
         self._mpdclient.prev_song()
 
-    def _on_next_song(self, widget):
+    def _on_next_song(self, _):
         self._mpdclient.next_song()
