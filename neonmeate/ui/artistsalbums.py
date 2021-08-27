@@ -2,7 +2,7 @@ from gi.repository import GObject, Gtk, GLib, Pango, GdkPixbuf, Gdk
 
 import re
 
-from .controls import ControlButton
+from .controls import ControlButton, NeonMeateButtonBox
 from neonmeate.ui import toolkit
 from neonmeate.ui.toolkit import glib_main, AlbumArt, TimedInfoBar, \
     DiffableBoolean, add_pixbuf_border
@@ -90,6 +90,27 @@ class ArtistsAlbums(Gtk.Overlay):
         self._albums_songs.on_artist_selected(selected_value)
 
 
+class SongsMenuButtonBox(NeonMeateButtonBox):
+    __gsignals__ = {
+        'neonmeate_add_sel_click': (GObject.SignalFlags.RUN_FIRST, None, ()),
+        'neonmeate_rem_sel_click': (GObject.SignalFlags.RUN_FIRST, None, ()),
+        'neonmeate_rep_play_click': (GObject.SignalFlags.RUN_FIRST, None, ())
+    }
+
+    def __init__(self):
+        super(SongsMenuButtonBox, self).__init__()
+        self._add_sel_btn = ControlButton('list-add-symbolic')
+        self.add_button(self._add_sel_btn, 'add-sel', 'neonmeate_add_sel_click')
+        self._rem_sel_btn = ControlButton('list-remove-symbolic')
+        self.add_button(self._rem_sel_btn, 'rem-sel', 'neonmeate_rem_sel_click')
+        self._replace_btn = ControlButton('media-playback-start-symbolic')
+        self.add_button(
+            self._replace_btn,
+            'rep-play',
+            'neonmeate_rep_play_click'
+        )
+
+
 # noinspection PyUnresolvedReferences
 class SongsMenu(Gtk.Popover):
     __gsignals__ = {
@@ -150,26 +171,18 @@ class SongsMenu(Gtk.Popover):
             self._songslist.add(checkbox)
             self._selected_songs.append(song)
 
-        self._btn_box = Gtk.Box()
-        self._btn_box.set_hexpand(False)
+        self._btn_box = SongsMenuButtonBox()
         self._btn_box.set_margin_start(margin)
         self._btn_box.set_margin_top(margin)
         self._btn_box.set_margin_bottom(margin)
         self._btn_box.set_margin_end(margin)
         self._btn_box.set_halign(Gtk.Align.START)
-        self._btn_box.set_orientation(Gtk.Orientation.HORIZONTAL)
-        self._btn_box.set_spacing(row_spacing)
+        self._btn_box.connect('neonmeate_add_sel_click', self._on_add_sel)
+        self._btn_box.connect('neonmeate_rem_sel_click', self._on_rem_sel)
+        self._btn_box.connect('neonmeate_rep_play_click', self._on_replace)
+
         self._vbox.pack_start(self._btn_box, False, False, 0)
         self._vbox.pack_end(self._scrollable, True, True, 10)
-        self._add_all_btn = ControlButton('list-add-symbolic')
-        self._btn_box.add(self._add_all_btn)
-        self._rem_all_btn = ControlButton('list-remove-symbolic')
-        self._btn_box.add(self._rem_all_btn)
-        self._replace_btn =  ControlButton('media-playback-start-symbolic')
-        self._btn_box.add(self._replace_btn)
-        self._add_all_btn.connect('clicked', self._on_add_sel)
-        self._rem_all_btn.connect('clicked', self._on_rem_sel)
-        self._replace_btn.connect('clicked', self._on_replace)
         self._vbox.show_all()
 
     def _get_selected_songs(self):
@@ -353,7 +366,7 @@ class Albums(Gtk.ScrolledWindow):
 
     def _on_right_click(self, widget, event):
         path, path_iter = self._get_path_at_position(event, widget)
-        if path: #event.button == Gdk.BUTTON_PRIMARY and path:
+        if path:  # event.button == Gdk.BUTTON_PRIMARY and path:
             popover = SongsMenu(self._model[path_iter][0], self._mpdclient)
             popover.connect('playlist-modified', self._on_playlist_modified)
             ok, rect = self._view.get_cell_rect(path)

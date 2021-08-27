@@ -91,7 +91,7 @@ class NeonMeateButtonBox(Gtk.ButtonBox):
         self._buttons = []
         self._byname = {}
 
-    def _add_button(self, button, name, click_signal_name):
+    def add_button(self, button, name, click_signal_name):
         self._buttons.append(button)
         self._byname[name] = button
         self.add(button)
@@ -119,22 +119,22 @@ class ControlButtons(NeonMeateButtonBox):
     def __init__(self):
         super(ControlButtons, self).__init__()
 
-        self._prev = self._add_button(
+        self._prev = self.add_button(
             ControlButton('media-skip-backward'),
             'prev',
             'neonmeate_prev_song'
         )
-        self._stop = self._add_button(
+        self._stop = self.add_button(
             ControlButton('media-playback-stop'),
             'stop',
             'neonmeate_stop_playing'
         )
-        self._play_pause_button = self._add_button(
+        self._play_pause_button = self.add_button(
             PlayPauseButton(),
             'play_pause',
             None
         )
-        self._next = self._add_button(
+        self._next = self.add_button(
             ControlButton('media-skip-forward'),
             'next',
             'neonmeate-next-song'
@@ -167,27 +167,27 @@ class PlayModeButtons(NeonMeateButtonBox):
 
     def __init__(self):
         super(PlayModeButtons, self).__init__()
-        self._consume = self._add_button(
+        self._consume = self.add_button(
             PlayModeButton('view-refresh'),
             'consume',
             None
         )
-        self._single = self._add_button(
+        self._single = self.add_button(
             PlayModeButton('zoom-original', '1'),
             'single',
             None
         )
-        self._random = self._add_button(
+        self._random = self.add_button(
             PlayModeButton('media-playlist-shuffle'),
             'random',
             None
         )
-        self._repeat = self._add_button(
+        self._repeat = self.add_button(
             PlayModeButton('media-playlist-repeat'),
             'repeat',
             None
         )
-        # self._vol_control = self._add_button(
+        # self._vol_control = self.add_button(
         #     VolumeControl(),
         #     'volume',
         #     None

@@ -14,7 +14,7 @@ class PlayListControls(NeonMeateButtonBox):
 
     def __init__(self):
         super(PlayListControls, self).__init__()
-        clear_btn = self._add_button(
+        clear_btn = self.add_button(
             ControlButton('edit-clear'),
             'clear',
             'neonmeate_clear_playlist'
@@ -22,7 +22,7 @@ class PlayListControls(NeonMeateButtonBox):
         clear_btn.set_label("Clear")
         clear_btn.set_always_show_image(True)
         clear_btn.set_tooltip_text('Clear the play queue')
-        shufl_btn = self._add_button(
+        shufl_btn = self.add_button(
             ControlButton('shuffle'),
             'shuffle',
             'neonmeate_shuffle_playlist'
@@ -30,7 +30,7 @@ class PlayListControls(NeonMeateButtonBox):
         shufl_btn.set_label('Shuffle')
         shufl_btn.set_always_show_image(True)
         shufl_btn.set_tooltip_text('Shuffle the play queue')
-        randm_btn = self._add_button(
+        randm_btn = self.add_button(
             ControlButton('random'),
             'random',
             'neonmeate_random_fill'
