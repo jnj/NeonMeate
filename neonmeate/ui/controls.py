@@ -1,6 +1,6 @@
 from gi.repository import Gtk, GObject
 
-from .songprogress import SongProgress
+from .songprogress import SongProgress, format_elapsed_time
 
 # noinspection PyUnresolvedReferences
 class ControlButton(Gtk.Button):
@@ -248,8 +248,12 @@ class ControlsBar(Gtk.ActionBar):
         self._ctrl_btns = ControlButtons()
         self._mode_btns = PlayModeButtons()
         self._progress = SongProgress()
+        self._time_label = Gtk.Label()
+        self._time_label.set_margin_start(6)
+        self._time_label.set_margin_end(6)
         self.pack_start(self._ctrl_btns)
         self.pack_start(self._progress)
+        self.pack_start(self._time_label)
         self.pack_start(self._mode_btns)
 
         for signame in ['neonmeate_stop_playing',
@@ -281,3 +285,4 @@ class ControlsBar(Gtk.ActionBar):
 
     def set_song_progress(self, elapsed, total):
         self._progress.set_elapsed(elapsed, total)
+        self._time_label.set_text(format_elapsed_time(int(elapsed), int(total)))
