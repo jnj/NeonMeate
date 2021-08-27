@@ -2,6 +2,7 @@ from gi.repository import GObject, Gtk, GLib, Pango, GdkPixbuf, Gdk
 
 import re
 
+from .controls import ControlButton
 from neonmeate.ui import toolkit
 from neonmeate.ui.toolkit import glib_main, AlbumArt, TimedInfoBar, \
     DiffableBoolean, add_pixbuf_border
@@ -102,6 +103,19 @@ class SongsMenu(Gtk.Popover):
         self._selected_songs = []
         self._mpdclient = mpdclient
         self._album = album
+
+        self._vbox = Gtk.VBox()
+        self.add(self._vbox)
+        self._vbox.set_halign(Gtk.Align.START)
+        self._songslist = Gtk.VBox()
+        self._songslist.set_spacing(row_spacing)
+        self._songslist.set_halign(Gtk.Align.START)
+        self._songslist.set_margin_top(margin)
+        self._songslist.set_margin_bottom(margin)
+        self._songslist.set_margin_start(margin)
+        self._songslist.set_margin_end(margin)
+        self._songs = album.sorted_songs()
+
         self._scrollable = Gtk.ScrolledWindow()
         self._scrollable.set_propagate_natural_height(True)
         self._scrollable.set_propagate_natural_width(True)
@@ -109,20 +123,7 @@ class SongsMenu(Gtk.Popover):
         self._scrollable.set_max_content_height(400)
         self._scrollable.set_overlay_scrolling(True)
         self._scrollable.set_shadow_type(Gtk.ShadowType.NONE)
-        self.add(self._scrollable)
-        self._vbox = Gtk.VBox()
-        self._vbox.set_halign(Gtk.Align.START)
-        self._scrollable.add(self._vbox)
-        self._songslist = Gtk.VBox()
-        self._songslist.set_spacing(row_spacing)
-        self._songslist.set_halign(Gtk.Align.START)
-        self._vbox.add(self._songslist)
-
-        self._songslist.set_margin_top(margin)
-        self._songslist.set_margin_bottom(margin)
-        self._songslist.set_margin_start(margin)
-        self._songslist.set_margin_end(margin)
-        self._songs = album.sorted_songs()
+        self._scrollable.add(self._songslist)
 
         for song in self._songs:
             checkbox = Gtk.CheckButton()
@@ -149,37 +150,40 @@ class SongsMenu(Gtk.Popover):
             self._songslist.add(checkbox)
             self._selected_songs.append(song)
 
-        self._btn_box = Gtk.ButtonBox()
+        self._btn_box = Gtk.Box()
+        self._btn_box.set_hexpand(False)
         self._btn_box.set_margin_start(margin)
         self._btn_box.set_margin_top(margin)
         self._btn_box.set_margin_bottom(margin)
         self._btn_box.set_margin_end(margin)
         self._btn_box.set_halign(Gtk.Align.START)
-        self._btn_box.set_orientation(Gtk.Orientation.VERTICAL)
+        self._btn_box.set_orientation(Gtk.Orientation.HORIZONTAL)
         self._btn_box.set_spacing(row_spacing)
-        self._vbox.add(self._btn_box)
-        self._add_all_btn = Gtk.Button()
-        label = Gtk.Label()
-        label.set_text('Add Selected')
-        label.set_xalign(0)
-        self._add_all_btn.add(label)
+        self._vbox.pack_start(self._btn_box, False, False, 0)
+        self._vbox.pack_end(self._scrollable, True, True, 10)
+        self._add_all_btn = ControlButton('list-add-symbolic')
         self._btn_box.add(self._add_all_btn)
-        self._scrollable.show_all()
-
-        self._rem_all_btn = Gtk.Button()
-        label = Gtk.Label()
-        label.set_text('Remove Selected')
-        label.set_xalign(0)
-        self._rem_all_btn.add(label)
+        self._rem_all_btn = ControlButton('list-remove-symbolic')
         self._btn_box.add(self._rem_all_btn)
+        self._replace_btn =  ControlButton('media-playback-start-symbolic')
+        self._btn_box.add(self._replace_btn)
         self._add_all_btn.connect('clicked', self._on_add_sel)
         self._rem_all_btn.connect('clicked', self._on_rem_sel)
-        self._scrollable.show_all()
+        self._replace_btn.connect('clicked', self._on_replace)
+        self._vbox.show_all()
 
     def _get_selected_songs(self):
         return self._selected_songs
 
+    def _on_replace(self, _):
+        self._mpdclient.clear_playlist()
+        self._add_selected()
+        self._mpdclient.toggle_pause(0)
+
     def _on_add_sel(self, btn):
+        self._add_selected()
+
+    def _add_selected(self):
         songs = self._get_selected_songs()
         if songs:
             self._mpdclient.add_songs(songs)

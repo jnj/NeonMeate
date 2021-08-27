@@ -66,7 +66,7 @@ class App(Gtk.ApplicationWindow):
         self._stack.child_set_property(
             self._artists,
             'icon-name',
-            'multimedia-player-symbolic'
+            'view-grid-symbolic'
         )
         self._stack.child_set_property(
             self._playlist,
