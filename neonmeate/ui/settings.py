@@ -78,17 +78,20 @@ class SettingsMenu(Gtk.Popover):
                                      self._on_user_connect_change)
 
         self._update_btn = Gtk.Button(label='Update')
+        self._update_btn.set_can_focus(False)
         self._update_btn.set_tooltip_text('Update the database')
         self._update_btn.connect('clicked', self._on_update_request)
         self._grid.attach_next_to(self._update_btn, switch_box,
                                   Gtk.PositionType.BOTTOM, 1, 1)
 
         self._save_btn = Gtk.Button(label='Save')
+        self._save_btn.set_can_focus(False)
         self._save_btn.connect('clicked', self._on_save_settings)
         self._grid.attach_next_to(self._save_btn, self._update_btn,
                                   Gtk.PositionType.BOTTOM, 1, 1)
 
         self._clear_colors_btn = Gtk.Button(label='Clear Cache')
+        self._clear_colors_btn.set_can_focus(False)
         self._clear_colors_btn.connect('clicked', self._on_clear_colors)
         self._grid.attach_next_to(self._clear_colors_btn, self._save_btn,
                                   Gtk.PositionType.BOTTOM, 1, 1)
