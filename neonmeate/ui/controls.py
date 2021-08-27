@@ -178,12 +178,12 @@ class PlayModeButtons(NeonMeateButtonBox):
             None
         )
         self._random = self.add_button(
-            PlayModeButton('media-playlist-shuffle'),
+            PlayModeButton('media-playlist-shuffle-symbolic'),
             'random',
             None
         )
         self._repeat = self.add_button(
-            PlayModeButton('media-playlist-repeat'),
+            PlayModeButton('media-playlist-repeat-symbolic'),
             'repeat',
             None
         )
@@ -277,7 +277,7 @@ class ControlsBar(Gtk.ActionBar):
     def set_paused(self, paused, stopped):
         self._ctrl_btns.set_paused(paused, stopped)
 
-    def _on_user_mode_toggle(self, mode, enabled):
+    def _on_user_mode_toggle(self, widget, mode, enabled):
         self.emit('neonmeate_playmode_toggle', mode, enabled)
 
     def set_mode(self, name, is_active):
