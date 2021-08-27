@@ -115,7 +115,7 @@ class SongsMenuButtonBox(NeonMeateButtonBox):
 class SelectSongsButtonBox(NeonMeateButtonBox):
     __gsignals__ = {
         'neonmeate_toggle_selected': (
-        GObject.SignalFlags.RUN_FIRST, None, (bool,)),
+            GObject.SignalFlags.RUN_FIRST, None, (bool,)),
     }
 
     def __init__(self):
@@ -178,6 +178,7 @@ class SongsMenu(Gtk.Popover):
                 self._songslist.add(disc_label)
             last_discnum = song.discnum
             checkbox = Gtk.CheckButton()
+            checkbox.set_can_focus(False)
             label = Gtk.Label()
             label.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
             label.set_text(f'{song.zero_padded_number()}. {song.title}')
@@ -225,6 +226,8 @@ class SongsMenu(Gtk.Popover):
         self._vbox.pack_start(self._all_buttons, False, False, 0)
         self._vbox.pack_end(self._scrollable, True, True, 10)
         self._vbox.show_all()
+        for child in self.get_children():
+            child.set_can_focus(False)
 
     def _on_selection_toggled(self, btnbox, active):
         for child in self._songslist.get_children():
