@@ -164,8 +164,17 @@ class SongsMenu(Gtk.Popover):
         self._scrollable.set_overlay_scrolling(True)
         self._scrollable.set_shadow_type(Gtk.ShadowType.NONE)
         self._scrollable.add(self._songslist)
+        last_discnum = None
 
         for song in self._songs:
+            if song.discnum != last_discnum:
+                disc_label = Gtk.Label()
+                disc_label.set_markup(f'<b>Disc {song.discnum}</b>')
+                disc_label.set_xalign(0)
+                if last_discnum is not None:
+                    disc_label.set_margin_top(12)
+                self._songslist.add(disc_label)
+            last_discnum = song.discnum
             checkbox = Gtk.CheckButton()
             label = Gtk.Label()
             label.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
@@ -186,7 +195,6 @@ class SongsMenu(Gtk.Popover):
                     self._selected_songs.remove(current_song)
 
             checkbox.connect('toggled', toggle_handler)
-
             self._songslist.add(checkbox)
             self._selected_songs.append(song)
 
@@ -218,8 +226,9 @@ class SongsMenu(Gtk.Popover):
 
     def _on_selection_toggled(self, btnbox, active):
         for child in self._songslist.get_children():
-            if child.get_active() != active:
-                child.set_active(active)
+            if isinstance(child, Gtk.CheckButton):
+                if child.get_active() != active:
+                    child.set_active(active)
 
     def _get_selected_songs(self):
         return self._selected_songs
