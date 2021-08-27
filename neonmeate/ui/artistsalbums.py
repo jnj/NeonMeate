@@ -2,7 +2,7 @@ from gi.repository import GObject, Gtk, GLib, Pango, GdkPixbuf, Gdk
 
 import re
 
-from .controls import ControlButton, NeonMeateButtonBox
+from .controls import ControlButton, NeonMeateButtonBox, PlayModeButton
 from neonmeate.ui import toolkit
 from neonmeate.ui.toolkit import glib_main, AlbumArt, TimedInfoBar, \
     DiffableBoolean, add_pixbuf_border
@@ -112,6 +112,25 @@ class SongsMenuButtonBox(NeonMeateButtonBox):
 
 
 # noinspection PyUnresolvedReferences
+class SelectSongsButtonBox(NeonMeateButtonBox):
+    __gsignals__ = {
+        'neonmeate_toggle_selected': (
+        GObject.SignalFlags.RUN_FIRST, None, (bool,)),
+    }
+
+    def __init__(self):
+        super(SelectSongsButtonBox, self).__init__()
+        self._toggle_selection_btn = PlayModeButton('object-select-symbolic')
+        self.add_button(self._toggle_selection_btn, 'toggle-selection', None)
+        self._toggle_selection_btn.set_active(True)
+        self._toggle_selection_btn.connect('toggled', self._on_toggled)
+
+    def _on_toggled(self, btn):
+        active = btn.get_active()
+        self.emit('neonmeate_toggle_selected', active)
+
+
+# noinspection PyUnresolvedReferences
 class SongsMenu(Gtk.Popover):
     __gsignals__ = {
         'playlist-modified': (GObject.SignalFlags.RUN_FIRST, None, ())
@@ -171,6 +190,7 @@ class SongsMenu(Gtk.Popover):
             self._songslist.add(checkbox)
             self._selected_songs.append(song)
 
+        self._all_buttons = Gtk.HBox()
         self._btn_box = SongsMenuButtonBox()
         self._btn_box.set_margin_start(margin)
         self._btn_box.set_margin_top(margin)
@@ -180,10 +200,26 @@ class SongsMenu(Gtk.Popover):
         self._btn_box.connect('neonmeate_add_sel_click', self._on_add_sel)
         self._btn_box.connect('neonmeate_rem_sel_click', self._on_rem_sel)
         self._btn_box.connect('neonmeate_rep_play_click', self._on_replace)
-
-        self._vbox.pack_start(self._btn_box, False, False, 0)
+        self._all_buttons.pack_start(self._btn_box, False, False, 0)
+        self._toggle_selection_btn = SelectSongsButtonBox()
+        self._toggle_selection_btn.set_margin_start(margin)
+        self._toggle_selection_btn.set_margin_top(margin)
+        self._toggle_selection_btn.set_margin_bottom(margin)
+        self._toggle_selection_btn.set_margin_end(margin)
+        self._toggle_selection_btn.set_halign(Gtk.Align.END)
+        self._toggle_selection_btn.connect(
+            'neonmeate_toggle_selected',
+            self._on_selection_toggled
+        )
+        self._all_buttons.pack_end(self._toggle_selection_btn, False, False, 0)
+        self._vbox.pack_start(self._all_buttons, False, False, 0)
         self._vbox.pack_end(self._scrollable, True, True, 10)
         self._vbox.show_all()
+
+    def _on_selection_toggled(self, btnbox, active):
+        for child in self._songslist.get_children():
+            if child.get_active() != active:
+                child.set_active(active)
 
     def _get_selected_songs(self):
         return self._selected_songs
