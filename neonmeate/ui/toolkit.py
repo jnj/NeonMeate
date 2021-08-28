@@ -2,6 +2,7 @@ from gi.repository import GdkPixbuf, GObject, Gtk, Pango, GLib, Gdk
 
 import cairo
 
+
 def glib_main(func):
     """
     Decorator for a function that will not run it synchronously, but
@@ -30,6 +31,7 @@ class TimedInfoBar(Gtk.InfoBar):
     """
     An InfoBar that briefly shows a message and then hides itself.
     """
+
     def __init__(self):
         super(TimedInfoBar, self).__init__()
         self.set_revealed(False)
@@ -110,27 +112,6 @@ class Scrollable(Gtk.ScrolledWindow):
 
     def add_content(self, widget):
         self._vp.add(widget)
-
-
-# noinspection PyUnresolvedReferences
-class CenteredLabel(Gtk.Label):
-    def __init__(self, text, markup=False):
-        super(CenteredLabel, self).__init__()
-        self.set_justify(Gtk.Justification.CENTER)
-        self.set_ellipsize(Pango.EllipsizeMode.END)
-        self.set_line_wrap(True)
-        if markup:
-            self.set_markup(text)
-        else:
-            self.set_text(text)
-
-
-class MaxWidthLabel(Gtk.Label):
-    def __init__(self, text):
-        super(MaxWidthLabel, self).__init__(text, xalign=0)
-
-    def do_get_preferred_width(self):
-        return 260
 
 
 # noinspection PyUnresolvedReferences,PyArgumentList
