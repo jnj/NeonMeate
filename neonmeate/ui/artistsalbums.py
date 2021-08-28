@@ -109,7 +109,8 @@ class SongsMenuButtonBox(NeonMeateButtonBox):
             'rep-play',
             'neonmeate_rep_play_click'
         )
-
+        for child in self.get_children():
+            child.set_can_focus(False)
 
 # noinspection PyUnresolvedReferences
 class SelectSongsButtonBox(NeonMeateButtonBox):
@@ -124,6 +125,7 @@ class SelectSongsButtonBox(NeonMeateButtonBox):
         self.add_button(self._toggle_selection_btn, 'toggle-selection', None)
         self._toggle_selection_btn.set_active(True)
         self._toggle_selection_btn.connect('toggled', self._on_toggled)
+        self._toggle_selection_btn.set_can_focus(False)
 
     def _on_toggled(self, btn):
         active = btn.get_active()
