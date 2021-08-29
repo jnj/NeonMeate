@@ -469,6 +469,7 @@ class Albums(Gtk.ScrolledWindow):
 
     def clear(self):
         self._clear_albums()
+        self._surface_cache.clear()
 
     def get_selected_album(self):
         return self._selected_album
@@ -486,6 +487,7 @@ class Albums(Gtk.ScrolledWindow):
         if not artist_name or self._selected_artist == artist_name:
             return
         self._clear_albums()
+        self._surface_cache.clear()
         self._selected_artist = artist_name
         for album in sorted(list(albums), key=Albums.album_sort_key):
             self._model.append([album])

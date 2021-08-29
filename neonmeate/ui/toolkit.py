@@ -219,7 +219,7 @@ class DiffableBoolean:
         return changed
 
 
-def add_pixbuf_border(pixbuf, color, border_width=1):
+def add_pixbuf_border(pixbuf, color, border_width=4):
     w, h = pixbuf.get_width(), pixbuf.get_height()
     w += border_width * 2
     h += border_width * 2
