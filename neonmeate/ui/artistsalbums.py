@@ -10,7 +10,7 @@ class AlbumViewOptions:
     def __init__(self):
         self.num_grid_cols = 1
         self.album_size = 160
-        self.col_spacing = 30
+        self.col_spacing = 50
         self.row_spacing = 30
 
 

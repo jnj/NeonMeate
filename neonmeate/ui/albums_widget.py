@@ -65,7 +65,7 @@ class Albums(Gtk.ScrolledWindow):
                 context = self.get_style_context()
                 border_color = context.get_color(context.get_state())
                 surface = self.pixbuf_surface(
-                    add_pixbuf_border(pb, border_color))
+                    add_pixbuf_border(pb, border_color, border_width=2))
                 self._surface_cache[album] = surface
             cell.set_property('surface', surface)
 
