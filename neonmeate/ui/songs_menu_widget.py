@@ -1,4 +1,4 @@
-from gi.repository import GObject, Gtk, Pango
+from gi.repository import GObject, Gtk, Pango, GLib
 
 from neonmeate.ui.controls import NeonMeateButtonBox, ControlButton, \
     PlayModeButton
@@ -55,6 +55,8 @@ class SongsMenu(Gtk.Popover):
         super(SongsMenu, self).__init__()
         margin = 12
         row_spacing = 10
+        max_width = 400
+        max_height = 460
         self._selected_songs = []
         self._mpdclient = mpdclient
         self.set_can_focus(False)
@@ -75,8 +77,8 @@ class SongsMenu(Gtk.Popover):
         self._scrollable = Gtk.ScrolledWindow()
         self._scrollable.set_propagate_natural_height(True)
         self._scrollable.set_propagate_natural_width(True)
-        self._scrollable.set_max_content_width(360)
-        self._scrollable.set_max_content_height(400)
+        self._scrollable.set_max_content_width(max_width)
+        self._scrollable.set_max_content_height(max_height)
         self._scrollable.set_overlay_scrolling(True)
         self._scrollable.set_shadow_type(Gtk.ShadowType.NONE)
         self._scrollable.add(self._songslist)
@@ -96,7 +98,14 @@ class SongsMenu(Gtk.Popover):
             checkbox.set_can_focus(False)
             label = Gtk.Label()
             label.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
-            label.set_text(f'{song.zero_padded_number()}. {song.title}')
+            esc_title = GLib.markup_escape_text(song.title)
+            trackno = song.zero_padded_number()
+            if song.is_compilation_track():
+                esc_artist = GLib.markup_escape_text(song.artist)
+                markup = f'{trackno}. <b>{esc_artist}</b> - {esc_title}'
+            else:
+                markup = f'{trackno}. {esc_title}'
+            label.set_markup(markup)
             label.set_property('xalign', 0)
             checkbox.set_active(True)
             checkbox.add(label)
