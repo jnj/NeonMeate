@@ -71,7 +71,7 @@ class App(Gtk.ApplicationWindow):
         self._stack.child_set_property(
             self._playlist,
             'icon-name',
-            'view-list-symbolic'
+            'view-list-bullet-symbolic'
         )
         self._stack.child_set_property(
             self._now_playing,
@@ -159,14 +159,6 @@ class App(Gtk.ApplicationWindow):
         @glib_main
         def on_current_queue(playqueue):
             self._update_play_queue(playqueue)
-            # only set needs-attention after the first time
-            # we've updated the playlist
-            # if self._playlist_updated and playqueue:
-            #     self._stack.child_set_property(
-            #         self._playlist,
-            #         'needs-attention',
-            #         True
-            #     )
             self._playlist_updated = True
 
         self._mpdclient.playlistinfo(on_current_queue)
