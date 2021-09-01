@@ -162,7 +162,7 @@ class Column(Gtk.ListBox):
 
 # noinspection PyUnresolvedReferences,PyArgumentList
 class Table:
-    def __init__(self, column_names, column_types, view_columns):
+    def __init__(self, column_names, column_types, view_columns, expand_flags):
         self._model_columns = column_names
         self._column_types = column_types
         self._view_columns = view_columns
@@ -170,6 +170,7 @@ class Table:
         self.tree = None
         self.selection_handler = None
         self._selection_changed_id = None
+        self._expand = expand_flags
 
     def clear(self):
         self.model.clear()
@@ -185,7 +186,7 @@ class Table:
             renderer.set_property('ellipsize', Pango.EllipsizeMode.END)
             column = Gtk.TreeViewColumn(header, renderer, text=i)
             column.set_resizable(True)
-            column.set_expand(True)
+            column.set_expand(self._expand[i])
             self.tree.append_column(column)
 
         select = self.tree.get_selection()

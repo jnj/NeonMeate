@@ -100,7 +100,8 @@ class Playlist(Gtk.ScrolledWindow):
         self._playlist_table = tk.Table(
             ['Track', 'Artist', 'Album', 'Title', 'Time', 'Index'],
             [str, str, str, str, str, int],
-            ['Track', 'Artist', 'Album', 'Title', 'Time']
+            ['Track', 'Artist', 'Album', 'Title', 'Time'],
+            [False, True, True, True, True, True]
         )
         self._selected_indices = []
         self._treeview = self._playlist_table.as_widget()
