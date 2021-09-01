@@ -2,7 +2,7 @@ import neonmeate.ui.toolkit as tk
 
 from gi.repository import Gdk, GObject, Gtk
 from neonmeate.ui.controls import NeonMeateButtonBox, ControlButton
-
+from .times import format_seconds
 
 # noinspection PyUnresolvedReferences
 class PlayListControls(NeonMeateButtonBox):
@@ -98,16 +98,6 @@ class Playlist(Gtk.ScrolledWindow):
     def format_track_no(track_no):
         return f'{int(track_no):02}'
 
-    @staticmethod
-    def format_time(seconds):
-        m, s = divmod(seconds, 60)
-
-        if m > 60:
-            h, m = divmod(m, 60)
-            return f'{h:02}:{m:02}:{s:02}'
-
-        return f'{m:02}:{s:02}'
-
     def __init__(self):
         super(Playlist, self).__init__()
         self._playlist_table = tk.Table(
@@ -159,7 +149,7 @@ class Playlist(Gtk.ScrolledWindow):
             item['artist'],
             item['album'],
             item['title'],
-            Playlist.format_time(item['seconds']),
+            format_seconds(item['seconds']),
             item['position']
         ]
         self._playlist_table.add(l)

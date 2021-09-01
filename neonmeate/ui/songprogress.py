@@ -1,12 +1,6 @@
 from gi.repository import Gtk
 
 
-def format_elapsed_time(elapsed_seconds, total_seconds):
-    elapsed_min, elapsed_sec = divmod(elapsed_seconds, 60)
-    total_min, total_sec = divmod(total_seconds, 60)
-    return f'{elapsed_min}:{elapsed_sec:02} / {total_min}:{total_sec:02}'
-
-
 # noinspection PyUnresolvedReferences
 class SongProgress(Gtk.ProgressBar):
 

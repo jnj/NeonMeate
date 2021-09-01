@@ -1,6 +1,8 @@
 from gi.repository import Gtk, GObject
 
-from .songprogress import SongProgress, format_elapsed_time
+from .songprogress import SongProgress
+from .times import format_elapsed_time
+
 
 # noinspection PyUnresolvedReferences
 class ControlButton(Gtk.Button):
