@@ -53,8 +53,7 @@ class NowPlaying(Gtk.Frame):
             album,
             covpath)
         self._box.pack_start(self._cover_art, True, True, 0)
-        self._box.show()
-        self._cover_art.show()
+        self._box.show_all()
 
     def _on_art_ready(self, pixbuf, artist_album_covpath):
         artist, album, covpath = artist_album_covpath
