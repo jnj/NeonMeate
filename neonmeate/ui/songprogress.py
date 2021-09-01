@@ -13,7 +13,7 @@ class SongProgress(Gtk.ProgressBar):
         self.set_valign(Gtk.Align.CENTER)
         self.set_hexpand(True)
         self.set_fraction(0)
-        self._total_seconds = 0.1
+        self._total_seconds = 0.0
         self._elapsed_seconds = 0.0
 
     def set_elapsed(self, elapsed, total):
