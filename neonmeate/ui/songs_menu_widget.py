@@ -175,8 +175,9 @@ class SongsMenu(Gtk.Popover):
 
     def _add_selected(self):
         songs = self._get_selected_songs()
-        if songs:
-            self._mpdclient.add_songs(songs)
+        ordered = sorted(songs, key=lambda s: (s.discnum, s.number))
+        if ordered:
+            self._mpdclient.add_songs(ordered)
             self.emit('playlist-modified')
 
     def _on_rem_sel(self, btn):
