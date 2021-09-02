@@ -57,7 +57,7 @@ class CoverWithGradient(Gtk.DrawingArea):
         self._grad = Gradient.gray()
         self._border_rgb = 1, 1, 1
         self._is_default_grad = True
-        self._border_thickness = 5
+        self._border_thickness = 8
         self.artist = artist
         self.album = album
         self.covpath = covpath
