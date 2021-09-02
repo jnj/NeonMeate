@@ -14,10 +14,13 @@ class SongsMenuButtonBox(NeonMeateButtonBox):
     def __init__(self):
         super(SongsMenuButtonBox, self).__init__()
         self._add_sel_btn = ControlButton('list-add-symbolic')
+        self._add_sel_btn.set_tooltip_text('Add selected tracks to the queue')
         self.add_button(self._add_sel_btn, 'add-sel', 'neonmeate_add_sel_click')
         self._rem_sel_btn = ControlButton('list-remove-symbolic')
+        self._rem_sel_btn.set_tooltip_text('Remove selected tracks from the queue')
         self.add_button(self._rem_sel_btn, 'rem-sel', 'neonmeate_rem_sel_click')
         self._replace_btn = ControlButton('media-playback-start-symbolic')
+        self._replace_btn.set_tooltip_text('Replace queue with selected tracks and play')
         self.add_button(
             self._replace_btn,
             'rep-play',
