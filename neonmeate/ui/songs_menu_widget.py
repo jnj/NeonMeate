@@ -105,9 +105,9 @@ class SongsMenu(Gtk.Popover):
             trackno = song.zero_padded_number()
             if song.is_compilation_track():
                 esc_artist = GLib.markup_escape_text(song.artist)
-                markup = f'{trackno}. <b>{esc_artist}</b> - {esc_title}'
+                markup = f'<small>{trackno}. <b>{esc_artist}</b> - {esc_title}</small>'
             else:
-                markup = f'{trackno}. {esc_title}'
+                markup = f'<small>{trackno}. {esc_title}</small>'
             label.set_markup(markup)
             label.set_property('xalign', 0)
             checkbox.set_active(True)
