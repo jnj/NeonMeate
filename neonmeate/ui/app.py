@@ -237,7 +237,7 @@ class App(Gtk.ApplicationWindow):
 
     def _on_stop(self, _):
         self._mpdclient.stop_playing()
-        self._controlsbar.set_song_progress(0, 1)
+        self._controlsbar.set_song_progress(0, 0)
 
     def _on_prev_song(self, _):
         self._mpdclient.prev_song()
