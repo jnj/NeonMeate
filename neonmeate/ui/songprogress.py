@@ -27,7 +27,8 @@ class SongProgress(Gtk.ProgressBar):
     def _on_change(self, elapsed_seconds, total_seconds):
         self._elapsed_seconds = elapsed_seconds
         self._total_seconds = total_seconds
-        self.set_fraction(round(elapsed_seconds / total_seconds, 2))
+        frac = round(elapsed_seconds / total_seconds, 2) if total_seconds > 0 else 0
+        self.set_fraction(frac)
         self.queue_draw()
 
     def set_fraction(self, frac):
