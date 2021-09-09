@@ -103,13 +103,15 @@ class SongsMenu(Gtk.Popover):
             label.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
             esc_title = GLib.markup_escape_text(song.title)
             trackno = song.zero_padded_number()
+            t = f'({song.formatted_duration()})'
             if song.is_compilation_track():
                 esc_artist = GLib.markup_escape_text(song.artist)
-                markup = f'<small>{trackno}. <b>{esc_artist}</b> - {esc_title}</small>'
+                markup = f'<small>{trackno}. <b>{esc_artist}</b> - {esc_title} {t}</small>'
             else:
-                markup = f'<small>{trackno}. {esc_title}</small>'
+                markup = f'<small>{trackno}. {esc_title} {t}</small>'
             label.set_markup(markup)
             label.set_property('xalign', 0)
+            label.set_margin_start(8)
             checkbox.set_active(True)
             checkbox.add(label)
 

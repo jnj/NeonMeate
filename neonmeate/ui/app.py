@@ -115,9 +115,10 @@ class App(Gtk.ApplicationWindow):
                 False
             )
 
-    def _on_random_fill(self, _):
+    def _on_random_fill(self, widget, item_type, n):
         with self._mpdhb.handler_block(self._playlist_change_id):
-            self._artists.on_random_fill()
+            self._mpdclient.add_random(item_type, n)
+            #self._artists.on_random_fill()
 
     def _on_music_dir(self, settings, new_dir):
         pass

@@ -1,6 +1,5 @@
 from gi.repository import Gtk
 
-
 # noinspection PyUnresolvedReferences
 class SongProgress(Gtk.ProgressBar):
 

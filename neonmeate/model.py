@@ -1,5 +1,6 @@
 import functools
 
+from ui import times
 
 def get_sanitized_string(dictlike, key):
     val = None
@@ -90,11 +91,12 @@ class Song:
             int(mpd_song_item.get('disc', 1)),
             mpd_song_item['title'],
             mpd_song_item['file'],
+            float(mpd_song_item['duration']),
             mpd_song_item['artist'],
             mpd_song_item.get('albumartist', None)
         )
 
-    def __init__(self, number, discnum, title, file, artist=None,
+    def __init__(self, number, discnum, title, file, duration, artist=None,
                  albumartist=None):
         """
         Creates a Song instance. The artist should only be non-None
@@ -108,6 +110,13 @@ class Song:
         self.file = file
         self.artist = artist
         self.albumartist = albumartist
+        self.duration = duration
+
+    def formatted_duration(self):
+        whole_seconds = int(self.duration // 1)
+        frac_seconds = round(self.duration - whole_seconds)
+        total_seconds = whole_seconds + frac_seconds
+        return times.format_seconds(total_seconds)
 
     def zero_padded_number(self):
         return f'{self.number:02}'
