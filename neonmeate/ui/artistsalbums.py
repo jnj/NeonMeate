@@ -58,7 +58,7 @@ class ArtistsAlbums(Gtk.Overlay):
         self.show_all()
 
     def on_random_fill(self):
-        self._mpdclient.get_random(50)
+        self._mpdclient._add_random_songs(50)
 
     def _on_playlist_mod(self, widget):
         self._infobar.temp_reveal("Playlist updated")

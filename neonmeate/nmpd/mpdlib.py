@@ -219,55 +219,60 @@ class Mpd:
 
     def add_random(self, item_type, n):
         if item_type == 'Songs':
-            self.get_random(n)
-        if item_type == 'Artists':
-            def task():
-                artists = set([])
+            self._add_random_songs(n)
+        elif item_type == 'Artists':
+            self._add_random_artists(n)
+        elif item_type == 'Albums':
+            self._add_random_albums(n)
 
-                def add_all(keyname):
-                    for record in self._client.list(keyname):
-                        aa = record.get(keyname, '')
-                        if aa != '':
-                            artists.add(aa)
+    def _add_random_albums(self, n):
+        def task():
+            pairs = []
+            for rec in [r for r in
+                        self._client.list('album', 'group', 'albumartist')
+                        if r['albumartist'] != '']:
+                alb = rec['album']
+                art = rec['albumartist']
+                if isinstance(alb, list):
+                    for i in alb:
+                        pairs.append((art, i))
+                else:
+                    pairs.append((art, alb))
+            all_files = []
+            selected = random.choices(pairs, k=n)
+            print(f'selected = {selected}')
+            for artist, album in selected:
+                files = [r['file'] for r in
+                         self._client.list('file', 'albumartist', artist,
+                                           'album', album)]
+                all_files.extend(files)
+            print(all_files)
+            self.add_files_to_playlist(all_files)
+        self.exec(task)
 
-                add_all('albumartist')
-                add_all('artist')
-                l = list(artists)
-                selected = random.choices(l, k=n)
-                files = []
-                for sel in selected:
-                    files.extend([r['file'] for r in
-                                  self._client.list('file', 'artist', sel)])
-                self.add_files_to_playlist(files)
+    def _add_random_artists(self, n):
+        def task():
+            artists = set([])
 
-            self.exec(task)
-        if item_type == 'Albums':
-            def task():
-                pairs = []
-                for rec in [r for r in
-                           self._client.list('album', 'group', 'albumartist')
-                           if r['albumartist'] != '']:
-                    alb = rec['album']
-                    art = rec['albumartist']
-                    if isinstance(alb, list):
-                        for i in alb:
-                            pairs.append((art, i))
-                    else:
-                        pairs.append((art, alb))
-                all_files = []
-                selected = random.choices(pairs, k=n)
-                print(f'selected = {selected}')
-                for artist, album in selected:
-                    files = [r['file'] for r in
-                             self._client.list('file', 'albumartist', artist,
-                                               'album', album)]
-                    all_files.extend(files)
-                print(all_files)
-                self.add_files_to_playlist(all_files)
+            def add_all(keyname):
+                for record in self._client.list(keyname):
+                    aa = record.get(keyname, '')
+                    if aa != '':
+                        artists.add(aa)
 
-            self.exec(task)
+            add_all('albumartist')
+            add_all('artist')
+            l = list(artists)
+            selected = random.choices(l, k=n)
+            files = []
+            for sel in selected:
+                files.extend([r['file'] for r in
+                              self._client.list('file', 'artist', sel)])
+            self.add_files_to_playlist(files)
 
-    def get_random(self, count):
+        self.exec(task)
+
+    def _add_random_songs(self, count):
         def task():
             allsongs = [r for r in self._client.listall() if 'file' in r]
             selected = [r['file'] for r in random.choices(allsongs, k=count)]
