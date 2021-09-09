@@ -1,6 +1,6 @@
 import functools
 
-from ui import times
+from neonmeate.ui import times
 
 def get_sanitized_string(dictlike, key):
     val = None
