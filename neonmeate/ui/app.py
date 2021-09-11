@@ -1,7 +1,7 @@
 import logging
 import os
 
-from gi.repository import Gtk
+from gi.repository import Gtk, Gdk
 
 from .artistsalbums import ArtistsAlbums
 from .controls import ControlsBar
@@ -55,8 +55,23 @@ class App(Gtk.ApplicationWindow):
         self._main_box = Gtk.VBox()
         self.add(self._main_box)
         self._stack = Gtk.Stack()
-        self._artists = ArtistsAlbums(mpdclient, art_cache, cfg)
         self._playlist = PlaylistContainer(mpdclient)
+        self._settings = SettingsMenu(executor, configstate, connstatus, cfg)
+        self._settings_btn = Gtk.MenuButton()
+        self._connect_handler = self._settings.connect(
+            'neonmeate-connect-attempt', self.on_connect_attempt)
+        self._settings.connect('neonmeate-update-requested',
+                               self._on_update_request)
+        self._settings.connect('neonmeate-musicdir-updated', self._on_music_dir)
+        self._settings_btn.set_popover(self._settings)
+        self._settings_btn.set_direction(Gtk.ArrowType.NONE)
+        Gtk.Settings.get_default().connect(
+            'notify::gtk-theme-name',
+            self._on_theme_change
+        )
+
+        style_ctx = self._settings.get_style_context()
+        self._artists = ArtistsAlbums(mpdclient, art_cache, cfg, style_ctx)
         self._update_playlist(None)
         self._playlist.connect('neonmeate_random_fill', self._on_random_fill)
         self._now_playing = NowPlaying(rng, art_cache, executor, cfg)
@@ -82,16 +97,6 @@ class App(Gtk.ApplicationWindow):
         self._stack_switcher.set_stack(self._stack)
         self._stack.connect('notify::visible-child', self._on_stack_change)
         self._titlebar.pack_start(self._stack_switcher)
-        self._settings_btn = Gtk.MenuButton()
-        self._settings = SettingsMenu(executor, configstate, connstatus, cfg)
-        self._connect_handler = self._settings.connect(
-            'neonmeate-connect-attempt', self.on_connect_attempt)
-        self._settings.connect('neonmeate-update-requested',
-                               self._on_update_request)
-        self._settings.connect('neonmeate-musicdir-updated', self._on_music_dir)
-        self._settings_btn.set_popover(self._settings)
-        self._settings_btn.set_direction(Gtk.ArrowType.NONE)
-
         self._titlebar.pack_end(self._settings_btn)
         self._main_box.pack_start(self._stack, True, True, 0)
         self._main_box.pack_end(self._controlsbar, False, False, 0)
@@ -107,6 +112,9 @@ class App(Gtk.ApplicationWindow):
         self._mpdhb.connect('playback-mode-toggled', self._on_mode_change())
         self._mpdhb.connect('updatingdb', self._on_updating_db)
 
+    def _on_theme_change(self, param1, param2):
+        self._artists.on_theme_change()
+
     def _on_stack_change(self, s, obj):
         if 'playlist' == self._stack.get_visible_child_name():
             self._stack.child_set_property(
@@ -118,7 +126,6 @@ class App(Gtk.ApplicationWindow):
     def _on_random_fill(self, widget, item_type, n):
         with self._mpdhb.handler_block(self._playlist_change_id):
             self._mpdclient.add_random(item_type, n)
-            #self._artists.on_random_fill()
 
     def _on_music_dir(self, settings, new_dir):
         pass

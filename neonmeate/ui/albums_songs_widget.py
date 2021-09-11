@@ -10,7 +10,7 @@ class AlbumsAndSongs(Gtk.Box):
     }
 
     def __init__(self, mpdclient, art_cache, placeholder_pixbuf,
-                 albums_view_options):
+                 albums_view_options, border_style_context):
         super(AlbumsAndSongs, self).__init__()
         self.set_hexpand(True)
         self.set_vexpand(True)
@@ -20,7 +20,9 @@ class AlbumsAndSongs(Gtk.Box):
             self._mpdclient,
             self._art_cache,
             placeholder_pixbuf,
-            albums_view_options)
+            albums_view_options,
+            border_style_context
+        )
         self._albums.connect('album-selected', self._on_album_selected)
         self._albums.connect('playlist-modified', self._on_playlist_modified)
         self.add(self._albums)
@@ -40,6 +42,9 @@ class AlbumsAndSongs(Gtk.Box):
         self._current_songs.show()
         self._songsbox.pack_end(self._current_songs, True, True, 0)
         self.queue_draw()
+
+    def on_theme_change(self):
+        self._albums.on_theme_change()
 
     def clear(self):
         self._albums.clear()

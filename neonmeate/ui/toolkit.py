@@ -187,6 +187,10 @@ class Table:
             column = Gtk.TreeViewColumn(header, renderer, text=i)
             column.set_resizable(True)
             column.set_expand(self._expand[i])
+            header_label = Gtk.Label()
+            header_label.set_text(header)
+            header_label.show()
+            column.set_widget(header_label)
             self.tree.append_column(column)
 
         select = self.tree.get_selection()

@@ -240,13 +240,11 @@ class Mpd:
                     pairs.append((art, alb))
             all_files = []
             selected = random.choices(pairs, k=n)
-            print(f'selected = {selected}')
             for artist, album in selected:
                 files = [r['file'] for r in
                          self._client.list('file', 'albumartist', artist,
                                            'album', album)]
                 all_files.extend(files)
-            print(all_files)
             self.add_files_to_playlist(all_files)
         self.exec(task)
 

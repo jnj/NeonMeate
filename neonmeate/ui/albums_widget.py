@@ -14,9 +14,11 @@ class Albums(Gtk.ScrolledWindow):
     def album_sort_key(album):
         return album.date, album.title, album.artist
 
-    def __init__(self, mpdclient, art_cache, placeholder_pixbuf, options):
+    def __init__(self, mpdclient, art_cache, placeholder_pixbuf, options,
+                 border_style_context):
         super(Albums, self).__init__()
         self.set_shadow_type(Gtk.ShadowType.NONE)
+        self._border_style_context = border_style_context
         self._placeholder_pixbuf = placeholder_pixbuf
         self._album_width_px = options.album_size
         self._album_spacing = options.col_spacing
@@ -38,10 +40,10 @@ class Albums(Gtk.ScrolledWindow):
 
         renderer = Gtk.CellRendererPixbuf()
         self._view.pack_start(renderer, False)
-        context = self.get_style_context()
-        border_color = context.get_color(context.get_state())
+        self._border_color = border_style_context.get_background_color(0)
         self._placeholder_surface = self.pixbuf_surface(
-            add_pixbuf_border(self._placeholder_pixbuf, border_color))
+            add_pixbuf_border(self._placeholder_pixbuf, self._border_color,
+                              border_width=0))
 
         def render_cover(view, cell, model, iter, placeholder_pb):
             album = model[iter][0]
@@ -61,11 +63,12 @@ class Albums(Gtk.ScrolledWindow):
 
                 album.art.resolve(on_art_ready, None)
             elif album.art.is_resolved():
-                pb = album.art.get_scaled_pixbuf(self._album_width_px)
-                context = self.get_style_context()
-                border_color = context.get_color(context.get_state())
-                surface = self.pixbuf_surface(
-                    add_pixbuf_border(pb, border_color, border_width=2))
+                pb = add_pixbuf_border(
+                    album.art.get_scaled_pixbuf(self._album_width_px),
+                    self._get_border_color(),
+                    border_width=self._options.border_width
+                )
+                surface = self.pixbuf_surface(pb)
                 self._surface_cache[album] = surface
             cell.set_property('surface', surface)
 
@@ -90,6 +93,13 @@ class Albums(Gtk.ScrolledWindow):
         self._selected_album = None
         self._artists = []
         self.show_all()
+
+    def on_theme_change(self):
+        self._surface_cache.clear()
+
+    def _get_border_color(self):
+        flags = Gtk.StateFlags.NORMAL
+        return self._border_style_context.get_background_color(flags)
 
     def _on_playlist_modified(self, _):
         self.emit('playlist-modified')

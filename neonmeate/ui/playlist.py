@@ -65,7 +65,6 @@ class PlaylistContainer(Gtk.Frame):
         self._box.pack_end(self._playlist_controls_bar, False, False, 0)
         self._controls.connect('neonmeate_clear_playlist', self._on_clear)
         self._controls.connect('neonmeate_shuffle_playlist', self._on_shuffle)
-        # self._controls.connect('neonmeate_random_fill', self._rand_fill)
         self._rand.connect('neonmeate_random_added', self._on_add_random)
         self._box.show_all()
 

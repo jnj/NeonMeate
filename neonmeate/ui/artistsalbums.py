@@ -8,7 +8,7 @@ from neonmeate.ui.toolkit import TimedInfoBar, \
 
 class AlbumViewOptions:
     def __init__(self):
-        self.num_grid_cols = 1
+        self.border_width = 4
         self.album_size = 220
         self.col_spacing = 50
         self.row_spacing = 30
@@ -17,7 +17,7 @@ class AlbumViewOptions:
 # noinspection PyUnresolvedReferences
 class ArtistsAlbums(Gtk.Overlay):
 
-    def __init__(self, mpdclient, art, cfg):
+    def __init__(self, mpdclient, art, cfg, style_context):
         super(ArtistsAlbums, self).__init__()
         album_view_opts = AlbumViewOptions()
         self.set_hexpand(True)
@@ -50,12 +50,16 @@ class ArtistsAlbums(Gtk.Overlay):
             self._mpdclient,
             self._art,
             self._album_placeholder_pixbuf,
-            album_view_opts
+            album_view_opts,
+            style_context
         )
         self._albums_songs.connect('playlist-modified', self._on_playlist_mod)
         columns.pack_end(self._albums_songs, True, True, 0)
         self._box.pack_end(columns, True, True, 0)
         self.show_all()
+
+    def on_theme_change(self):
+        self._albums_songs.on_theme_change()
 
     def on_random_fill(self):
         self._mpdclient._add_random_songs(50)
