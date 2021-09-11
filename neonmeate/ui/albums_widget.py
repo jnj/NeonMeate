@@ -88,7 +88,7 @@ class Albums(Gtk.ScrolledWindow):
         txt_render.set_property('ellipsize', Pango.EllipsizeMode.END)
         self._view.pack_start(txt_render, False)
         self._view.set_cell_data_func(txt_render, render_album_info, None)
-        self._view.connect('button-press-event', self._on_right_click)
+        self._view.connect('button-press-event', self._on_button_press)
         self._selected_artist = None
         self._selected_album = None
         self._artists = []
@@ -104,7 +104,7 @@ class Albums(Gtk.ScrolledWindow):
     def _on_playlist_modified(self, _):
         self.emit('playlist-modified')
 
-    def _on_right_click(self, widget, event):
+    def _on_button_press(self, widget, event):
         path, path_iter = self._get_path_at_position(event, widget)
         if path:  # event.button == Gdk.BUTTON_PRIMARY and path:
             popover = SongsMenu(self._model[path_iter][0], self._mpdclient)
