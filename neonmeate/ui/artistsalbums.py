@@ -3,7 +3,7 @@ from gi.repository import Gtk
 from .albums_songs_widget import AlbumsAndSongs
 from .artists_widget import ArtistsWidget
 from neonmeate.ui.toolkit import TimedInfoBar, \
-    DiffableBoolean
+    BooleanRef
 
 
 class AlbumViewOptions:
@@ -29,7 +29,7 @@ class ArtistsAlbums(Gtk.Overlay):
         self._infobar.set_valign(Gtk.Align.START)
         self.add_overlay(self._infobar)
         # self.pack_start(self._infobar, False, False, 0)
-        self._update_pending = DiffableBoolean()
+        self._update_pending = BooleanRef()
         self._album_placeholder_pixbuf = \
             Gtk.IconTheme.get_default().load_icon_for_scale(
                 'media-optical-cd-audio-symbolic',

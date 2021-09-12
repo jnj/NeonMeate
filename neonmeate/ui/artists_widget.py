@@ -2,8 +2,8 @@ import re
 
 from gi.repository import Gtk, GObject
 
-from neonmeate.ui import toolkit
 from neonmeate.ui.toolkit import glib_main
+from neonmeate.ui.toolkit import Column
 
 
 class ArtistsWidget(Gtk.VBox):
@@ -56,10 +56,13 @@ class Artists(Gtk.ScrolledWindow):
         super(Artists, self).__init__()
         self.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         self.set_shadow_type(Gtk.ShadowType.NONE)
-        self._artist_column = toolkit.Column(vmargin=15, selectable_rows=True)
+        self._artist_column = Column(vmargin=15, selectable_rows=True)
         self.add(self._artist_column)
         self._mpd = mpdclient
-        self._artist_column.connect('value-selected', self._on_artist_clicked)
+        self._artist_column.connect(
+            Column.SIG_VALUE_SELECTED,
+            self._on_artist_clicked
+        )
         self._artists = []
         self.reload_artists()
 

@@ -26,7 +26,6 @@ def glib_main(func):
     return f
 
 
-# noinspection PyUnresolvedReferences
 class TimedInfoBar(Gtk.InfoBar):
     """
     An InfoBar that briefly shows a message and then hides itself.
@@ -59,7 +58,6 @@ class TimedInfoBar(Gtk.InfoBar):
         self._source_id = GLib.timeout_add_seconds(1, unreveal)
 
 
-# noinspection PyUnresolvedReferences
 class AlbumArt:
     """
     Asynchronously resolved album artwork. This will initially be a
@@ -103,7 +101,6 @@ class AlbumArt:
         self._art.async_resolve_cover_file(self._album.dirpath, _on_cover_path)
 
 
-# noinspection PyUnresolvedReferences
 class Scrollable(Gtk.ScrolledWindow):
     def __init__(self):
         super(Scrollable, self).__init__()
@@ -114,13 +111,14 @@ class Scrollable(Gtk.ScrolledWindow):
         self._vp.add(widget)
 
 
-# noinspection PyUnresolvedReferences,PyArgumentList
 class Column(Gtk.ListBox):
     """
     Renders items in a column using a Gtk.ListBox.
     """
+    SIG_VALUE_SELECTED = 'value-selected'
+
     __gsignals__ = {
-        'value-selected': (GObject.SignalFlags.RUN_FIRST, None, (str,))
+        SIG_VALUE_SELECTED: (GObject.SignalFlags.RUN_FIRST, None, (str,))
     }
 
     def __init__(self, vmargin=10, selectable_rows=True, multiselect=False):
@@ -141,7 +139,9 @@ class Column(Gtk.ListBox):
             child.destroy()
 
     def add_row(self, text):
-        label = Gtk.Label(text, xalign=0)
+        label = Gtk.Label()
+        label.set_text(text)
+        label.set_xalign(0)
         label.set_justify(Gtk.Justification.LEFT)
         label.set_ellipsize(Pango.EllipsizeMode.END)
         label.set_margin_top(self._vmargin)
@@ -150,36 +150,34 @@ class Column(Gtk.ListBox):
         label.show()
         self.add(label)
 
-    # noinspection PyUnusedLocal
     def _on_row_selected(self, box, row):
         if row is None:
             return
         child = row.get_child()
         if child and isinstance(child, Gtk.Label):
-            self.emit('value-selected', child.get_text())
+            self.emit(Column.SIG_VALUE_SELECTED, child.get_text())
         return True
 
 
-# noinspection PyUnresolvedReferences,PyArgumentList
 class Table:
     def __init__(self, column_names, column_types, view_columns, expand_flags):
         self._model_columns = column_names
         self._column_types = column_types
         self._view_columns = view_columns
-        self.model = Gtk.ListStore(*column_types)
-        self.tree = None
-        self.selection_handler = None
+        self._model = Gtk.ListStore(*column_types)
+        self._tree = None
+        self._selection_handler = None
         self._selection_changed_id = None
         self._expand = expand_flags
 
     def clear(self):
-        self.model.clear()
+        self._model.clear()
 
     def add(self, col_values):
-        self.model.append(col_values)
+        self._model.append(col_values)
 
     def as_widget(self):
-        self.tree = Gtk.TreeView.new_with_model(self.model)
+        self._tree = Gtk.TreeView.new_with_model(self._model)
 
         for i, header in enumerate(self._view_columns):
             renderer = Gtk.CellRendererText()
@@ -191,36 +189,36 @@ class Table:
             header_label.set_text(header)
             header_label.show()
             column.set_widget(header_label)
-            self.tree.append_column(column)
+            self._tree.append_column(column)
 
-        select = self.tree.get_selection()
+        select = self._tree.get_selection()
         select.set_mode(Gtk.SelectionMode.MULTIPLE)
-        self.tree.set_property('fixed_height_mode', True)
-        self.tree.columns_autosize()
-        return self.tree
+        self._tree.set_property('fixed_height_mode', True)
+        self._tree.columns_autosize()
+        return self._tree
 
     def _disable_selection_signal(self):
-        sel = self.tree.get_selection()
+        sel = self._tree.get_selection()
         sel.handler_block(self._selection_changed_id)
 
     def _enable_selection_signal(self):
-        sel = self.tree.get_selection()
+        sel = self._tree.get_selection()
         sel.handler_unblock(self._selection_changed_id)
 
     def set_selection_handler(self, handler):
-        self.selection_handler = handler
+        self._selection_handler = handler
 
 
-class DiffableBoolean:
+class BooleanRef:
     def __init__(self):
-        self.value = False
+        self._value = False
 
     def current(self):
-        return self.value
+        return self._value
 
     def update(self, new_value):
-        changed = new_value != self.value
-        self.value = new_value
+        changed = new_value != self._value
+        self._value = new_value
         return changed
 
 
