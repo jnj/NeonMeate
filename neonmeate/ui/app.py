@@ -165,9 +165,12 @@ class App(Gtk.ApplicationWindow):
             if self._connstatus == should_connect:
                 return
             if should_connect:
+                if self._playlist_updated:
+                    self._playlist_updated = False
                 self._mpdclient.connect()
                 self._artists.on_mpd_connected(True)
             else:
+                self._playlist_updated = False
                 self._titlebar.set_title('NeonMeate')
                 self._artists.on_mpd_connected(False)
                 self._playlist.clear()
