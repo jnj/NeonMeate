@@ -1,6 +1,6 @@
 from gi.repository import Gtk
 
-# noinspection PyUnresolvedReferences
+
 class SongProgress(Gtk.ProgressBar):
 
     @staticmethod
@@ -26,7 +26,8 @@ class SongProgress(Gtk.ProgressBar):
     def _on_change(self, elapsed_seconds, total_seconds):
         self._elapsed_seconds = elapsed_seconds
         self._total_seconds = total_seconds
-        frac = round(elapsed_seconds / total_seconds, 2) if total_seconds > 0 else 0
+        frac = round(elapsed_seconds / total_seconds,
+                     2) if total_seconds > 0 else 0
         self.set_fraction(frac)
         self.queue_draw()
 

@@ -6,12 +6,13 @@ from neonmeate.ui.random_widget import RandomWidget
 from .times import format_seconds
 
 
-# noinspection PyUnresolvedReferences
 class PlayListControls(NeonMeateButtonBox):
+    SIG_CLEAR_PLAYLIST = 'neonmeate_clear_playlist'
+    SIG_SHUFFLE_PLAYLIST = 'neonmeate_shuffle_playlist'
+
     __gsignals__ = {
-        'neonmeate_clear_playlist': (GObject.SignalFlags.RUN_FIRST, None, ()),
-        'neonmeate_shuffle_playlist': (GObject.SignalFlags.RUN_FIRST, None, ()),
-        'neonmeate_random_fill': (GObject.SignalFlags.RUN_FIRST, None, ())
+        SIG_CLEAR_PLAYLIST : (GObject.SignalFlags.RUN_FIRST, None, ()),
+        SIG_SHUFFLE_PLAYLIST: (GObject.SignalFlags.RUN_FIRST, None, ())
     }
 
     def __init__(self):
@@ -19,7 +20,7 @@ class PlayListControls(NeonMeateButtonBox):
         clear_btn = self.add_button(
             ControlButton('edit-clear'),
             'clear',
-            'neonmeate_clear_playlist'
+            PlayListControls.SIG_CLEAR_PLAYLIST
         )
         clear_btn.set_label("Clear")
         clear_btn.set_always_show_image(True)
@@ -27,26 +28,18 @@ class PlayListControls(NeonMeateButtonBox):
         shufl_btn = self.add_button(
             ControlButton('shuffle'),
             'shuffle',
-            'neonmeate_shuffle_playlist'
+            PlayListControls.SIG_SHUFFLE_PLAYLIST
         )
         shufl_btn.set_label('Shuffle')
         shufl_btn.set_always_show_image(True)
         shufl_btn.set_tooltip_text('Shuffle the play queue')
-        # randm_btn = self.add_button(
-        #     ControlButton('random'),
-        #     'random',
-        #     'neonmeate_random_fill'
-        # )
-        # randm_btn.set_always_show_image(True)
-        # randm_btn.set_tooltip_text("Add random songs to the play queue")
-        # randm_btn.set_label('Random')
 
 
-# noinspection PyUnresolvedReferences
 class PlaylistContainer(Gtk.Frame):
+    SIG_RANDOM_FILL = 'neonmeate_random_fill'
+
     __gsignals__ = {
-        'neonmeate_random_fill': (
-        GObject.SignalFlags.RUN_FIRST, None, (str, int))
+        SIG_RANDOM_FILL: (GObject.SignalFlags.RUN_FIRST, None, (str, int))
     }
 
     def __init__(self, mpdclient):
@@ -59,21 +52,29 @@ class PlaylistContainer(Gtk.Frame):
         self._rand = RandomWidget()
         self._playlist_controls_bar.pack_end(self._rand)
         self._playlist = Playlist()
-        self._playlist.connect('neonmeate-delitem-playlist', self._on_del_item)
+        self._playlist.connect(
+            Playlist.SIG_DEL_PLAYLIST_ITEM,
+            self._on_del_item
+        )
         self.add(self._box)
         self._box.pack_start(self._playlist, True, True, 0)
         self._box.pack_end(self._playlist_controls_bar, False, False, 0)
-        self._controls.connect('neonmeate_clear_playlist', self._on_clear)
-        self._controls.connect('neonmeate_shuffle_playlist', self._on_shuffle)
-        self._rand.connect('neonmeate_random_added', self._on_add_random)
+        self._controls.connect(
+            PlayListControls.SIG_CLEAR_PLAYLIST,
+            self._on_clear
+        )
+        self._controls.connect(
+            PlayListControls.SIG_SHUFFLE_PLAYLIST,
+            self._on_shuffle
+        )
+        self._rand.connect(RandomWidget.SIG_RANDOM_ADDED, self._on_add_random)
         self._box.show_all()
 
     def _on_add_random(self, widget, item_type, n):
-        self.emit('neonmeate_random_fill', item_type, n)
+        self.emit(PlaylistContainer.SIG_RANDOM_FILL, item_type, n)
 
     def _on_del_item(self, pl):
-        indices = pl.get_selected_indices()
-        for i in indices:
+        for i in pl.get_selected_indices():
             self._mpdclient.delete_playlist_item(i)
 
     def _on_shuffle(self, _):
@@ -92,11 +93,11 @@ class PlaylistContainer(Gtk.Frame):
         self._playlist.add_playlist_item(item)
 
 
-# noinspection PyUnresolvedReferences
 class Playlist(Gtk.ScrolledWindow):
+    SIG_DEL_PLAYLIST_ITEM = 'neonmeate_delitem_playlist'
+
     __gsignals__ = {
-        'neonmeate_clear_playlist': (GObject.SignalFlags.RUN_FIRST, None, ()),
-        'neonmeate_delitem_playlist': (GObject.SignalFlags.RUN_FIRST, None, ())
+        SIG_DEL_PLAYLIST_ITEM: (GObject.SignalFlags.RUN_FIRST, None, ())
     }
 
     @staticmethod
@@ -140,7 +141,7 @@ class Playlist(Gtk.ScrolledWindow):
             selection.selected_foreach(on_selected_row)
 
             if self._selected_indices:
-                self.emit('neonmeate_delitem_playlist')
+                self.emit(Playlist.SIG_DEL_PLAYLIST_ITEM)
         return True
 
     def _on_selection(self, row):
@@ -150,7 +151,7 @@ class Playlist(Gtk.ScrolledWindow):
         self._playlist_table.clear()
 
     def add_playlist_item(self, item):
-        l = [
+        row = [
             Playlist.format_track_no(item['track']),
             item['artist'],
             item['album'],
@@ -158,4 +159,4 @@ class Playlist(Gtk.ScrolledWindow):
             format_seconds(item['seconds']),
             item['position']
         ]
-        self._playlist_table.add(l)
+        self._playlist_table.add(row)

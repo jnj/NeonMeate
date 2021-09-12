@@ -5,13 +5,15 @@ from ..util.config import main_config_file
 
 # noinspection PyUnresolvedReferences,PyArgumentList
 class SettingsMenu(Gtk.Popover):
+    SIG_CONNECT_ATTEMPT = 'neonmeate-connect-attempt'
+    SIG_MUSIC_DIR_UPDATED = 'neonmeate-musicdir-updated'
+    SIG_UPDATE_REQUESTED = 'neonmeate-update-requested'
+
     __gsignals__ = {
-        'neonmeate-connect-attempt':
+        SIG_CONNECT_ATTEMPT :
             (GObject.SignalFlags.RUN_FIRST, None, (str, int, bool,)),
-        'neonmeate-musicdir-updated':
-            (GObject.SignalFlags.RUN_FIRST, None, (str,)),
-        'neonmeate-update-requested':
-            (GObject.SignalFlags.RUN_FIRST, None, ())
+        SIG_MUSIC_DIR_UPDATED : (GObject.SignalFlags.RUN_FIRST, None, (str,)),
+        SIG_UPDATE_REQUESTED : (GObject.SignalFlags.RUN_FIRST, None, ())
     }
 
     def __init__(self, executor, configstate, connstatus, cfg):
@@ -107,7 +109,7 @@ class SettingsMenu(Gtk.Popover):
         self._connect_label.set_text(txt)
 
     def _on_update_request(self, btn):
-        self.emit('neonmeate-update-requested')
+        self.emit(SettingsMenu.SIG_UPDATE_REQUESTED)
 
     def _on_save_settings(self, btn):
         self._save()
@@ -122,7 +124,7 @@ class SettingsMenu(Gtk.Popover):
         self._save()
         if current != chosen:
             self._configstate.set_musicpath(chosen)
-            self.emit('neonmeate-musicdir-updated', chosen)
+            self.emit(SettingsMenu.SIG_MUSIC_DIR_UPDATED, chosen)
 
     def _on_user_connect_change(self, switch, gparam):
         connected = switch.get_active()

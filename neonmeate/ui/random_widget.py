@@ -2,9 +2,10 @@ from gi.repository import Gdk, GObject, Gtk
 
 
 class RandomWidget(Gtk.Box):
+    SIG_RANDOM_ADDED = 'neonmeate_random_added'
+
     __gsignals__ = {
-        'neonmeate_random_added':
-            (GObject.SignalFlags.RUN_FIRST, None, (str, int))
+        SIG_RANDOM_ADDED : (GObject.SignalFlags.RUN_FIRST, None, (str, int))
     }
 
     def __init__(self):
@@ -36,7 +37,7 @@ class RandomWidget(Gtk.Box):
     def _on_add(self, widget):
         n = int(self._number_entry.get_buffer().get_text())
         item_type = self._combo.get_active_text()
-        self.emit('neonmeate_random_added', item_type, n)
+        self.emit(RandomWidget.SIG_RANDOM_ADDED, item_type, n)
 
     def _on_entry_change(self, entry):
         self._validate_entry()
