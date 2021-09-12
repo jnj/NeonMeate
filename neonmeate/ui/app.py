@@ -72,7 +72,6 @@ class App(Gtk.ApplicationWindow):
 
         style_ctx = self._settings.get_style_context()
         self._artists = ArtistsAlbums(mpdclient, art_cache, cfg, style_ctx)
-        self._update_playlist(None)
         self._playlist.connect('neonmeate_random_fill', self._on_random_fill)
         self._now_playing = NowPlaying(rng, art_cache, executor, cfg)
         self._stack.add_named(self._artists, 'library')
@@ -163,7 +162,8 @@ class App(Gtk.ApplicationWindow):
         self._artists.on_db_update(value)
 
     def _update_playlist(self, obj):
-        self._artists.on_playlist_modified()
+        if self._playlist_updated:
+            self._artists.on_playlist_modified()
 
         @glib_main
         def on_current_queue(playqueue):

@@ -5,8 +5,10 @@ from neonmeate.ui.toolkit import add_pixbuf_border, AlbumArt
 
 
 class Albums(Gtk.ScrolledWindow):
+    SIG_ALBUM_SELECTED = 'album_selected'
+
     __gsignals__ = {
-        'album-selected': (GObject.SignalFlags.RUN_FIRST, None, (int,)),
+        SIG_ALBUM_SELECTED: (GObject.SignalFlags.RUN_FIRST, None, (int,))
     }
 
     @staticmethod
@@ -159,7 +161,7 @@ class Albums(Gtk.ScrolledWindow):
 
     def _on_album_selected(self, entry, index):
         self._selected_album = entry.album
-        self.emit('album-selected', index)
+        self.emit(Albums.SIG_ALBUM_SELECTED, index)
 
     def _clear_albums(self):
         self._selected_artist = None

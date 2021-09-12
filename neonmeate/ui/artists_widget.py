@@ -7,9 +7,12 @@ from neonmeate.ui.toolkit import Column
 
 
 class ArtistsWidget(Gtk.VBox):
+    SIG_ARTIST_SELECTED = 'artist_selected'
+    SIG_ARTISTS_LOADED = 'artists_loaded'
+
     __gsignals__ = {
-        'artist_selected': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
-        'artists_loaded': (GObject.SignalFlags.RUN_FIRST, None, (bool,))
+        SIG_ARTIST_SELECTED : (GObject.SignalFlags.RUN_FIRST, None, (str,)),
+        SIG_ARTISTS_LOADED: (GObject.SignalFlags.RUN_FIRST, None, (bool,))
     }
 
     def __init__(self, mpdclient):
@@ -21,8 +24,14 @@ class ArtistsWidget(Gtk.VBox):
         self._searchbar.add(self._search_entry)
         self.pack_start(self._searchbar, False, False, 0)
         self.pack_start(self._artists, True, True, 0)
-        self._artists.connect('artist_selected', self._on_artist_selected)
-        self._artists.connect('artists_loaded', self._on_artists_loaded)
+        self._artists.connect(
+            Artists.SIG_ARTIST_SELECTED,
+            self._on_artist_selected
+        )
+        self._artists.connect(
+            Artists.SIG_ARTISTS_LOADED,
+            self._on_artists_loaded
+        )
         self._searched_artist = None
         self._search_entry.connect('search-changed', self._on_artist_searched)
         self.show_all()
@@ -31,10 +40,10 @@ class ArtistsWidget(Gtk.VBox):
         self._artists.set_filter(search_entry.get_text())
 
     def _on_artists_loaded(self, _, b):
-        self.emit('artists_loaded', b)
+        self.emit(ArtistsWidget.SIG_ARTISTS_LOADED, b)
 
     def _on_artist_selected(self, _, artist):
-        self.emit('artist_selected', artist)
+        self.emit(ArtistsWidget.SIG_ARTIST_SELECTED, artist)
 
     def reload_artists(self):
         self._artists.reload_artists()
@@ -47,9 +56,13 @@ class ArtistsWidget(Gtk.VBox):
 
 
 class Artists(Gtk.ScrolledWindow):
+
+    SIG_ARTIST_SELECTED = 'artist_selected'
+    SIG_ARTISTS_LOADED = 'artists_loaded'
+
     __gsignals__ = {
-        'artist_selected': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
-        'artists_loaded': (GObject.SignalFlags.RUN_FIRST, None, (bool,))
+        SIG_ARTIST_SELECTED: (GObject.SignalFlags.RUN_FIRST, None, (str,)),
+        SIG_ARTISTS_LOADED: (GObject.SignalFlags.RUN_FIRST, None, (bool,))
     }
 
     def __init__(self, mpdclient):
@@ -81,12 +94,12 @@ class Artists(Gtk.ScrolledWindow):
             self._artists.extend(artists)
             for artist in self._artists:
                 self._artist_column.add_row(artist.name)
-            self.emit('artists_loaded', True)
+            self.emit(Artists.SIG_ARTISTS_LOADED, True)
 
         self._mpd.find_artists(on_artists)
 
     def _on_artist_clicked(self, obj, value):
-        self.emit('artist_selected', value)
+        self.emit(Artists.SIG_ARTIST_SELECTED, value)
 
     def set_filter(self, artist_text):
         if artist_text is None or len(artist_text) == 0:

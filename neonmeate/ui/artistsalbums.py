@@ -39,8 +39,14 @@ class ArtistsAlbums(Gtk.Overlay):
         self._mpdclient = mpdclient
         columns = Gtk.HBox()
         self._artists = ArtistsWidget(mpdclient)
-        self._artists.connect('artist_selected', self._on_artist_clicked)
-        self._artists.connect('artists_loaded', self._on_artists_loaded)
+        self._artists.connect(
+            ArtistsWidget.SIG_ARTIST_SELECTED,
+            self._on_artist_clicked
+        )
+        self._artists.connect(
+            ArtistsWidget.SIG_ARTISTS_LOADED,
+            self._on_artists_loaded
+        )
         columns.pack_start(self._artists, False, False, 0)
 
         separator = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
@@ -60,9 +66,6 @@ class ArtistsAlbums(Gtk.Overlay):
 
     def on_theme_change(self):
         self._albums_songs.on_theme_change()
-
-    def on_random_fill(self):
-        self._mpdclient._add_random_songs(50)
 
     def on_playlist_modified(self):
         self._infobar.temp_reveal("Playlist updated")

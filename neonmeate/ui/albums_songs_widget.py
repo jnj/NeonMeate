@@ -20,7 +20,10 @@ class AlbumsAndSongs(Gtk.Box):
             albums_view_options,
             border_style_context
         )
-        self._albums.connect('album-selected', self._on_album_selected)
+        self._albums.connect(
+            Albums.SIG_ALBUM_SELECTED,
+            self._on_album_selected
+        )
         self.add(self._albums)
         self._albums_list = []
         self._artist_by_name = {}
