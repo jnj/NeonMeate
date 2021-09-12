@@ -9,6 +9,7 @@ from .nowplaying import NowPlaying
 from .playlist import PlaylistContainer
 from .settings import SettingsMenu
 from .toolkit import glib_main
+from ..nmpd.mpdlib import MpdHeartbeat as Hb
 
 
 # noinspection PyUnresolvedReferences,PyArgumentList
@@ -101,16 +102,19 @@ class App(Gtk.ApplicationWindow):
         self._main_box.pack_start(self._stack, True, True, 0)
         self._main_box.pack_end(self._controlsbar, False, False, 0)
 
-        self._mpdhb.connect('song_elapsed', self._on_song_elapsed)
-        self._mpdhb.connect('song_playing_status', self._on_song_playing_status)
-        self._mpdhb.connect('song_changed', self._on_song_changed)
-        self._mpdhb.connect('no_song', self._no_song)
+        self._mpdhb.connect(Hb.SIG_SONG_ELAPSED, self._on_song_elapsed)
+        self._mpdhb.connect(
+            Hb.SIG_SONG_PLAYING_STATUS,
+            self._on_song_playing_status
+        )
+        self._mpdhb.connect(Hb.SIG_SONG_CHANGED, self._on_song_changed)
+        self._mpdhb.connect(Hb.SIG_NO_SONG, self._no_song)
         self._playlist_change_id = self._mpdhb.connect(
-            'playlist-changed',
+            Hb.SIG_PLAYLIST_CHANGED,
             self._update_playlist
         )
-        self._mpdhb.connect('playback-mode-toggled', self._on_mode_change())
-        self._mpdhb.connect('updatingdb', self._on_updating_db)
+        self._mpdhb.connect(Hb.SIG_PLAYBACK_MODE_TOGGLED, self._on_mode_change)
+        self._mpdhb.connect(Hb.SIG_UPDATING_DB, self._on_updating_db)
 
     def _on_theme_change(self, param1, param2):
         self._artists.on_theme_change()
@@ -153,11 +157,8 @@ class App(Gtk.ApplicationWindow):
     def _on_user_mode_toggle(self, _, name, is_active):
         self._mpdclient.toggle_play_mode(name, is_active)
 
-    def _on_mode_change(self):
-        def handler(_, name, is_active):
-            self._controlsbar.set_mode(name, is_active)
-
-        return handler
+    def _on_mode_change(self, hb, name, active):
+        self._controlsbar.set_mode(name, active)
 
     def _on_updating_db(self, obj, value):
         self._artists.on_db_update(value)

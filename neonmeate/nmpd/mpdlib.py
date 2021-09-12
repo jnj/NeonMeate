@@ -12,8 +12,10 @@ import neonmeate.util.thread as thread
 
 
 class MpdConnectionStatus(GObject.GObject):
+    SIG_MPD_CONNECTED = 'mpd_connected'
+
     __gsignals__ = {
-        'mpd_connected': (GObject.SignalFlags.RUN_FIRST, None, (bool,)),
+        SIG_MPD_CONNECTED: (GObject.SignalFlags.RUN_FIRST, None, (bool,))
     }
 
     def __init__(self):
@@ -22,7 +24,7 @@ class MpdConnectionStatus(GObject.GObject):
 
     def set_connected(self, connected):
         self._connected = connected
-        self.emit('mpd_connected', connected)
+        self.emit(MpdConnectionStatus.SIG_MPD_CONNECTED, connected)
 
     def is_connected(self):
         return self._connected
@@ -246,6 +248,7 @@ class Mpd:
                                            'album', album)]
                 all_files.extend(files)
             self.add_files_to_playlist(all_files)
+
         self.exec(task)
 
     def _add_random_artists(self, n):
@@ -438,17 +441,24 @@ class MpdHeartbeat(GObject.GObject):
 
     """
 
-    # These signals will be emitted when player events are detected.
+    SIG_PLAYLIST_CHANGED = 'playlist-changed'
+    SIG_SONG_ELAPSED = 'song_elapsed'
+    SIG_SONG_PLAYING_STATUS = 'song_playing_status'
+    SIG_SONG_CHANGED = 'song_changed'
+    SIG_NO_SONG = 'no_song'
+    SIG_PLAYBACK_MODE_TOGGLED = 'playback_mode_toggled'
+    SIG_UPDATING_DB = 'updatingdb'
+
     __gsignals__ = {
-        'playlist-changed': (GObject.SignalFlags.RUN_FIRST, None, ()),
-        'song_elapsed': (GObject.SignalFlags.RUN_FIRST, None, (float, float)),
-        'song_playing_status': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
-        'song_changed': (
-            GObject.SignalFlags.RUN_FIRST, None, (str, str, str, str)),
-        'no_song': (GObject.SignalFlags.RUN_FIRST, None, ()),
-        'playback_mode_toggled': (
-            GObject.SignalFlags.RUN_FIRST, None, (str, bool)),
-        'updatingdb': (GObject.SignalFlags.RUN_FIRST, None, (bool,))
+        SIG_PLAYLIST_CHANGED: (GObject.SignalFlags.RUN_FIRST, None, ()),
+        SIG_SONG_ELAPSED: (GObject.SignalFlags.RUN_FIRST, None, (float, float)),
+        SIG_SONG_PLAYING_STATUS: (GObject.SignalFlags.RUN_FIRST, None, (str,)),
+        SIG_SONG_CHANGED:
+            (GObject.SignalFlags.RUN_FIRST, None, (str, str, str, str)),
+        SIG_NO_SONG: (GObject.SignalFlags.RUN_FIRST, None, ()),
+        SIG_PLAYBACK_MODE_TOGGLED:
+            (GObject.SignalFlags.RUN_FIRST, None, (str, bool)),
+        SIG_UPDATING_DB: (GObject.SignalFlags.RUN_FIRST, None, (bool,))
     }
 
     def __init__(self, client, millis_interval, executor, connstatus):
@@ -526,7 +536,10 @@ class MpdHeartbeat(GObject.GObject):
         return True
 
     def _on_state_change(self, obj, spec):
-        self.emit('song_playing_status', self._state.get_property(spec.name))
+        self.emit(
+            MpdHeartbeat.SIG_SONG_PLAYING_STATUS,
+            self._state.get_property(spec.name)
+        )
 
     def _on_song_change(self, obj, spec):
         songid = self._state.get_property(spec.name)
@@ -538,29 +551,35 @@ class MpdHeartbeat(GObject.GObject):
         def on_current_song(song_info):
             self.logger.debug(f'current song: {str(song_info)}')
             try:
-                self.emit('song_changed',
-                          song_info['artist'],
-                          song_info['title'],
-                          song_info['album'],
-                          song_info['file'])
+                self.emit(
+                    MpdHeartbeat.SIG_SONG_CHANGED,
+                    song_info['artist'],
+                    song_info['title'],
+                    song_info['album'],
+                    song_info['file']
+                )
             except KeyError as e:
                 self.logger.exception(e)
 
         self._client.currentsong(on_current_song)
 
     def _on_playlist_change(self, obj, spec):
-        self.emit('playlist-changed')
+        self.emit(MpdHeartbeat.SIG_PLAYLIST_CHANGED)
 
     def _on_playlistlength_change(self, obj, spec):
-        self.emit('playlist-changed')
+        self.emit(MpdHeartbeat.SIG_PLAYLIST_CHANGED)
 
     def _on_updating(self, obj, spec):
         propval = self._state.get_property(spec.name)
-        self.emit('updatingdb', propval != '0')
+        self.emit(MpdHeartbeat.SIG_UPDATING_DB, propval != '0')
 
     def _on_mode_change(self, obj, spec):
         propval = self._state.get_property(spec.name)
-        self.emit('playback-mode-toggled', spec.name, propval != '0')
+        self.emit(
+            MpdHeartbeat.SIG_PLAYBACK_MODE_TOGGLED,
+            spec.name,
+            propval != '0'
+        )
 
     def _on_elapsed_change(self, obj, spec):
         self._on_total_seconds_change(obj, spec)
@@ -568,7 +587,7 @@ class MpdHeartbeat(GObject.GObject):
     def _on_total_seconds_change(self, obj, spec):
         elapsed = self._state.get_property('elapsedseconds')
         total = self._state.get_property('songseconds')
-        self.emit('song_elapsed', elapsed, total)
+        self.emit(MpdHeartbeat.SIG_SONG_ELAPSED, elapsed, total)
 
     def _mpd_state(self):
         return self._mpd_status.get('state', 'unknown')
