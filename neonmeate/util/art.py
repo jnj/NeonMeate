@@ -1,6 +1,7 @@
 import os
 
 import gi
+import logging
 import heapq
 import time
 
@@ -109,6 +110,7 @@ class ArtCache(GObject.GObject):
         self._pending_requests = {}
         self._cover_file_names = ArtCache.CoverNames
         self._thread_pool = executor
+        self._log = logging.getLogger(__name__)
 
     def _on_music_path(self, configstate, _):
         self._root_music_dir = configstate.get_musicpath()
@@ -152,8 +154,12 @@ class ArtCache(GObject.GObject):
             return
         req = self._get_pending_or_create(file_path, callback, user_data)
         gio_file = Gio.File.new_for_path(file_path)
-        gio_file.read_async(GLib.PRIORITY_DEFAULT, None, self._on_stream_ready,
-                            req)
+        gio_file.read_async(
+            GLib.PRIORITY_DEFAULT,
+            None,
+            self._on_stream_ready,
+            req
+        )
 
     def _get_pending_or_create(self, file_path, callback, user_data):
         """
@@ -173,14 +179,11 @@ class ArtCache(GObject.GObject):
         try:
             stream = src_object.read_finish(result)
         except GLib.GError as e:
-            # todo handle better
-            print(e)
+            self._log.error(f'stream finish failed: {e.message}', e)
         else:
             GdkPixbuf.Pixbuf.new_from_stream_async(stream, None,
                                                    self._on_pixbuf_ready,
                                                    art_request)
-        finally:
-            pass
 
     def _on_pixbuf_ready(self, src_object, result, art_request):
         pixbuf = GdkPixbuf.Pixbuf.new_from_stream_finish(result)
