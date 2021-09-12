@@ -12,7 +12,6 @@ from .toolkit import glib_main
 from ..nmpd.mpdlib import MpdHeartbeat as Hb
 
 
-# noinspection PyUnresolvedReferences,PyArgumentList
 class App(Gtk.ApplicationWindow):
     Title = 'NeonMeate'
 

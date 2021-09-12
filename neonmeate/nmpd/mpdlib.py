@@ -355,7 +355,6 @@ class Mpd:
             self.exec(task)
 
 
-# noinspection PyUnresolvedReferences
 class MpdState(GObject.GObject):
     """
     Used by the heartbeat to track the player state.
@@ -425,7 +424,6 @@ class MpdState(GObject.GObject):
             self._update_if_changed('elapsedseconds', elapsed_secs)
 
 
-# noinspection PyUnresolvedReferences
 class MpdHeartbeat(GObject.GObject):
     """
     Ideally MPD would allow a client to register itself to receive
