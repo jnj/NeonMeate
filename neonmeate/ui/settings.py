@@ -3,7 +3,6 @@ from gi.repository import Gtk, GObject
 from ..util.config import main_config_file
 
 
-# noinspection PyUnresolvedReferences,PyArgumentList
 class SettingsMenu(Gtk.Popover):
     SIG_CONNECT_ATTEMPT = 'neonmeate-connect-attempt'
     SIG_MUSIC_DIR_UPDATED = 'neonmeate-musicdir-updated'
