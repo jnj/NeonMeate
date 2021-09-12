@@ -5,10 +5,14 @@ from neonmeate.ui.controls import NeonMeateButtonBox, ControlButton, \
 
 
 class SongsMenuButtonBox(NeonMeateButtonBox):
+    SIG_ADD_SEL_CLICK = 'neonmeate_add_sel_click'
+    SIG_REM_SEL_CLICK = 'neonmeate_rem_sel_click'
+    SIG_REP_PLAY_CLICK = 'neonmeate_rep_play_click'
+
     __gsignals__ = {
-        'neonmeate_add_sel_click': (GObject.SignalFlags.RUN_FIRST, None, ()),
-        'neonmeate_rem_sel_click': (GObject.SignalFlags.RUN_FIRST, None, ()),
-        'neonmeate_rep_play_click': (GObject.SignalFlags.RUN_FIRST, None, ())
+        SIG_ADD_SEL_CLICK: (GObject.SignalFlags.RUN_FIRST, None, ()),
+        SIG_REM_SEL_CLICK: (GObject.SignalFlags.RUN_FIRST, None, ()),
+        SIG_REP_PLAY_CLICK: (GObject.SignalFlags.RUN_FIRST, None, ())
     }
 
     def __init__(self):
@@ -17,10 +21,13 @@ class SongsMenuButtonBox(NeonMeateButtonBox):
         self._add_sel_btn.set_tooltip_text('Add selected tracks to the queue')
         self.add_button(self._add_sel_btn, 'add-sel', 'neonmeate_add_sel_click')
         self._rem_sel_btn = ControlButton('list-remove-symbolic')
-        self._rem_sel_btn.set_tooltip_text('Remove selected tracks from the queue')
+        self._rem_sel_btn.set_tooltip_text(
+            'Remove selected tracks from the queue'
+        )
         self.add_button(self._rem_sel_btn, 'rem-sel', 'neonmeate_rem_sel_click')
         self._replace_btn = ControlButton('media-playback-start-symbolic')
-        self._replace_btn.set_tooltip_text('Replace queue with selected tracks and play')
+        self._replace_btn.set_tooltip_text(
+            'Replace queue with selected tracks and play')
         self.add_button(
             self._replace_btn,
             'rep-play',
@@ -31,9 +38,10 @@ class SongsMenuButtonBox(NeonMeateButtonBox):
 
 
 class SelectSongsButtonBox(NeonMeateButtonBox):
+    SIG_TOGGLE_SELECTED = 'neonmeate_toggle_selected'
+
     __gsignals__ = {
-        'neonmeate_toggle_selected': (
-            GObject.SignalFlags.RUN_FIRST, None, (bool,)),
+        SIG_TOGGLE_SELECTED: (GObject.SignalFlags.RUN_FIRST, None, (bool,))
     }
 
     def __init__(self):
@@ -45,13 +53,16 @@ class SelectSongsButtonBox(NeonMeateButtonBox):
         self._toggle_selection_btn.set_can_focus(False)
 
     def _on_toggled(self, btn):
-        active = btn.get_active()
-        self.emit('neonmeate_toggle_selected', active)
+        self.emit(SelectSongsButtonBox.SIG_TOGGLE_SELECTED, btn.get_active())
 
 
 class SongsMenu(Gtk.Popover):
+    # TODO this should really come from the playlist itself,
+    #    when it notices that it has changed
+    SIG_PLAYLIST_MODIFIED = 'playlist-modified'
+
     __gsignals__ = {
-        'playlist-modified': (GObject.SignalFlags.RUN_FIRST, None, ())
+        SIG_PLAYLIST_MODIFIED: (GObject.SignalFlags.RUN_FIRST, None, ())
     }
 
     def __init__(self, album, mpdclient):
@@ -137,9 +148,18 @@ class SongsMenu(Gtk.Popover):
         self._btn_box.set_margin_bottom(margin)
         self._btn_box.set_margin_end(margin)
         self._btn_box.set_halign(Gtk.Align.START)
-        self._btn_box.connect('neonmeate_add_sel_click', self._on_add_sel)
-        self._btn_box.connect('neonmeate_rem_sel_click', self._on_rem_sel)
-        self._btn_box.connect('neonmeate_rep_play_click', self._on_replace)
+        self._btn_box.connect(
+            SongsMenuButtonBox.SIG_ADD_SEL_CLICK,
+            self._on_add_sel
+        )
+        self._btn_box.connect(
+            SongsMenuButtonBox.SIG_REM_SEL_CLICK,
+            self._on_rem_sel
+        )
+        self._btn_box.connect(
+            SongsMenuButtonBox.SIG_REP_PLAY_CLICK,
+            self._on_replace
+        )
         self._all_buttons.pack_start(self._btn_box, False, False, 0)
         self._toggle_selection_btn = SelectSongsButtonBox()
         self._toggle_selection_btn.set_margin_start(margin)
@@ -148,7 +168,7 @@ class SongsMenu(Gtk.Popover):
         self._toggle_selection_btn.set_margin_end(margin)
         self._toggle_selection_btn.set_halign(Gtk.Align.END)
         self._toggle_selection_btn.connect(
-            'neonmeate_toggle_selected',
+            SelectSongsButtonBox.SIG_TOGGLE_SELECTED,
             self._on_selection_toggled
         )
         self._all_buttons.pack_end(self._toggle_selection_btn, False, False, 0)
@@ -180,10 +200,10 @@ class SongsMenu(Gtk.Popover):
         ordered = sorted(songs, key=lambda s: (s.discnum, s.number))
         if ordered:
             self._mpdclient.add_songs(ordered)
-            self.emit('playlist-modified')
+            self.emit(SongsMenu.SIG_PLAYLIST_MODIFIED)
 
     def _on_rem_sel(self, btn):
         songs = self._get_selected_songs()
         if songs:
             self._mpdclient.remove_songs(songs)
-            self.emit('playlist-modified')
+            self.emit(SongsMenu.SIG_PLAYLIST_MODIFIED)
