@@ -4,7 +4,7 @@ import os
 from gi.repository import Gtk, Gdk
 
 from .artistsalbums import ArtistsAlbums
-from .controls import ControlsBar
+from .controls import ControlsBar, ControlButtons, PlayModeButtons
 from .nowplaying import NowPlaying
 from .playlist import PlaylistContainer
 from .settings import SettingsMenu
@@ -43,14 +43,29 @@ class App(Gtk.ApplicationWindow):
 
         self._controlsbar = ControlsBar()
         self._controlsbar.connect(
-            'neonmeate_playmode_toggle',
+            PlayModeButtons.SIG_PLAYMODE_TOGGLE,
             self._on_user_mode_toggle
         )
-        self._controlsbar.connect('neonmeate_start_playing', self._on_start)
-        self._controlsbar.connect('neonmeate_stop_playing', self._on_stop)
-        self._controlsbar.connect('neonmeate_toggle_pause', self._on_pause)
-        self._controlsbar.connect('neonmeate_prev_song', self._on_prev_song)
-        self._controlsbar.connect('neonmeate_next_song', self._on_next_song)
+        self._controlsbar.connect(
+            ControlButtons.SIG_START_PLAYING,
+            self._on_start
+        )
+        self._controlsbar.connect(
+            ControlButtons.SIG_STOP_PLAYING,
+            self._on_stop
+        )
+        self._controlsbar.connect(
+            ControlButtons.SIG_TOGGLE_PAUSE,
+            self._on_pause
+        )
+        self._controlsbar.connect(
+            ControlButtons.SIG_PREV_SONG,
+            self._on_prev_song
+        )
+        self._controlsbar.connect(
+            ControlButtons.SIG_NEXT_SONG,
+            self._on_next_song
+        )
 
         self._main_box = Gtk.VBox()
         self.add(self._main_box)
@@ -59,10 +74,17 @@ class App(Gtk.ApplicationWindow):
         self._settings = SettingsMenu(executor, configstate, connstatus, cfg)
         self._settings_btn = Gtk.MenuButton()
         self._connect_handler = self._settings.connect(
-            'neonmeate-connect-attempt', self.on_connect_attempt)
-        self._settings.connect('neonmeate-update-requested',
-                               self._on_update_request)
-        self._settings.connect('neonmeate-musicdir-updated', self._on_music_dir)
+            SettingsMenu.SIG_CONNECT_ATTEMPT,
+            self.on_connect_attempt
+        )
+        self._settings.connect(
+            SettingsMenu.SIG_UPDATE_REQUESTED,
+            self._on_update_request
+        )
+        self._settings.connect(
+            SettingsMenu.SIG_MUSIC_DIR_UPDATED,
+            self._on_music_dir
+        )
         self._settings_btn.set_popover(self._settings)
         self._settings_btn.set_direction(Gtk.ArrowType.NONE)
         Gtk.Settings.get_default().connect(
@@ -72,7 +94,10 @@ class App(Gtk.ApplicationWindow):
 
         style_ctx = self._settings.get_style_context()
         self._artists = ArtistsAlbums(mpdclient, art_cache, cfg, style_ctx)
-        self._playlist.connect('neonmeate_random_fill', self._on_random_fill)
+        self._playlist.connect(
+            PlaylistContainer.SIG_RANDOM_FILL,
+            self._on_random_fill
+        )
         self._now_playing = NowPlaying(rng, art_cache, executor, cfg)
         self._stack.add_named(self._artists, 'library')
         self._stack.add_named(self._playlist, 'playlist')

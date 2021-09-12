@@ -39,9 +39,10 @@ class VolumeControl(Gtk.VolumeButton):
 
 # noinspection PyUnresolvedReferences
 class PlayPauseButton(ControlButton):
+    SIG_PLAYPAUSE_TOGGLED = 'neonmeate_playpause_toggled'
+
     __gsignals__ = {
-        'neonmeate_playpause_toggled':
-            (GObject.SignalFlags.RUN_FIRST, None, (bool,))
+        SIG_PLAYPAUSE_TOGGLED : (GObject.SignalFlags.RUN_FIRST, None, (bool,))
     }
 
     def __init__(self):
@@ -69,7 +70,7 @@ class PlayPauseButton(ControlButton):
 
     def _toggle_pause_state(self, button):
         self.set_paused(not self.paused)
-        self.emit('neonmeate_playpause_toggled', self.paused)
+        self.emit(PlayPauseButton.SIG_PLAYPAUSE_TOGGLED, self.paused)
 
     def _swap_icons(self):
         child = self.get_child()
@@ -110,12 +111,19 @@ class NeonMeateButtonBox(Gtk.ButtonBox):
 
 # noinspection PyUnresolvedReferences
 class ControlButtons(NeonMeateButtonBox):
+
+    SIG_STOP_PLAYING = 'neonmeate_stop_playing'
+    SIG_START_PLAYING = 'neonmeate_start_playing'
+    SIG_TOGGLE_PAUSE = 'neonmeate_toggle_pause'
+    SIG_PREV_SONG = 'neonmeate_prev_song'
+    SIG_NEXT_SONG = 'neonmeate_next_song'
+
     __gsignals__ = {
-        'neonmeate_stop_playing': (GObject.SignalFlags.RUN_FIRST, None, ()),
-        'neonmeate_start_playing': (GObject.SignalFlags.RUN_FIRST, None, ()),
-        'neonmeate_toggle_pause': (GObject.SignalFlags.RUN_FIRST, None, ()),
-        'neonmeate_prev_song': (GObject.SignalFlags.RUN_FIRST, None, ()),
-        'neonmeate_next_song': (GObject.SignalFlags.RUN_FIRST, None, ())
+        SIG_STOP_PLAYING : (GObject.SignalFlags.RUN_FIRST, None, ()),
+        SIG_START_PLAYING : (GObject.SignalFlags.RUN_FIRST, None, ()),
+        SIG_TOGGLE_PAUSE: (GObject.SignalFlags.RUN_FIRST, None, ()),
+        SIG_PREV_SONG : (GObject.SignalFlags.RUN_FIRST, None, ()),
+        SIG_NEXT_SONG: (GObject.SignalFlags.RUN_FIRST, None, ())
     }
 
     def __init__(self):
@@ -124,12 +132,12 @@ class ControlButtons(NeonMeateButtonBox):
         self._prev = self.add_button(
             ControlButton('media-skip-backward'),
             'prev',
-            'neonmeate_prev_song'
+            ControlButtons.SIG_PREV_SONG
         )
         self._stop = self.add_button(
             ControlButton('media-playback-stop'),
             'stop',
-            'neonmeate_stop_playing'
+            ControlButtons.SIG_STOP_PLAYING
         )
         self._play_pause_button = self.add_button(
             PlayPauseButton(),
@@ -139,7 +147,7 @@ class ControlButtons(NeonMeateButtonBox):
         self._next = self.add_button(
             ControlButton('media-skip-forward'),
             'next',
-            'neonmeate-next-song'
+            ControlButtons.SIG_NEXT_SONG
         )
         self._play_pause_button.connect(
             'neonmeate_playpause_toggled',
@@ -154,17 +162,18 @@ class ControlButtons(NeonMeateButtonBox):
 
     def _on_playpause(self, btn, is_paused):
         if is_paused:
-            self.emit('neonmeate_toggle_pause')
+            self.emit(ControlButtons.SIG_TOGGLE_PAUSE)
         else:
-            self.emit('neonmeate_start_playing')
+            self.emit(ControlButtons.SIG_START_PLAYING)
         return True
 
 
 # noinspection PyUnresolvedReferences
 class PlayModeButtons(NeonMeateButtonBox):
+    SIG_PLAYMODE_TOGGLE = 'neonmeate_playmode_toggle'
+
     __gsignals__ = {
-        'neonmeate_playmode_toggle': (
-            GObject.SignalFlags.RUN_FIRST, None, (str, bool))
+        SIG_PLAYMODE_TOGGLE: (GObject.SignalFlags.RUN_FIRST, None, (str, bool))
     }
 
     def __init__(self):
@@ -210,7 +219,11 @@ class PlayModeButtons(NeonMeateButtonBox):
 
     def _on_click(self, name, btn):
         def handler(_):
-            self.emit('neonmeate_playmode_toggle', name, btn.get_active())
+            self.emit(
+                PlayModeButtons.SIG_PLAYMODE_TOGGLE,
+                name,
+                btn.get_active()
+            )
 
         return handler
 
@@ -225,7 +238,7 @@ class PlayModeButtons(NeonMeateButtonBox):
     def on_mode_change(self, name, active):
         btn = self._byname.get(name, None)
         if btn and btn.get_active() != active:
-            signal_name = 'neonmeate_playmode_toggle'
+            signal_name = PlayModeButtons.SIG_PLAYMODE_TOGGLE
             try:
                 self._disable_emission(signal_name)
                 btn.set_active(active)
@@ -233,16 +246,18 @@ class PlayModeButtons(NeonMeateButtonBox):
                 self._enable_emission(signal_name)
 
 
-# noinspection PyUnresolvedReferences,PyArgumentList,PyTypeChecker
 class ControlsBar(Gtk.ActionBar):
     __gsignals__ = {
-        'neonmeate_stop_playing': (GObject.SignalFlags.RUN_FIRST, None, ()),
-        'neonmeate_start_playing': (GObject.SignalFlags.RUN_FIRST, None, ()),
-        'neonmeate_toggle_pause': (GObject.SignalFlags.RUN_FIRST, None, ()),
-        'neonmeate_prev_song': (GObject.SignalFlags.RUN_FIRST, None, ()),
-        'neonmeate_next_song': (GObject.SignalFlags.RUN_FIRST, None, ()),
-        'neonmeate_playmode_toggle': (
-            GObject.SignalFlags.RUN_FIRST, None, (str, bool))
+        ControlButtons.SIG_STOP_PLAYING:
+            (GObject.SignalFlags.RUN_FIRST, None, ()),
+        ControlButtons.SIG_START_PLAYING:
+            (GObject.SignalFlags.RUN_FIRST, None, ()),
+        ControlButtons.SIG_TOGGLE_PAUSE:
+            (GObject.SignalFlags.RUN_FIRST, None, ()),
+        ControlButtons.SIG_PREV_SONG: (GObject.SignalFlags.RUN_FIRST, None, ()),
+        ControlButtons.SIG_NEXT_SONG: (GObject.SignalFlags.RUN_FIRST, None, ()),
+        PlayModeButtons.SIG_PLAYMODE_TOGGLE:
+            (GObject.SignalFlags.RUN_FIRST, None, (str, bool))
     }
 
     def __init__(self):
@@ -258,15 +273,15 @@ class ControlsBar(Gtk.ActionBar):
         self.pack_start(self._time_label)
         self.pack_start(self._mode_btns)
 
-        for signame in ['neonmeate_stop_playing',
-                        'neonmeate_start_playing',
-                        'neonmeate_toggle_pause',
-                        'neonmeate_prev_song',
-                        'neonmeate_next_song']:
+        for signame in [ControlButtons.SIG_STOP_PLAYING,
+                        ControlButtons.SIG_START_PLAYING,
+                        ControlButtons.SIG_TOGGLE_PAUSE,
+                        ControlButtons.SIG_PREV_SONG,
+                        ControlButtons.SIG_NEXT_SONG]:
             self._reemit(self._ctrl_btns, signame)
 
         self._mode_btns.subscribe_to_signal(
-            'neonmeate_playmode_toggle',
+            PlayModeButtons.SIG_PLAYMODE_TOGGLE,
             self._on_user_mode_toggle
         )
 
@@ -280,7 +295,7 @@ class ControlsBar(Gtk.ActionBar):
         self._ctrl_btns.set_paused(paused, stopped)
 
     def _on_user_mode_toggle(self, widget, mode, enabled):
-        self.emit('neonmeate_playmode_toggle', mode, enabled)
+        self.emit(PlayModeButtons.SIG_PLAYMODE_TOGGLE, mode, enabled)
 
     def set_mode(self, name, is_active):
         self._mode_btns.on_mode_change(name, is_active)
