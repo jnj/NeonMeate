@@ -68,7 +68,8 @@ class ArtistsAlbums(Gtk.Overlay):
         self._albums_songs.on_theme_change()
 
     def on_playlist_modified(self):
-        self._infobar.temp_reveal("Playlist updated")
+        #self._infobar.temp_reveal("Playlist updated")
+        pass
 
     def _on_artists_loaded(self, _, done):
         if done:
