@@ -7,7 +7,6 @@ from neonmeate.ui.toolkit import add_pixbuf_border, AlbumArt
 class Albums(Gtk.ScrolledWindow):
     __gsignals__ = {
         'album-selected': (GObject.SignalFlags.RUN_FIRST, None, (int,)),
-        'playlist-modified': (GObject.SignalFlags.RUN_FIRST, None, ())
     }
 
     @staticmethod
@@ -101,14 +100,10 @@ class Albums(Gtk.ScrolledWindow):
         flags = Gtk.StateFlags.NORMAL
         return self._border_style_context.get_background_color(flags)
 
-    def _on_playlist_modified(self, _):
-        self.emit('playlist-modified')
-
     def _on_button_press(self, widget, event):
         path, path_iter = self._get_path_at_position(event, widget)
         if path:  # event.button == Gdk.BUTTON_PRIMARY and path:
             popover = SongsMenu(self._model[path_iter][0], self._mpdclient)
-            popover.connect('playlist-modified', self._on_playlist_modified)
             ok, rect = self._view.get_cell_rect(path)
             if ok:
                 popover.set_pointing_to(rect)

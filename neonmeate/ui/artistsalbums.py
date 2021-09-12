@@ -53,7 +53,7 @@ class ArtistsAlbums(Gtk.Overlay):
             album_view_opts,
             style_context
         )
-        self._albums_songs.connect('playlist-modified', self._on_playlist_mod)
+
         columns.pack_end(self._albums_songs, True, True, 0)
         self._box.pack_end(columns, True, True, 0)
         self.show_all()
@@ -64,7 +64,7 @@ class ArtistsAlbums(Gtk.Overlay):
     def on_random_fill(self):
         self._mpdclient._add_random_songs(50)
 
-    def _on_playlist_mod(self, widget):
+    def on_playlist_modified(self):
         self._infobar.temp_reveal("Playlist updated")
 
     def _on_artists_loaded(self, _, done):

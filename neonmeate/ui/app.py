@@ -163,6 +163,7 @@ class App(Gtk.ApplicationWindow):
         self._artists.on_db_update(value)
 
     def _update_playlist(self, obj):
+        self._artists.on_playlist_modified()
 
         @glib_main
         def on_current_queue(playqueue):

@@ -57,13 +57,6 @@ class SelectSongsButtonBox(NeonMeateButtonBox):
 
 
 class SongsMenu(Gtk.Popover):
-    # TODO this should really come from the playlist itself,
-    #    when it notices that it has changed
-    SIG_PLAYLIST_MODIFIED = 'playlist-modified'
-
-    __gsignals__ = {
-        SIG_PLAYLIST_MODIFIED: (GObject.SignalFlags.RUN_FIRST, None, ())
-    }
 
     def __init__(self, album, mpdclient):
         super(SongsMenu, self).__init__()
@@ -200,10 +193,8 @@ class SongsMenu(Gtk.Popover):
         ordered = sorted(songs, key=lambda s: (s.discnum, s.number))
         if ordered:
             self._mpdclient.add_songs(ordered)
-            self.emit(SongsMenu.SIG_PLAYLIST_MODIFIED)
 
     def _on_rem_sel(self, btn):
         songs = self._get_selected_songs()
         if songs:
             self._mpdclient.remove_songs(songs)
-            self.emit(SongsMenu.SIG_PLAYLIST_MODIFIED)

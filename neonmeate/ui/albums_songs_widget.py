@@ -5,9 +5,6 @@ from neonmeate.ui.toolkit import glib_main
 
 
 class AlbumsAndSongs(Gtk.Box):
-    __gsignals__ = {
-        'playlist-modified': (GObject.SignalFlags.RUN_FIRST, None, ()),
-    }
 
     def __init__(self, mpdclient, art_cache, placeholder_pixbuf,
                  albums_view_options, border_style_context):
@@ -24,7 +21,6 @@ class AlbumsAndSongs(Gtk.Box):
             border_style_context
         )
         self._albums.connect('album-selected', self._on_album_selected)
-        self._albums.connect('playlist-modified', self._on_playlist_modified)
         self.add(self._albums)
         self._albums_list = []
         self._artist_by_name = {}
@@ -74,6 +70,3 @@ class AlbumsAndSongs(Gtk.Box):
             self._albums.on_artist_selected(artist_name, albums)
 
         self._mpdclient.find_albums(artist_inst, on_albums)
-
-    def _on_playlist_modified(self, _):
-        self.emit('playlist-modified')
