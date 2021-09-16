@@ -335,6 +335,14 @@ class Mpd:
 
         self.exec(task)
 
+    def crop_playlist(self):
+        def task():
+            q = self._client.playlistinfo()
+            n = len(q)
+            if n > 1:
+                self._client.delete((1, n))
+        self.exec(task)
+
     def shuffle_playlist(self):
         def task():
             self._client.shuffle()

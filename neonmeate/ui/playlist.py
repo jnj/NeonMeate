@@ -8,21 +8,31 @@ from .times import format_seconds
 
 class PlayListControls(NeonMeateButtonBox):
     SIG_CLEAR_PLAYLIST = 'neonmeate_clear_playlist'
+    SIG_CROP_PLAYLIST = 'neonmeate_crop_playlist'
     SIG_SHUFFLE_PLAYLIST = 'neonmeate_shuffle_playlist'
 
     __gsignals__ = {
         SIG_CLEAR_PLAYLIST : (GObject.SignalFlags.RUN_FIRST, None, ()),
+        SIG_CROP_PLAYLIST : (GObject.SignalFlags.RUN_FIRST, None, ()),
         SIG_SHUFFLE_PLAYLIST: (GObject.SignalFlags.RUN_FIRST, None, ())
     }
 
     def __init__(self):
         super(PlayListControls, self).__init__()
+        crop_btn = self.add_button(
+            ControlButton('crop'),
+            'crop',
+            PlayListControls.SIG_CROP_PLAYLIST
+        )
+        crop_btn.set_label('Crop')
+        crop_btn.set_always_show_image(True)
+        crop_btn.set_tooltip_text('Clear the play queue')
         clear_btn = self.add_button(
             ControlButton('edit-clear'),
             'clear',
             PlayListControls.SIG_CLEAR_PLAYLIST
         )
-        clear_btn.set_label("Clear")
+        clear_btn.set_label('Clear')
         clear_btn.set_always_show_image(True)
         clear_btn.set_tooltip_text('Clear the play queue')
         shufl_btn = self.add_button(
@@ -60,6 +70,10 @@ class PlaylistContainer(Gtk.Frame):
         self._box.pack_start(self._playlist, True, True, 0)
         self._box.pack_end(self._playlist_controls_bar, False, False, 0)
         self._controls.connect(
+            PlayListControls.SIG_CROP_PLAYLIST,
+            self._on_crop
+        )
+        self._controls.connect(
             PlayListControls.SIG_CLEAR_PLAYLIST,
             self._on_clear
         )
@@ -85,6 +99,9 @@ class PlaylistContainer(Gtk.Frame):
 
     def _on_clear(self, _):
         self._mpdclient.clear_playlist()
+
+    def _on_crop(self, _):
+        self._mpdclient.crop_playlist()
 
     def clear(self):
         self._playlist.clear()
