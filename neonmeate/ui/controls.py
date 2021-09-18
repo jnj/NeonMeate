@@ -4,7 +4,6 @@ from .songprogress import SongProgress
 from .times import format_elapsed_time
 
 
-# noinspection PyUnresolvedReferences
 class ControlButton(Gtk.Button):
     def __init__(self, icon_name):
         super(ControlButton, self).__init__()
@@ -14,7 +13,6 @@ class ControlButton(Gtk.Button):
         self.set_can_focus(False)
 
 
-# noinspection PyUnresolvedReferences
 class PlayModeButton(Gtk.ToggleButton):
     def __init__(self, icon_name, label=None):
         super(PlayModeButton, self).__init__()
@@ -32,19 +30,17 @@ class PlayModeButton(Gtk.ToggleButton):
             self.add()
 
 
-# noinspection PyUnresolvedReferences
 class VolumeControl(Gtk.VolumeButton):
     def __init__(self):
         super(VolumeControl, self).__init__()
         self.set_property('use-symbolic', True)
 
 
-# noinspection PyUnresolvedReferences
 class PlayPauseButton(ControlButton):
     SIG_PLAYPAUSE_TOGGLED = 'neonmeate_playpause_toggled'
 
     __gsignals__ = {
-        SIG_PLAYPAUSE_TOGGLED : (GObject.SignalFlags.RUN_FIRST, None, (bool,))
+        SIG_PLAYPAUSE_TOGGLED: (GObject.SignalFlags.RUN_FIRST, None, (bool,))
     }
 
     def __init__(self):
@@ -88,7 +84,6 @@ class PlayPauseButton(ControlButton):
         return self.pause_icon
 
 
-# noinspection PyUnresolvedReferences
 class NeonMeateButtonBox(Gtk.ButtonBox):
     def __init__(self):
         super(NeonMeateButtonBox, self).__init__(Gtk.Orientation.HORIZONTAL)
@@ -111,9 +106,7 @@ class NeonMeateButtonBox(Gtk.ButtonBox):
         button.connect('clicked', click_handler)
 
 
-# noinspection PyUnresolvedReferences
 class ControlButtons(NeonMeateButtonBox):
-
     SIG_STOP_PLAYING = 'neonmeate_stop_playing'
     SIG_START_PLAYING = 'neonmeate_start_playing'
     SIG_TOGGLE_PAUSE = 'neonmeate_toggle_pause'
@@ -121,10 +114,10 @@ class ControlButtons(NeonMeateButtonBox):
     SIG_NEXT_SONG = 'neonmeate_next_song'
 
     __gsignals__ = {
-        SIG_STOP_PLAYING : (GObject.SignalFlags.RUN_FIRST, None, ()),
-        SIG_START_PLAYING : (GObject.SignalFlags.RUN_FIRST, None, ()),
+        SIG_STOP_PLAYING: (GObject.SignalFlags.RUN_FIRST, None, ()),
+        SIG_START_PLAYING: (GObject.SignalFlags.RUN_FIRST, None, ()),
         SIG_TOGGLE_PAUSE: (GObject.SignalFlags.RUN_FIRST, None, ()),
-        SIG_PREV_SONG : (GObject.SignalFlags.RUN_FIRST, None, ()),
+        SIG_PREV_SONG: (GObject.SignalFlags.RUN_FIRST, None, ()),
         SIG_NEXT_SONG: (GObject.SignalFlags.RUN_FIRST, None, ())
     }
 
@@ -170,7 +163,6 @@ class ControlButtons(NeonMeateButtonBox):
         return True
 
 
-# noinspection PyUnresolvedReferences
 class PlayModeButtons(NeonMeateButtonBox):
     SIG_PLAYMODE_TOGGLE = 'neonmeate_playmode_toggle'
 
