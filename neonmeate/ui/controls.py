@@ -11,12 +11,14 @@ class ControlButton(Gtk.Button):
         self.icon_size = Gtk.IconSize.MENU
         self.icon = Gtk.Image.new_from_icon_name(icon_name, self.icon_size)
         self.add(self.icon)
+        self.set_can_focus(False)
 
 
 # noinspection PyUnresolvedReferences
 class PlayModeButton(Gtk.ToggleButton):
     def __init__(self, icon_name, label=None):
         super(PlayModeButton, self).__init__()
+        self.set_can_focus(False)
         if icon_name is not None:
             self._icon_size = Gtk.IconSize.MENU
             self._icon = Gtk.Image.new_from_icon_name(
