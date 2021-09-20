@@ -3,6 +3,7 @@ import logging
 import os
 import random
 import re
+from datetime import datetime
 
 import mpd as mpd2
 from gi.repository import GObject
@@ -28,6 +29,18 @@ class MpdConnectionStatus(GObject.GObject):
 
     def is_connected(self):
         return self._connected
+
+
+def parse_date(date: str):
+    try:
+        return int(date)
+    except ValueError:
+        logging.debug(f'date is not int {date}')
+
+    try:
+        return datetime.strptime(date, "%Y-%m-%d")
+    except ValueError as e:
+        logging.debug(e)
 
 
 class Mpd:
@@ -208,7 +221,9 @@ class Mpd:
         for song in songs:
             if 'album' in song:
                 album_name = song['album']
-                date = int(song['date'])
+
+                date = parse_date(song.get('date'))
+
                 directory = os.path.dirname(song['file'])
                 key = (album_name, date, directory)
                 songlist = songs_by_album.setdefault(key, [])
@@ -341,6 +356,7 @@ class Mpd:
             n = len(q)
             if n > 1:
                 self._client.delete((1, n))
+
         self.exec(task)
 
     def shuffle_playlist(self):
