@@ -5,6 +5,7 @@ import random
 import re
 from datetime import datetime
 
+import dateparser as dateparser
 import mpd as mpd2
 from gi.repository import GObject
 from ..model import Album, Artist, Song
@@ -33,12 +34,7 @@ class MpdConnectionStatus(GObject.GObject):
 
 def parse_date(date: str):
     try:
-        return int(date)
-    except ValueError:
-        logging.debug(f'date is not int {date}')
-
-    try:
-        return datetime.strptime(date, "%Y-%m-%d")
+        return dateparser.parse(date).year
     except ValueError as e:
         logging.debug(e)
 
