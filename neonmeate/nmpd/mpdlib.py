@@ -1,13 +1,11 @@
-import asyncio
 import logging
 import os
 import random
 import re
-from datetime import datetime
-
-import dateparser as dateparser
 import mpd as mpd2
 from gi.repository import GObject
+
+from neonmeate.util.metadata import parse_date
 from ..model import Album, Artist, Song
 from functools import partial
 import neonmeate.util.thread as thread
@@ -30,13 +28,6 @@ class MpdConnectionStatus(GObject.GObject):
 
     def is_connected(self):
         return self._connected
-
-
-def parse_date(date: str):
-    try:
-        return dateparser.parse(date).year
-    except ValueError as e:
-        logging.debug(e)
 
 
 class Mpd:
