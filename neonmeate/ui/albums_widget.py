@@ -21,12 +21,11 @@ class Albums(Gtk.ScrolledWindow):
         self.set_shadow_type(Gtk.ShadowType.NONE)
         self._border_style_context = border_style_context
         self._placeholder_pixbuf = placeholder_pixbuf
-        self._album_width_px = options.album_size
+        self._options = options
         self._album_spacing = options.col_spacing
-        self.set_min_content_width(self._album_width_px + self._album_spacing)
+        self.set_min_content_width(self._album_width() + self._album_spacing)
         self._art = art_cache
         self._mpdclient = mpdclient
-        self._options = options
         self._model = Gtk.ListStore(GObject.TYPE_PYOBJECT)
         self._view = Gtk.IconView(self._model)
         self._view.set_hexpand(True)
@@ -34,10 +33,11 @@ class Albums(Gtk.ScrolledWindow):
         self._view.set_column_spacing(options.col_spacing)
         self._view.set_row_spacing(options.row_spacing)
         self._view.set_has_tooltip(True)
-        self._view.set_item_width(self._album_width_px)
+        self._view.set_item_width(self._album_width())
         self._view.connect('query-tooltip', self._on_tooltip)
-        self.add(self._view)
         self._surface_cache = {}
+        self.add(self._view)
+        self.connect('notify::scale-factor', self._on_scale)
 
         renderer = Gtk.CellRendererPixbuf()
         self._view.pack_start(renderer, False)
@@ -65,7 +65,7 @@ class Albums(Gtk.ScrolledWindow):
                 album.art.resolve(on_art_ready, None)
             elif album.art.is_resolved():
                 pb = add_pixbuf_border(
-                    album.art.get_scaled_pixbuf(self._album_width_px),
+                    album.art.get_scaled_pixbuf(self._album_width()),
                     self._get_border_color(),
                     border_width=self._options.border_width
                 )
@@ -94,6 +94,13 @@ class Albums(Gtk.ScrolledWindow):
         self._selected_album = None
         self._artists = []
         self.show_all()
+
+    def _album_width(self):
+        return self.get_scale_factor() * self._options.album_size
+
+    def _on_scale(self, widget, scale):
+        self._surface_cache.clear()
+        self.queue_draw()
 
     def on_theme_change(self):
         self._surface_cache.clear()
