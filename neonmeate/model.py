@@ -1,6 +1,8 @@
 import functools
 
 from neonmeate.ui import times
+from neonmeate.util.metadata import parse_disc
+
 
 def get_sanitized_string(dictlike, key):
     val = None
@@ -88,7 +90,7 @@ class Song:
     def create(mpd_song_item):
         return Song(
             int(mpd_song_item['track']),
-            int(mpd_song_item.get('disc', 1)),
+            parse_disc(mpd_song_item),
             mpd_song_item['title'],
             mpd_song_item['file'],
             float(mpd_song_item['duration']),

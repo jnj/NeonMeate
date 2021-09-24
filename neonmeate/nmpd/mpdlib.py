@@ -1,11 +1,11 @@
-import asyncio
 import logging
 import os
 import random
 import re
-
 import mpd as mpd2
 from gi.repository import GObject
+
+from neonmeate.util.metadata import parse_date
 from ..model import Album, Artist, Song
 from functools import partial
 import neonmeate.util.thread as thread
@@ -208,7 +208,9 @@ class Mpd:
         for song in songs:
             if 'album' in song:
                 album_name = song['album']
-                date = int(song['date'])
+
+                date = parse_date(song.get('date'))
+
                 directory = os.path.dirname(song['file'])
                 key = (album_name, date, directory)
                 songlist = songs_by_album.setdefault(key, [])
@@ -341,6 +343,7 @@ class Mpd:
             n = len(q)
             if n > 1:
                 self._client.delete((1, n))
+
         self.exec(task)
 
     def shuffle_playlist(self):

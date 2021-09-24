@@ -1,3 +1,5 @@
+dateparser~=1.0.0
 PyGObject
 python-mpd2
 pycairo
+
