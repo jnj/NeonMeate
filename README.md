@@ -10,12 +10,6 @@ to the Captain Beefheart song _Neon Meate Dream of a Octafish_.
 
 This is a work in progress. 
 
-## Requirements ##
-* PyGObject
-* pycairo
-* python-mpd2 https://python-mpd2.readthedocs.io/en/latest/
-
-
 ### Library view
 ![Screenshot](https://github.com/jnj/NeonMeate/blob/master/artists.png)
 
