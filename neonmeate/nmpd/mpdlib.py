@@ -93,6 +93,11 @@ class Mpd:
         self._client.close()
         self.disconnect()
 
+    def set_volume(self, value):
+        def task():
+            self._client.setvol(value)
+        self.exec(task)
+
     def toggle_play_mode(self, name, active):
         """
         Sets a play mode.
@@ -384,7 +389,7 @@ class MpdState(GObject.GObject):
     songseconds = GObject.Property(type=float, default=1)
     elapsedseconds = GObject.Property(type=float, default=0)
     updatingdb = GObject.Property(type=str, default='0')
-    # volume = GObject.Property(type=int, default=0)
+    volume = GObject.Property(type=str, default='-1')
     synth_props = {'songseconds', 'elapsedseconds', 'updatingdb'}
 
     def __init__(self):
@@ -457,6 +462,7 @@ class MpdHeartbeat(GObject.GObject):
     SIG_NO_SONG = 'no_song'
     SIG_PLAYBACK_MODE_TOGGLED = 'playback_mode_toggled'
     SIG_UPDATING_DB = 'updatingdb'
+    SIG_VOL_CHANGE = 'volume-changed'
 
     __gsignals__ = {
         SIG_PLAYLIST_CHANGED: (GObject.SignalFlags.RUN_FIRST, None, ()),
@@ -467,7 +473,8 @@ class MpdHeartbeat(GObject.GObject):
         SIG_NO_SONG: (GObject.SignalFlags.RUN_FIRST, None, ()),
         SIG_PLAYBACK_MODE_TOGGLED:
             (GObject.SignalFlags.RUN_FIRST, None, (str, bool)),
-        SIG_UPDATING_DB: (GObject.SignalFlags.RUN_FIRST, None, (bool,))
+        SIG_UPDATING_DB: (GObject.SignalFlags.RUN_FIRST, None, (bool,)),
+        SIG_VOL_CHANGE: (GObject.SignalFlags.RUN_FIRST, None, (float,))
     }
 
     def __init__(self, client, millis_interval, executor, connstatus):
@@ -493,7 +500,8 @@ class MpdHeartbeat(GObject.GObject):
             'single': self._on_mode_change,
             'elapsedseconds': self._on_elapsed_change,
             'songseconds': self._on_total_seconds_change,
-            'state': self._on_state_change
+            'state': self._on_state_change,
+            'volume': self._on_vol_change
         }.items():
             self._state.connect(f'notify::{prop}', fn)
         self._scheduled_hb = None
@@ -550,11 +558,15 @@ class MpdHeartbeat(GObject.GObject):
             self._state.get_property(spec.name)
         )
 
+    def _on_vol_change(self, obj, spec):
+        value = int(self._state.get_property(spec.name)) / 100.0
+        self.emit(MpdHeartbeat.SIG_VOL_CHANGE, value)
+
     def _on_song_change(self, obj, spec):
         songid = self._state.get_property(spec.name)
 
         if songid == '-1':
-            self.emit('no_song')
+            self.emit(MpdHeartbeat.SIG_NO_SONG)
             return
 
         def on_current_song(song_info):

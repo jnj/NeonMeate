@@ -30,12 +30,6 @@ class PlayModeButton(Gtk.ToggleButton):
             self.add()
 
 
-class VolumeControl(Gtk.VolumeButton):
-    def __init__(self):
-        super(VolumeControl, self).__init__()
-        self.set_property('use-symbolic', True)
-
-
 class PlayPauseButton(ControlButton):
     SIG_PLAYPAUSE_TOGGLED = 'neonmeate_playpause_toggled'
 
@@ -192,11 +186,6 @@ class PlayModeButtons(NeonMeateButtonBox):
             'repeat',
             None
         )
-        # self._vol_control = self.add_button(
-        #     VolumeControl(),
-        #     'volume',
-        #     None
-        # )
         self._consume.set_tooltip_text('Consume mode')
         self._single.set_tooltip_text('Single mode')
         self._random.set_tooltip_text('Random mode')

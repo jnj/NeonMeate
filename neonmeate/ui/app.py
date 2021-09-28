@@ -72,6 +72,8 @@ class App(Gtk.ApplicationWindow):
         self._stack = Gtk.Stack()
         self._playlist = PlaylistContainer(mpdclient)
         self._settings = SettingsMenu(executor, configstate, connstatus, cfg)
+        self._volume_btn = Gtk.VolumeButton()
+        self._volume_btn.connect('value-changed', self._on_volume_change)
         self._settings_btn = Gtk.MenuButton()
         self._connect_handler = self._settings.connect(
             SettingsMenu.SIG_CONNECT_ATTEMPT,
@@ -121,6 +123,7 @@ class App(Gtk.ApplicationWindow):
         self._stack_switcher.set_stack(self._stack)
         self._stack.connect('notify::visible-child', self._on_stack_change)
         self._titlebar.pack_start(self._stack_switcher)
+        self._titlebar.pack_end(self._volume_btn)
         self._titlebar.pack_end(self._settings_btn)
         self._main_box.pack_start(self._stack, True, True, 0)
         self._main_box.pack_end(self._controlsbar, False, False, 0)
@@ -132,12 +135,20 @@ class App(Gtk.ApplicationWindow):
         )
         self._mpdhb.connect(Hb.SIG_SONG_CHANGED, self._on_song_changed)
         self._mpdhb.connect(Hb.SIG_NO_SONG, self._no_song)
+        self._mpdhb.connect(Hb.SIG_VOL_CHANGE, self._on_volume_sync)
         self._playlist_change_id = self._mpdhb.connect(
             Hb.SIG_PLAYLIST_CHANGED,
             self._update_playlist
         )
         self._mpdhb.connect(Hb.SIG_PLAYBACK_MODE_TOGGLED, self._on_mode_change)
         self._mpdhb.connect(Hb.SIG_UPDATING_DB, self._on_updating_db)
+
+    def _on_volume_sync(self, hb, volume):
+        with self._volume_btn.freeze_notify():
+            self._volume_btn.set_value(volume)
+
+    def _on_volume_change(self, button, value):
+        self._mpdclient.set_volume(round(value * 100.0))
 
     def _on_theme_change(self, param1, param2):
         self._artists.on_theme_change()
