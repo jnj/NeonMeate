@@ -96,6 +96,7 @@ class Mpd:
     def set_volume(self, value):
         def task():
             self._client.setvol(value)
+
         self.exec(task)
 
     def toggle_play_mode(self, name, active):
@@ -158,7 +159,7 @@ class Mpd:
 
         self.status(on_status)
 
-    def find_artists(self, callback):
+    def find_artists(self, callback, include_comps):
         """
         Queries the database for all artists. A list of Artist
         instances will be provided to the callback.
@@ -173,10 +174,11 @@ class Mpd:
                 artist = Artist.create(a)
                 if artist:
                     artists.add(artist)
-            for a in self._client.list('artist'):
-                artist = Artist.create(a)
-                if artist:
-                    artists.add(artist)
+            if include_comps:
+                for a in self._client.list('artist'):
+                    artist = Artist.create(a)
+                    if artist:
+                        artists.add(artist)
 
             callback(sorted(list(artists)))
 

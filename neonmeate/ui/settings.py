@@ -65,10 +65,23 @@ class SettingsMenu(Gtk.Popover):
         self._grid.attach_next_to(music_dir_chooser, music_dir_label,
                                   Gtk.PositionType.RIGHT, 1, 1)
 
+        albums_view_label = Gtk.Label('Artists')
+        albums_view_label.set_xalign(0)
+        albums_view_label.set_justify(Gtk.Justification.LEFT)
+        self._grid.attach_next_to(albums_view_label, music_dir_label,
+                                  Gtk.PositionType.BOTTOM, 1, 1)
+        self._include_comps = Gtk.ComboBoxText()
+        self._include_comps.append('0', 'All')
+        self._include_comps.append('1', 'Only album artists')
+        include_comps = self._cfg.get_albums_include_comps()
+        self._include_comps.set_active(0 if include_comps else 1)
+        self._grid.attach_next_to(self._include_comps, albums_view_label,
+                                  Gtk.PositionType.RIGHT, 1, 1)
+        self._include_comps.connect('changed', self._on_album_view_change)
         self._connect_label = Gtk.Label('Connect')
         self._connect_label.set_xalign(0)
         self._connect_label.set_justify(Gtk.Justification.LEFT)
-        self._grid.attach_next_to(self._connect_label, music_dir_label,
+        self._grid.attach_next_to(self._connect_label, albums_view_label,
                                   Gtk.PositionType.BOTTOM, 1, 1)
         switch_box = Gtk.Box()
         self._connect_switch = Gtk.Switch()
@@ -97,6 +110,12 @@ class SettingsMenu(Gtk.Popover):
         self._grid.attach_next_to(self._clear_colors_btn, self._save_btn,
                                   Gtk.PositionType.BOTTOM, 1, 1)
         self._grid.show_all()
+
+    def _on_album_view_change(self, widget):
+        active = self._include_comps.get_active()
+        include_comps = active == 0
+        self._cfg.set_albums_include_comps(include_comps)
+        self._configstate.set_albums_include_comps(include_comps)
 
     def _on_clear_colors(self, btn):
         self._cfg.clear_background_cache()

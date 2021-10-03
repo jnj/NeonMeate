@@ -95,7 +95,14 @@ class App(Gtk.ApplicationWindow):
         )
 
         style_ctx = self._settings.get_style_context()
-        self._artists = ArtistsAlbums(mpdclient, art_cache, cfg, style_ctx)
+        include_comps = configstate.get_property('albums_include_comps')
+        self._artists = ArtistsAlbums(
+            mpdclient,
+            art_cache,
+            cfg,
+            style_ctx,
+            include_comps
+        )
         self._playlist.connect(
             PlaylistContainer.SIG_RANDOM_FILL,
             self._on_random_fill
@@ -142,6 +149,14 @@ class App(Gtk.ApplicationWindow):
         )
         self._mpdhb.connect(Hb.SIG_PLAYBACK_MODE_TOGGLED, self._on_mode_change)
         self._mpdhb.connect(Hb.SIG_UPDATING_DB, self._on_updating_db)
+        self._configstate.connect(
+            'notify::albums-include-comps',
+            self._on_albums_view_change
+        )
+
+    def _on_albums_view_change(self, state, gparam):
+        enabled = state.get_property('albums_include_comps')
+        self._artists.on_include_comps_change(enabled)
 
     def _on_volume_sync(self, hb, volume):
         with self._volume_btn.freeze_notify():

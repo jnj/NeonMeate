@@ -50,6 +50,10 @@ class Config:
 
         'background_cache': {},
 
+        # Whether to include compilation appearances among an
+        # artist's albums in the library view
+        'albums_include_comps': True,
+
         ConfigKey.CONN_SETTINGS: {
             ConfigKey.CONN_HOST: 'localhost',
             ConfigKey.CONN_PORT: 6600,
@@ -126,6 +130,12 @@ class Config:
     def set_music_dir(self, value):
         self._config[ConfigKey.MEDIA_DIR] = value
 
+    def set_albums_include_comps(self, enabled):
+        self._config['albums_include_comps'] = enabled
+
+    def get_albums_include_comps(self):
+        return self._config['albums_include_comps']
+
     def clear_background_cache(self):
         self._config['background_cache'] = {}
 
@@ -162,6 +172,7 @@ class ConfigState(GObject.GObject):
     connected = GObject.Property(type=bool, default=False)
     musicpath = GObject.Property(type=str, default='')
     host_and_port = GObject.Property(type=object, default=None)
+    albums_include_comps = GObject.Property(type=bool, default=True)
 
     def __init__(self):
         GObject.GObject.__init__(self)
@@ -173,12 +184,19 @@ class ConfigState(GObject.GObject):
             conn = cfg[ConfigKey.CONN_SETTINGS]
             hostport = [conn[ConfigKey.CONN_HOST], conn[ConfigKey.CONN_PORT]]
             self.set_property('host_and_port', hostport)
+            self.set_property(
+                'albums_include_comps',
+                cfg['albums_include_comps']
+            )
 
     def set_connected(self, value):
         self._update_if_changed('connected', value)
 
     def get_connected(self):
         return self.get_property('connected')
+
+    def set_albums_include_comps(self, enabled):
+        self._update_if_changed('albums_include_comps', enabled)
 
     def set_musicpath(self, path):
         self._update_if_changed('musicpath', path)
@@ -194,5 +212,6 @@ class ConfigState(GObject.GObject):
 
     # todo use mixin for this, it's also used by MpdState
     def _update_if_changed(self, propname, newval):
-        if self.get_property(propname) != newval:
+        oldval = self.get_property(propname)
+        if oldval != newval:
             self.set_property(propname, newval)

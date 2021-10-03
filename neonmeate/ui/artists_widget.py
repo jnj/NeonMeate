@@ -11,13 +11,13 @@ class ArtistsWidget(Gtk.VBox):
     SIG_ARTISTS_LOADED = 'artists_loaded'
 
     __gsignals__ = {
-        SIG_ARTIST_SELECTED : (GObject.SignalFlags.RUN_FIRST, None, (str,)),
+        SIG_ARTIST_SELECTED: (GObject.SignalFlags.RUN_FIRST, None, (str,)),
         SIG_ARTISTS_LOADED: (GObject.SignalFlags.RUN_FIRST, None, (bool,))
     }
 
-    def __init__(self, mpdclient):
+    def __init__(self, mpdclient, include_comps):
         super(ArtistsWidget, self).__init__()
-        self._artists = Artists(mpdclient)
+        self._artists = Artists(mpdclient, include_comps)
         self._searchbar = Gtk.ActionBar()
         self._search_entry = Gtk.SearchEntry()
         self._search_entry.set_has_frame(True)
@@ -35,6 +35,10 @@ class ArtistsWidget(Gtk.VBox):
         self._searched_artist = None
         self._search_entry.connect('search-changed', self._on_artist_searched)
         self.show_all()
+
+    def on_include_comps_change(self, enabled):
+        self._artists.set_include_comps(enabled)
+        self.reload_artists()
 
     def _on_artist_searched(self, search_entry):
         self._artists.set_filter(search_entry.get_text())
@@ -56,7 +60,6 @@ class ArtistsWidget(Gtk.VBox):
 
 
 class Artists(Gtk.ScrolledWindow):
-
     SIG_ARTIST_SELECTED = 'artist_selected'
     SIG_ARTISTS_LOADED = 'artists_loaded'
 
@@ -65,8 +68,9 @@ class Artists(Gtk.ScrolledWindow):
         SIG_ARTISTS_LOADED: (GObject.SignalFlags.RUN_FIRST, None, (bool,))
     }
 
-    def __init__(self, mpdclient):
+    def __init__(self, mpdclient, include_comps):
         super(Artists, self).__init__()
+        self._include_comps = include_comps
         self.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         self.set_shadow_type(Gtk.ShadowType.NONE)
         self._artist_column = Column(vmargin=15, selectable_rows=True)
@@ -86,6 +90,9 @@ class Artists(Gtk.ScrolledWindow):
         self._artists.clear()
         self._artist_column.clear()
 
+    def set_include_comps(self, enabled):
+        self._include_comps = enabled
+
     def reload_artists(self):
         self.clear()
 
@@ -96,7 +103,7 @@ class Artists(Gtk.ScrolledWindow):
                 self._artist_column.add_row(artist.name)
             self.emit(Artists.SIG_ARTISTS_LOADED, True)
 
-        self._mpd.find_artists(on_artists)
+        self._mpd.find_artists(on_artists, self._include_comps)
 
     def _on_artist_clicked(self, obj, value):
         self.emit(Artists.SIG_ARTIST_SELECTED, value)

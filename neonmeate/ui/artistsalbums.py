@@ -17,7 +17,7 @@ class AlbumViewOptions:
 # noinspection PyUnresolvedReferences
 class ArtistsAlbums(Gtk.Overlay):
 
-    def __init__(self, mpdclient, art, cfg, style_context):
+    def __init__(self, mpdclient, art, cfg, style_context, include_comps):
         super(ArtistsAlbums, self).__init__()
         album_view_opts = AlbumViewOptions()
         self.set_hexpand(True)
@@ -38,7 +38,7 @@ class ArtistsAlbums(Gtk.Overlay):
         self._cfg = cfg
         self._mpdclient = mpdclient
         columns = Gtk.HBox()
-        self._artists = ArtistsWidget(mpdclient)
+        self._artists = ArtistsWidget(mpdclient, include_comps)
         self._artists.connect(
             ArtistsWidget.SIG_ARTIST_SELECTED,
             self._on_artist_clicked
@@ -64,11 +64,13 @@ class ArtistsAlbums(Gtk.Overlay):
         self._box.pack_end(columns, True, True, 0)
         self.show_all()
 
+    def on_include_comps_change(self, enabled):
+        self._artists.on_include_comps_change(enabled)
+
     def on_theme_change(self):
         self._albums_songs.on_theme_change()
 
     def on_playlist_modified(self):
-        #self._infobar.temp_reveal("Playlist updated")
         pass
 
     def _on_artists_loaded(self, _, done):
