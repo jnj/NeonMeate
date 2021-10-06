@@ -26,7 +26,7 @@ class PlayListControls(NeonMeateButtonBox):
         )
         crop_btn.set_label('Crop')
         crop_btn.set_always_show_image(True)
-        crop_btn.set_tooltip_text('Clear the play queue')
+        crop_btn.set_tooltip_text('Remove all except first song')
         clear_btn = self.add_button(
             ControlButton('edit-clear'),
             'clear',
