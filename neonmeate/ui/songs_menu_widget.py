@@ -65,6 +65,45 @@ class SelectSongsButtonBox(NeonMeateButtonBox):
         self.emit(SelectSongsButtonBox.SIG_TOGGLE_SELECTED, btn.get_active())
 
 
+class SongMenuCheckButton(Gtk.CheckButton):
+
+    @staticmethod
+    def for_disc(song):
+        return SongMenuCheckButton(song, True)
+
+    @staticmethod
+    def for_song(song):
+        return SongMenuCheckButton(song, False)
+
+    def __init__(self, song, is_disc):
+        super(SongMenuCheckButton, self).__init__()
+        self.is_disc = is_disc
+        self.discnum = song.discnum
+        self.set_can_focus(False)
+        label = Gtk.Label()
+        label.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
+
+        if is_disc:
+            markup = f'<b>Disc {song.discnum}</b>'
+        else:
+            esc_title = GLib.markup_escape_text(song.title)
+            trackno = song.zero_padded_number()
+            time = f'({song.formatted_duration()})'
+
+            if song.is_compilation_track():
+                esc_artist = GLib.markup_escape_text(song.artist)
+                markup = f'<small>{trackno}. <b>{esc_artist}</b>' \
+                         f' - {esc_title} {time}</small>'
+            else:
+                markup = f'<small>{trackno}. {esc_title} {time}</small>'
+
+        label.set_markup(markup)
+        label.set_property('xalign', 0)
+        label.set_margin_start(8)
+        self.set_active(True)
+        self.add(label)
+
+
 class SongsMenu(Gtk.Popover):
 
     def __init__(self, album, mpdclient):
@@ -103,43 +142,11 @@ class SongsMenu(Gtk.Popover):
 
         for song in self._songs:
             if multidisc and song.discnum != last_discnum:
-                disc_label = Gtk.Label()
-                disc_label.set_markup(f'<b>Disc {song.discnum}</b>')
-                disc_label.set_xalign(0)
-                if last_discnum is not None:
-                    disc_label.set_margin_top(12)
-                self._songslist.add(disc_label)
+                disc_chkbtn = self.__create_disc_entry(song, last_discnum)
+                self._songslist.add(disc_chkbtn)
+
             last_discnum = song.discnum
-            checkbox = Gtk.CheckButton()
-            checkbox.set_can_focus(False)
-            label = Gtk.Label()
-            label.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
-            esc_title = GLib.markup_escape_text(song.title)
-            trackno = song.zero_padded_number()
-            t = f'({song.formatted_duration()})'
-            if song.is_compilation_track():
-                esc_artist = GLib.markup_escape_text(song.artist)
-                markup = f'<small>{trackno}. <b>{esc_artist}</b> - {esc_title} {t}</small>'
-            else:
-                markup = f'<small>{trackno}. {esc_title} {t}</small>'
-            label.set_markup(markup)
-            label.set_property('xalign', 0)
-            label.set_margin_start(8)
-            checkbox.set_active(True)
-            checkbox.add(label)
-
-            # using a default value for the song argument allows
-            # us to not close over the 'song' variable, so
-            # that within this function its value will be that
-            # of the current loop iteration.
-            def toggle_handler(button, current_song=song):
-                included = current_song in self._selected_songs
-                if button.get_active() and not included:
-                    self._selected_songs.append(current_song)
-                if not button.get_active() and included:
-                    self._selected_songs.remove(current_song)
-
-            checkbox.connect('toggled', toggle_handler)
+            checkbox = self.__create_song_entry(song)
             self._songslist.add(checkbox)
             self._selected_songs.append(song)
 
@@ -179,6 +186,34 @@ class SongsMenu(Gtk.Popover):
         self._vbox.show_all()
         for child in self.get_children():
             child.set_can_focus(False)
+
+    def __create_disc_entry(self, song, last_discnum):
+        chkbtn = SongMenuCheckButton.for_disc(song)
+
+        if last_discnum is not None:
+            chkbtn.set_margin_top(12)
+
+        def toggle_handler(btn, current_disc=song.discnum):
+            included = btn.get_active()
+            for s in self._songslist.get_children():
+                if s.discnum == current_disc:
+                    s.set_active(included)
+
+        chkbtn.connect('toggled', toggle_handler)
+        return chkbtn
+
+    def __create_song_entry(self, song):
+        chkbtn = SongMenuCheckButton.for_song(song)
+
+        def toggle_handler(btn, current_song=song):
+            included = current_song in self._selected_songs
+            if btn.get_active() and not included:
+                self._selected_songs.append(current_song)
+            if not btn.get_active() and included:
+                self._selected_songs.remove(current_song)
+
+        chkbtn.connect('toggled', toggle_handler)
+        return chkbtn
 
     def _on_selection_toggled(self, btnbox, active):
         for child in self._songslist.get_children():
