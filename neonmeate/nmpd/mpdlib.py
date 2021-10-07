@@ -3,12 +3,15 @@ import os
 import random
 import re
 import mpd as mpd2
+
 from gi.repository import GObject
+
+import neonmeate.util.thread as thread
+import neonmeate.util.metadata as mpdmeta
 
 from neonmeate.util.metadata import parse_date
 from ..model import Album, Artist, Song
 from functools import partial
-import neonmeate.util.thread as thread
 
 
 class MpdConnectionStatus(GObject.GObject):
@@ -213,12 +216,10 @@ class Mpd:
     @staticmethod
     def _process_songs(songs, songs_by_album, dirs_by_album, songset):
         for song in songs:
-            if 'album' in song:
-                album_name = song['album']
-
-                date = parse_date(song.get('date'))
-
-                directory = os.path.dirname(song['file'])
+            if mpdmeta.ALBUM_KEY in song:
+                album_name = song[mpdmeta.ALBUM_KEY]
+                date = parse_date(song.get(mpdmeta.DATE_KEY))
+                directory = os.path.dirname(song[mpdmeta.FILE_KEY])
                 key = (album_name, date, directory)
                 songlist = songs_by_album.setdefault(key, [])
                 dirs = dirs_by_album.setdefault(key, [])
@@ -240,10 +241,14 @@ class Mpd:
         def task():
             pairs = []
             for rec in [r for r in
-                        self._client.list('album', 'group', 'albumartist')
-                        if r['albumartist'] != '']:
-                alb = rec['album']
-                art = rec['albumartist']
+                        self._client.list(
+                            mpdmeta.ALBUM_KEY,
+                            'group',
+                            mpdmeta.ALBUMARTIST_KEY
+                        )
+                        if r[mpdmeta.ALBUMARTIST_KEY] != '']:
+                alb = rec[mpdmeta.ALBUM_KEY]
+                art = rec[mpdmeta.ALBUMARTIST_KEY]
                 if isinstance(alb, list):
                     for i in alb:
                         pairs.append((art, i))
@@ -252,9 +257,14 @@ class Mpd:
             all_files = []
             selected = random.choices(pairs, k=n)
             for artist, album in selected:
-                files = [r['file'] for r in
-                         self._client.list('file', 'albumartist', artist,
-                                           'album', album)]
+                files = [r[mpdmeta.FILE_KEY] for r in
+                         self._client.list(
+                             mpdmeta.FILE_KEY,
+                             mpdmeta.ALBUMARTIST_KEY,
+                             artist,
+                             mpdmeta.ALBUM_KEY,
+                             album
+                         )]
                 all_files.extend(files)
             self.add_files_to_playlist(all_files)
 
@@ -270,22 +280,28 @@ class Mpd:
                     if aa != '':
                         artists.add(aa)
 
-            add_all('albumartist')
-            add_all('artist')
+            add_all(mpdmeta.ALBUMARTIST_KEY)
+            add_all(mpdmeta.ARTIST_KEY)
             l = list(artists)
             selected = random.choices(l, k=n)
             files = []
             for sel in selected:
-                files.extend([r['file'] for r in
-                              self._client.list('file', 'artist', sel)])
+                files.extend([r[mpdmeta.FILE_KEY] for r in
+                              self._client.list(
+                                  mpdmeta.FILE_KEY,
+                                  mpdmeta.RTIST_KEY,
+                                  sel
+                              )])
             self.add_files_to_playlist(files)
 
         self.exec(task)
 
     def _add_random_songs(self, count):
+        key = mpdmeta.FILE_KEY
+
         def task():
-            allsongs = [r for r in self._client.listall() if 'file' in r]
-            selected = [r['file'] for r in random.choices(allsongs, k=count)]
+            allsongs = [r for r in self._client.listall() if key in r]
+            selected = [r[key] for r in random.choices(allsongs, k=count)]
             self.add_files_to_playlist(selected)
 
         self.exec(task)
@@ -320,7 +336,7 @@ class Mpd:
 
         def removal_task(playlist):
             for t in playlist:
-                if t['file'] in files:
+                if t[mpdmeta.FILE_KEY] in files:
                     self._client.deleteid(t['id'])
 
         def on_playlist(playlist):

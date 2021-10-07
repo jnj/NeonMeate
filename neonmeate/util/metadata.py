@@ -5,12 +5,14 @@ import dateparser
 # MPD keys
 ARTIST_KEY = 'artist'
 ALBUMARTIST_KEY = 'albumartist'
+ALBUM_KEY = 'album'
 NAME_KEY = 'name'
 TITLE_KEY = 'title'
 TRACK_KEY = 'track'
 DISC_KEY = 'disc'
 FILE_KEY = 'file'
 DURATION_KEY = 'duration'
+DATE_KEY = 'date'
 
 
 def parse_date(date: str):
