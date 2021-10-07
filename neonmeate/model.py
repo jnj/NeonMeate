@@ -1,7 +1,7 @@
 import functools
+import neonmeate.util.metadata as mpdtags
 
 from neonmeate.ui import times
-from neonmeate.util.metadata import parse_disc
 
 
 def get_sanitized_string(dictlike, key):
@@ -12,9 +12,17 @@ def get_sanitized_string(dictlike, key):
     return None if not val else val
 
 
+def joined(tagvalue):
+    if tagvalue is None:
+        return None
+    if isinstance(tagvalue, list):
+        return ','.join(str(e) for e in tagvalue)
+    return tagvalue
+
+
 @functools.total_ordering
 class Artist:
-    NameKeys = ['albumartist', 'artist', 'name']
+    NameKeys = [mpdtags.ALBUMARTIST_KEY, mpdtags.ARTIST_KEY, mpdtags.NAME_KEY]
 
     @staticmethod
     def create(dictlike):
@@ -23,7 +31,7 @@ class Artist:
             for k in Artist.NameKeys:
                 name = get_sanitized_string(dictlike, k)
                 if name:
-                    return Artist(name, k == 'albumartist')
+                    return Artist(name, k == mpdtags.ALBUMARTIST_KEY)
         return None
 
     def __init__(self, name, is_albumartist):
@@ -89,13 +97,13 @@ class Song:
     @staticmethod
     def create(mpd_song_item):
         return Song(
-            int(mpd_song_item['track']),
-            parse_disc(mpd_song_item),
-            mpd_song_item['title'],
-            mpd_song_item['file'],
-            float(mpd_song_item['duration']),
-            mpd_song_item['artist'],
-            mpd_song_item.get('albumartist', None)
+            int(mpd_song_item[mpdtags.TRACK_KEY]),
+            mpdtags.parse_disc(mpd_song_item),
+            joined(mpd_song_item[mpdtags.TITLE_KEY]),
+            mpd_song_item[mpdtags.FILE_KEY],
+            float(mpd_song_item[mpdtags.DURATION_KEY]),
+            joined(mpd_song_item[mpdtags.ARTIST_KEY]),
+            joined(mpd_song_item.get(mpdtags.ALBUMARTIST_KEY, None))
         )
 
     def __init__(self, number, discnum, title, file, duration, artist=None,
