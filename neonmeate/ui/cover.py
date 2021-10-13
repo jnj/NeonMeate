@@ -106,7 +106,7 @@ class CoverWithGradient(Gtk.DrawingArea):
         if self._is_default_grad:
             self._is_default_grad = False
             start_rgb = rgb
-            stop_rgb = start_rgb.darken(18).saturate(5)
+            stop_rgb = start_rgb.darken(30).saturate(5)
             self._grad = Gradient(start_rgb, stop_rgb)
             self._border_rgb = border_rgb.components()
             self.queue_draw()
