@@ -22,18 +22,18 @@ class Albums(Gtk.ScrolledWindow):
         self._border_style_context = border_style_context
         self._placeholder_pixbuf = placeholder_pixbuf
         self._options = options
-        self._album_spacing = options.col_spacing
-        self.set_min_content_width(self._album_width() + self._album_spacing)
+        colspacing = options.col_spacing // self.get_scale_factor()
+        self.set_min_content_width(self._album_width() + colspacing)
         self._art = art_cache
         self._mpdclient = mpdclient
         self._model = Gtk.ListStore(GObject.TYPE_PYOBJECT)
         self._view = Gtk.IconView(self._model)
         self._view.set_hexpand(True)
         self._view.set_selection_mode(Gtk.SelectionMode.NONE)
-        self._view.set_column_spacing(options.col_spacing)
+        self._view.set_column_spacing(colspacing)
         self._view.set_row_spacing(options.row_spacing)
         self._view.set_has_tooltip(True)
-        self._view.set_item_width(self._album_width())
+        self._view.set_item_width(self._options.album_size)
         self._view.connect('query-tooltip', self._on_tooltip)
         self._surface_cache = {}
         self.add(self._view)
