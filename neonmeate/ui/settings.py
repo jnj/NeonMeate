@@ -3,7 +3,153 @@ from gi.repository import Gtk, GObject
 from ..util.config import main_config_file
 
 
-class OutputsMenu(Gtk.VBox):
+def left_label(txt):
+    lbl = Gtk.Label(txt)
+    lbl.set_xalign(0)
+    lbl.set_justify(Gtk.Justification.LEFT)
+    return lbl
+
+
+class SettingsGrid(Gtk.Grid):
+    def __init__(self):
+        super(SettingsGrid, self).__init__()
+        spacing = 10
+        self.set_column_spacing(spacing)
+        self.set_row_spacing(spacing)
+        self.set_property('margin', spacing)
+
+    def _attach(self, to_attach, attached, pos_type):
+        self.attach_next_to(to_attach, attached, pos_type, 1, 1)
+
+    def attach_right(self, to_attach, left_item):
+        self._attach(to_attach, left_item, Gtk.PositionType.RIGHT)
+
+    def attach_under(self, to_attach, top_item):
+        self._attach(to_attach, top_item, Gtk.PositionType.BOTTOM)
+
+
+class NetworkSettings(SettingsGrid):
+
+    def __init__(self, configstate):
+        super(NetworkSettings, self).__init__()
+        host_label = left_label('Host')
+        self.add(host_label)
+        host, port = configstate.get_host_and_port()
+        self._host_entry = host_entry = Gtk.Entry()
+        host_entry.set_input_purpose(Gtk.InputPurpose.ALPHA)
+        host_entry.set_text(host)
+        self.add(host_entry)
+
+        port_label = left_label('Port')
+        self.attach_under(port_label, host_label)
+        self._port_entry = port_entry = Gtk.Entry()
+        port_entry.set_input_purpose(Gtk.InputPurpose.DIGITS)
+        port_entry.set_text(str(port))
+        self.attach_right(port_entry, port_label)
+
+        passwd_label = left_label('Password')
+        self.attach_under(passwd_label, port_label)
+        self._passwd_entry = passwd_entry = Gtk.Entry()
+        passwd_entry.set_visibility(False)
+        passwd_entry.set_input_purpose(Gtk.InputPurpose.PASSWORD)
+        self.attach_right(passwd_entry, passwd_label)
+        self.show_all()
+
+    def get_host_setting(self):
+        return self._host_entry.get_text()
+
+    def get_port_setting(self):
+        return int(self._port_entry.get_text())
+
+    def get_password_setting(self):
+        return self._passwd_entry.get_text()
+
+    def on_connected(self, connected):
+        self._update_entry_editability(connected)
+
+    def on_user_connect_change(self, connected):
+        self._update_entry_editability(connected)
+
+    def _update_entry_editability(self, connected):
+        for entry in [self._host_entry, self._port_entry, self._passwd_entry]:
+            entry.set_property('editable', not connected)
+            entry.set_can_focus(not connected)
+
+
+class LibrarySettings(SettingsGrid):
+    SIG_MUSIC_DIR_UPDATED = 'neonmeate-musicdir-updated'
+    SIG_UPDATE_REQUESTED = 'neonmeate-update-requested'
+    SIG_CACHE_CLEARED = 'neonmeate-cache-cleared'
+
+    __gsignals__ = {
+        SIG_MUSIC_DIR_UPDATED: (GObject.SignalFlags.RUN_FIRST, None, (str,)),
+        SIG_UPDATE_REQUESTED: (GObject.SignalFlags.RUN_FIRST, None, ()),
+        SIG_CACHE_CLEARED: (GObject.SignalFlags.RUN_FIRST, None, ())
+    }
+
+    def __init__(self, configstate, cfg):
+        super(LibrarySettings, self).__init__()
+        self._configstate = configstate
+        self._cfg = cfg
+        music_dir_label = left_label('Music Folder')
+        music_dir_chooser = Gtk.FileChooserButton()
+        music_dir_chooser.set_action(Gtk.FileChooserAction.SELECT_FOLDER)
+        music_dir_chooser.set_local_only(True)
+        music_dir_chooser.set_current_folder(configstate.get_musicpath())
+        music_dir_chooser.connect('file-set', self._on_music_folder)
+
+        self.add(music_dir_label)
+        self.attach_right(music_dir_chooser, music_dir_label)
+        albums_view_label = left_label('Artists')
+        self.attach_under(albums_view_label, music_dir_label)
+
+        self._include_comps_box = Gtk.ComboBoxText()
+        self._include_comps_box.append('0', 'All')
+        self._include_comps_box.append('1', 'Only album artists')
+        include_comps = cfg.get_albums_include_comps()
+        self._include_comps_box.set_active(0 if include_comps else 1)
+        self.attach_right(self._include_comps_box, albums_view_label)
+        self._include_comps_box.connect('changed', self._on_album_view_change)
+
+        db_label = left_label('Database')
+        self.attach_under(db_label, albums_view_label)
+        self._update_btn = Gtk.Button(label='Update')
+        self._update_btn.set_can_focus(False)
+        self._update_btn.set_tooltip_text('Update the database')
+        self._update_btn.connect('clicked', self._on_update_request)
+        self.attach_right(self._update_btn, db_label)
+
+        cache_label = left_label('Color cache')
+        self.attach_under(cache_label, db_label)
+        self._clear_btn = Gtk.Button(label='Clear')
+        self._clear_btn.set_can_focus(False)
+        self._clear_btn.connect('clicked', self._on_clear_colors)
+        self.attach_right(self._clear_btn, cache_label)
+        self.show_all()
+
+    def _on_clear_colors(self, btn):
+        self._cfg.clear_background_cache()
+        self.emit(LibrarySettings.SIG_CACHE_CLEARED)
+
+    def _on_update_request(self, btn):
+        self.emit(LibrarySettings.SIG_UPDATE_REQUESTED)
+
+    def _on_album_view_change(self, widget):
+        active = self._include_comps_box.get_active()
+        include_comps = active == 0
+        self._cfg.set_albums_include_comps(include_comps)
+        self._configstate.set_albums_include_comps(include_comps)
+
+    def _on_music_folder(self, chooser):
+        current = self._configstate.get_musicpath()
+        chosen = chooser.get_filename()
+        self._cfg.set_music_dir(chosen)
+        if current != chosen:
+            self._configstate.set_musicpath(chosen)
+            self.emit(SettingsMenu.SIG_MUSIC_DIR_UPDATED, chosen)
+
+
+class OutputsSettings(SettingsGrid):
     SIG_OUTPUT_CHANGE = 'neonmeate-output-change'
 
     __gsignals__ = {
@@ -11,7 +157,8 @@ class OutputsMenu(Gtk.VBox):
     }
 
     def __init__(self):
-        super(OutputsMenu, self).__init__()
+        super(OutputsSettings, self).__init__()
+        self.set_column_spacing(30)
         self._outputs = []
         self._update()
 
@@ -23,7 +170,7 @@ class OutputsMenu(Gtk.VBox):
 
     def _on_user_toggle(self, switch, gparam, name, id):
         enabled = switch.get_active()
-        self.emit(OutputsMenu.SIG_OUTPUT_CHANGE, int(id), enabled)
+        self.emit(OutputsSettings.SIG_OUTPUT_CHANGE, int(id), enabled)
 
     def _connect_switch(self, switch, output_id, output_name):
         switch.connect(
@@ -36,40 +183,28 @@ class OutputsMenu(Gtk.VBox):
     def _update(self):
         for c in self.get_children():
             self.remove(c)
-
-        grid = Gtk.Grid()
-        grid.set_property('margin', 10)
-        grid.set_column_spacing(30)
-        grid.set_row_spacing(10)
-        self.add(grid)
-        prev_label = None
+        prev = None
 
         for output in self._outputs:
-            grid_box = Gtk.Box()
-            grid_box.set_hexpand(True)
-            grid_box.set_vexpand(False)
-            label = Gtk.Label(label=output['outputname'])
-            label.set_xalign(0)
-            label.set_justify(Gtk.Justification.LEFT)
+            box = Gtk.Box()
+            box.set_hexpand(True)
+            box.set_vexpand(False)
+            label = left_label(output['outputname'])
             switch = Gtk.Switch()
             switch.set_can_focus(False)
             switch.set_active(output['outputenabled'] == '1')
             switch.set_can_focus(False)
             name = output['outputname']
             id = output['outputid']
+            box.pack_start(label, False, False, 10)
+            box.pack_end(switch, False, False, 0)
             self._connect_switch(switch, id, name)
 
-            grid_box.pack_start(label, False, False, 10)
-            grid_box.pack_end(switch, False, False, 0)
-
-            if prev_label is None:
-                grid.add(grid_box)
+            if prev is None:
+                self.add(box)
             else:
-                grid.attach_next_to(grid_box, prev_label,
-                                    Gtk.PositionType.BOTTOM, 1, 1)
-
-            prev_label = grid_box
-
+                self.attach_under(box, prev)
+            prev = box
         self.show_all()
 
 
@@ -94,140 +229,66 @@ class SettingsMenu(Gtk.Popover):
         self._configstate = configstate
         self._connstatus = connstatus
         self._connstatus.connect('mpd_connected', self._on_mpd_connection)
-
-        stack = Gtk.Stack()
-        stack.set_hexpand(True)
-        stack.set_vexpand(True)
-        stack.set_property('margin-top', 20)
-        spacing = 10
-
-        self._menu_grid = Gtk.VBox()
-        self.add(self._menu_grid)
+        spacing = 16
         self.set_border_width(spacing)
-        self._settings_grid = Gtk.Grid()
-        self._settings_grid.set_column_spacing(spacing)
-        self._settings_grid.set_row_spacing(spacing)
-        self._settings_grid.set_property('margin', 10)
+        self._box = Gtk.VBox()
+        self.add(self._box)
 
-        host_label = Gtk.Label('Host')
-        host_label.set_xalign(0)
-        host_label.set_justify(Gtk.Justification.LEFT)
-        self._settings_grid.add(host_label)
-        host, port = self._configstate.get_host_and_port()
-        self._host_entry = Gtk.Entry()
-        self._host_entry.set_input_purpose(Gtk.InputPurpose.ALPHA)
-        self._host_entry.set_text(host)
-        self._settings_grid.add(self._host_entry)
+        notebook = Gtk.Notebook()
+        notebook.set_tab_pos(Gtk.PositionType.LEFT)
 
-        port_label = Gtk.Label('Port')
-        port_label.set_xalign(0)
-        port_label.set_justify(Gtk.Justification.LEFT)
-        self._settings_grid.attach_next_to(port_label, host_label,
-                                           Gtk.PositionType.BOTTOM, 1, 1)
+        self._network_settings = NetworkSettings(configstate)
+        self._library_settings = LibrarySettings(configstate, cfg)
+        self._output_settings = OutputsSettings()
 
-        self._port_entry = Gtk.Entry()
-        self._port_entry.set_input_purpose(Gtk.InputPurpose.DIGITS)
-        self._port_entry.set_text(str(port))
-        self._settings_grid.attach_next_to(self._port_entry, port_label,
-                                           Gtk.PositionType.RIGHT, 1, 1)
+        notebook.append_page(self._network_settings, Gtk.Label('Network'))
+        notebook.append_page(self._library_settings, Gtk.Label('Library'))
+        notebook.append_page(self._output_settings, Gtk.Label('Outputs'))
 
-        music_dir_label = Gtk.Label('Music Folder')
-        music_dir_label.set_xalign(0)
-        music_dir_label.set_justify(Gtk.Justification.LEFT)
-        music_dir_chooser = Gtk.FileChooserButton()
-        music_dir_chooser.set_action(Gtk.FileChooserAction.SELECT_FOLDER)
-        music_dir_chooser.set_local_only(True)
-        music_dir_chooser.set_current_folder(self._configstate.get_musicpath())
-        music_dir_chooser.connect('file-set', self._on_music_folder)
-
-        def __attach_below(to_attach, other_item):
-            self._settings_grid.attach_next_to(
-                to_attach, other_item,
-                Gtk.PositionType.BOTTOM,
-                1,
-                1
-            )
-
-        __attach_below(music_dir_label, port_label)
-        self._settings_grid.attach_next_to(music_dir_chooser, music_dir_label,
-                                           Gtk.PositionType.RIGHT, 1, 1)
-
-        albums_view_label = Gtk.Label('Artists')
-        albums_view_label.set_xalign(0)
-        albums_view_label.set_justify(Gtk.Justification.LEFT)
-        __attach_below(albums_view_label, music_dir_label)
-        self._include_comps = Gtk.ComboBoxText()
-        self._include_comps.append('0', 'All')
-        self._include_comps.append('1', 'Only album artists')
-        include_comps = self._cfg.get_albums_include_comps()
-        self._include_comps.set_active(0 if include_comps else 1)
-        self._settings_grid.attach_next_to(self._include_comps,
-                                           albums_view_label,
-                                           Gtk.PositionType.RIGHT, 1, 1)
-        self._include_comps.connect('changed', self._on_album_view_change)
         self._connect_label = Gtk.Label('Connect')
-        self._connect_label.set_xalign(0)
-        self._connect_label.set_justify(Gtk.Justification.LEFT)
-        __attach_below(self._connect_label, albums_view_label)
-        switch_box = Gtk.Box()
-        self._connect_switch = Gtk.Switch()
-        switch_box.pack_end(self._connect_switch, False, False, 0)
-        self._settings_grid.attach_next_to(switch_box, self._connect_label,
-                                           Gtk.PositionType.RIGHT, 1, 1)
-        self._connect_switch.connect('notify::active',
-                                     self._on_user_connect_change)
+        self._connected_label = Gtk.Label('Connected')
+        self._connect_switch = Gtk.ToggleButton()
+        self._connect_switch.add(self._connect_label)
+        self._connect_switch.connect(
+            'notify::active',
+            self._on_user_connect_change
+        )
 
-        self._update_btn = Gtk.Button(label='Update')
-        self._update_btn.set_can_focus(False)
-        self._update_btn.set_tooltip_text('Update the database')
-        self._update_btn.connect('clicked', self._on_update_request)
-        __attach_below(self._update_btn, switch_box)
+        self._connect_switch.set_property('margin_top', spacing)
 
-        self._save_btn = Gtk.Button(label='Save')
-        self._save_btn.set_can_focus(False)
-        self._save_btn.connect('clicked', self._on_save_settings)
-        __attach_below(self._save_btn, self._update_btn)
+        self._library_settings.connect(
+            LibrarySettings.SIG_MUSIC_DIR_UPDATED,
+            self._on_music_folder
+        )
 
-        self._clear_colors_btn = Gtk.Button(label='Clear Cache')
-        self._clear_colors_btn.set_can_focus(False)
-        self._clear_colors_btn.connect('clicked', self._on_clear_colors)
-        __attach_below(self._clear_colors_btn, self._save_btn)
-        self._settings_grid.show_all()
-        self._outputs = OutputsMenu()
-        self._outputs.connect(
-            OutputsMenu.SIG_OUTPUT_CHANGE,
+        self._library_settings.connect(
+            LibrarySettings.SIG_CACHE_CLEARED,
+            self._on_cache_clear
+        )
+
+        self._output_settings.connect(
+            OutputsSettings.SIG_OUTPUT_CHANGE,
             self._on_outputs_change
         )
 
-        stack.add_titled(self._settings_grid, 'settings', 'Settings')
-        stack.add_titled(self._outputs, 'outputs', 'Outputs')
-        stack_switcher = Gtk.StackSwitcher()
-        stack_switcher.set_stack(stack)
-        stack_switcher.set_can_focus(False)
-        self._menu_grid.add(stack_switcher)
-        self._menu_grid.add(stack)
-        self._menu_grid.show_all()
+        self._box.add(notebook)
+        self._box.add(self._connect_switch)
+        self._box.show_all()
+
+    def _on_cache_clear(self, widget):
+        self._save()
 
     def on_outputs(self, outputs):
-        self._outputs.on_outputs(outputs)
+        self._output_settings.on_outputs(outputs)
 
     def _on_outputs_change(self, outputsmenu, id, enabled):
         self.emit(SettingsMenu.SIG_OUTPUT_CHANGE, id, enabled)
-
-    def _on_album_view_change(self, widget):
-        active = self._include_comps.get_active()
-        include_comps = active == 0
-        self._cfg.set_albums_include_comps(include_comps)
-        self._configstate.set_albums_include_comps(include_comps)
-
-    def _on_clear_colors(self, btn):
-        self._cfg.clear_background_cache()
-        self._save()
 
     def _on_mpd_connection(self, _, success):
         self._connect_switch.set_active(success)
         txt = 'Connected' if success else 'Connect'
         self._connect_label.set_text(txt)
+        self._network_settings.on_connected(success)
 
     def _on_update_request(self, btn):
         self.emit(SettingsMenu.SIG_UPDATE_REQUESTED)
@@ -238,14 +299,9 @@ class SettingsMenu(Gtk.Popover):
     def _save(self):
         self._cfg.save(main_config_file())
 
-    def _on_music_folder(self, chooser):
-        current = self._configstate.get_musicpath()
-        chosen = chooser.get_filename()
-        self._cfg.set_music_dir(chosen)
+    def _on_music_folder(self, library_settings, chosen):
         self._save()
-        if current != chosen:
-            self._configstate.set_musicpath(chosen)
-            self.emit(SettingsMenu.SIG_MUSIC_DIR_UPDATED, chosen)
+        self.emit(SettingsMenu.SIG_MUSIC_DIR_UPDATED, chosen)
 
     # This is called when the user toggles the connection
     # switch in the config panel. This will result in
@@ -253,11 +309,13 @@ class SettingsMenu(Gtk.Popover):
     # text based on the current status.
     def _on_user_connect_change(self, switch, gparam):
         connected = switch.get_active()
-        self._host_entry.set_editable(not connected)
-        self._port_entry.set_editable(not connected)
-        host = self._host_entry.get_text()
-        port = int(self._port_entry.get_text())
+        self._network_settings.on_user_connect_change(connected)
+        host = self._network_settings.get_host_setting()
+        port = self._network_settings.get_port_setting()
         self._configstate.set_host_and_port(host, port)
         self.emit('neonmeate-connect-attempt', host, port, connected)
-        label_txt = 'Connected' if connected else 'Connect'
-        self._connect_label.set_text(label_txt)
+        label = self._connected_label if connected else self._connect_label
+        for c in switch.get_children():
+            switch.remove(c)
+        switch.add(label)
+        switch.show_all()

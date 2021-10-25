@@ -7,7 +7,7 @@ from .artistsalbums import ArtistsAlbums
 from .controls import ControlsBar, ControlButtons, PlayModeButtons
 from .nowplaying import NowPlaying
 from .playlist import PlaylistContainer
-from .settings import SettingsMenu, OutputsMenu
+from .settings import SettingsMenu, OutputsSettings
 from .toolkit import glib_main
 from ..nmpd.mpdlib import MpdHeartbeat as Hb
 
