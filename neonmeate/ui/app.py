@@ -7,7 +7,7 @@ from .artistsalbums import ArtistsAlbums
 from .controls import ControlsBar, ControlButtons, PlayModeButtons
 from .nowplaying import NowPlaying
 from .playlist import PlaylistContainer
-from .settings import SettingsMenu
+from .settings import SettingsMenu, OutputsMenu
 from .toolkit import glib_main
 from ..nmpd.mpdlib import MpdHeartbeat as Hb
 
@@ -87,6 +87,10 @@ class App(Gtk.ApplicationWindow):
             SettingsMenu.SIG_MUSIC_DIR_UPDATED,
             self._on_music_dir
         )
+        self._settings.connect(
+            SettingsMenu.SIG_OUTPUT_CHANGE,
+            self._on_output_change
+        )
         self._settings_btn.set_popover(self._settings)
         self._settings_btn.set_direction(Gtk.ArrowType.NONE)
         Gtk.Settings.get_default().connect(
@@ -154,6 +158,9 @@ class App(Gtk.ApplicationWindow):
             self._on_albums_view_change
         )
 
+    def _on_output_change(self, settings, output_id, enabled):
+        self._mpdclient.enable_output(output_id, enabled)
+
     def _on_albums_view_change(self, state, gparam):
         enabled = state.get_property('albums_include_comps')
         self._artists.on_include_comps_change(enabled)
@@ -195,6 +202,7 @@ class App(Gtk.ApplicationWindow):
                     self._playlist_updated = False
                 self._mpdclient.connect()
                 self._artists.on_mpd_connected(True)
+                self._settings.on_outputs(self._mpdclient.get_outputs())
             else:
                 self._playlist_updated = False
                 self._titlebar.set_title('NeonMeate')
@@ -202,6 +210,7 @@ class App(Gtk.ApplicationWindow):
                 self._playlist.clear()
                 self._now_playing.on_connection_status(False)
                 self._mpdclient.disconnect()
+                self._settings.on_outputs([])
 
     def _no_song(self, hb):
         self._on_song_changed(hb, None, None, None, None)

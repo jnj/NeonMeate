@@ -54,6 +54,7 @@ class Mpd:
         self._client.timeout = 10
         self._client.idletimeout = None
         self._status = {}
+        self._outputs = []
 
     def _on_host_chg(self, state, _):
         self.disconnect()
@@ -77,6 +78,7 @@ class Mpd:
         try:
             self._client.connect(self._host, self._port)
             self._connstatus.set_connected(True)
+            self._outputs = self._client.outputs()
         except ConnectionError:
             logging.error('connection refused')
             self._connstatus.set_connected(False)
@@ -95,6 +97,18 @@ class Mpd:
         """Shuts down the client and disconnects from the server."""
         self._client.close()
         self.disconnect()
+
+    def get_outputs(self):
+        return self._outputs
+
+    def enable_output(self, id, enabled):
+        def task():
+            if enabled:
+                self._client.enableoutput(id)
+            else:
+                self._client.disableoutput(id)
+
+        self.exec(task)
 
     def set_volume(self, value):
         def task():
