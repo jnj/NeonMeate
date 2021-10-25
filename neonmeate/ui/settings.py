@@ -293,10 +293,6 @@ class SettingsMenu(Gtk.Popover):
         switch.add(label)
         switch.show_all()
 
-        txt = 'Connected' if success else 'Connect'
-        self._connect_label.set_text(txt)
-        self._network_settings.on_connected(success)
-
     def _on_update_request(self, btn):
         self.emit(SettingsMenu.SIG_UPDATE_REQUESTED)
 
