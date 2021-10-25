@@ -285,7 +285,14 @@ class SettingsMenu(Gtk.Popover):
         self.emit(SettingsMenu.SIG_OUTPUT_CHANGE, id, enabled)
 
     def _on_mpd_connection(self, _, success):
-        self._connect_switch.set_active(success)
+        switch = self._connect_switch
+        switch.set_active(success)
+        label = self._connected_label if success else self._connect_label
+        for c in switch.get_children():
+            switch.remove(c)
+        switch.add(label)
+        switch.show_all()
+
         txt = 'Connected' if success else 'Connect'
         self._connect_label.set_text(txt)
         self._network_settings.on_connected(success)
@@ -314,8 +321,3 @@ class SettingsMenu(Gtk.Popover):
         port = self._network_settings.get_port_setting()
         self._configstate.set_host_and_port(host, port)
         self.emit('neonmeate-connect-attempt', host, port, connected)
-        label = self._connected_label if connected else self._connect_label
-        for c in switch.get_children():
-            switch.remove(c)
-        switch.add(label)
-        switch.show_all()
