@@ -109,7 +109,7 @@ class Song:
     def __init__(self, number, discnum, title, file, duration, artist=None,
                  albumartist=None):
         """
-        Creates a Song instance. The artist should only be non-None
+        Creates a Song instance. The albumartist should only be non-None
         if this song is part of a compilation album.
         """
         self.number = number
