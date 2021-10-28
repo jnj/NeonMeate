@@ -54,7 +54,7 @@ class SelectSongsButtonBox(NeonMeateButtonBox):
     }
 
     def __init__(self):
-        super(SelectSongsButtonBox, self).__init__()
+        super().__init__()
         self._toggle_selection_btn = PlayModeButton('object-select-symbolic')
         self.add_button(self._toggle_selection_btn, 'toggle-selection', None)
         self._toggle_selection_btn.set_active(True)
@@ -67,41 +67,56 @@ class SelectSongsButtonBox(NeonMeateButtonBox):
 
 class SongMenuCheckButton(Gtk.CheckButton):
 
+    def _markup(self):
+        pass
+
     @staticmethod
     def for_disc(song):
-        return SongMenuCheckButton(song, True)
+        return DiscCheckButton(song)
 
     @staticmethod
     def for_song(song):
-        return SongMenuCheckButton(song, False)
+        return SongCheckButton(song)
 
-    def __init__(self, song, is_disc):
-        super(SongMenuCheckButton, self).__init__()
-        self.is_disc = is_disc
+    def __init__(self, song):
+        super().__init__()
+        self._song = song
         self.discnum = song.discnum
         self.set_can_focus(False)
         label = Gtk.Label()
         label.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
-
-        if is_disc:
-            markup = f'<b>Disc {song.discnum}</b>'
-        else:
-            esc_title = GLib.markup_escape_text(song.title)
-            trackno = song.zero_padded_number()
-            time = f'({song.formatted_duration()})'
-
-            if song.is_compilation_track():
-                esc_artist = GLib.markup_escape_text(song.artist)
-                markup = f'<small>{trackno}. <b>{esc_artist}</b>' \
-                         f' - {esc_title} {time}</small>'
-            else:
-                markup = f'<small>{trackno}. {esc_title} {time}</small>'
-
+        markup = self._markup()
         label.set_markup(markup)
         label.set_property('xalign', 0)
         label.set_margin_start(8)
         self.set_active(True)
         self.add(label)
+
+
+class DiscCheckButton(SongMenuCheckButton):
+    def __init__(self, song):
+        super(DiscCheckButton, self).__init__(song)
+
+    def _markup(self):
+        return f'<b>Disc {self._song.discnum}</b>'
+
+
+class SongCheckButton(SongMenuCheckButton):
+    def __init__(self, song):
+        super(SongCheckButton, self).__init__(song)
+
+    def _markup(self):
+        song = self._song
+        esc_title = GLib.markup_escape_text(song.title)
+        trackno = song.zero_padded_number()
+        time = f'({song.formatted_duration()})'
+
+        if song.is_compilation_track():
+            esc_artist = GLib.markup_escape_text(song.artist)
+            return f'<small>{trackno}. <b>{esc_artist}</b>' \
+                   f' - {esc_title} {time}</small>'
+        else:
+            return f'<small>{trackno}. {esc_title} {time}</small>'
 
 
 class SongsMenu(Gtk.Popover):
