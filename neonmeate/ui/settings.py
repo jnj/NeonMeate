@@ -266,6 +266,11 @@ class SettingsMenu(Gtk.Popover):
             self._on_cache_clear
         )
 
+        self._library_settings.connect(
+            LibrarySettings.SIG_UPDATE_REQUESTED,
+            self._on_update_request
+        )
+
         self._output_settings.connect(
             OutputsSettings.SIG_OUTPUT_CHANGE,
             self._on_outputs_change
