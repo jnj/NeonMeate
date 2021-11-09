@@ -91,6 +91,10 @@ class App(Gtk.ApplicationWindow):
             SettingsMenu.SIG_OUTPUT_CHANGE,
             self._on_output_change
         )
+        self._settings.connect(
+            SettingsMenu.SIG_ALBUM_SCALE_CHANGE,
+            self._on_album_size_change
+        )
         self._settings_btn.set_popover(self._settings)
         self._settings_btn.set_direction(Gtk.ArrowType.NONE)
         Gtk.Settings.get_default().connect(
@@ -157,6 +161,10 @@ class App(Gtk.ApplicationWindow):
             'notify::albums-include-comps',
             self._on_albums_view_change
         )
+
+    def _on_album_size_change(self, widget, size):
+        self._artists.on_album_size_change(size)
+        self._cfg.save_album_size(size)
 
     def _on_output_change(self, settings, output_id, enabled):
         self._mpdclient.enable_output(output_id, enabled)

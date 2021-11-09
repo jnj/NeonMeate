@@ -42,6 +42,9 @@ class AlbumsAndSongs(Gtk.Box):
         self._songsbox.pack_end(self._current_songs, True, True, 0)
         self.queue_draw()
 
+    def on_album_size_change(self, size):
+        self._albums.on_album_size(size)
+
     def on_theme_change(self):
         self._albums.on_theme_change()
 

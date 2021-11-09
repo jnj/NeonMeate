@@ -1,7 +1,7 @@
 from gi.repository import Gtk, GObject, GLib, Pango, Gdk
 
 from neonmeate.ui.songs_menu_widget import SongsMenu
-from neonmeate.ui.toolkit import add_pixbuf_border, AlbumArt
+from neonmeate.ui.toolkit import add_pixbuf_border, AlbumArt, scale_pixbuf
 
 
 class Albums(Gtk.ScrolledWindow):
@@ -18,62 +18,42 @@ class Albums(Gtk.ScrolledWindow):
     def __init__(self, mpdclient, art_cache, placeholder_pixbuf, options,
                  border_style_context):
         super(Albums, self).__init__()
+        self._placeholder_surface = None
         self.set_shadow_type(Gtk.ShadowType.NONE)
         self._border_style_context = border_style_context
         self._placeholder_pixbuf = placeholder_pixbuf
         self._options = options
-        colspacing = options.col_spacing // self.get_scale_factor()
-        self.set_min_content_width(self._album_width() + colspacing)
         self._art = art_cache
         self._mpdclient = mpdclient
+        self._border_color = border_style_context.get_background_color(0)
         self._model = Gtk.ListStore(GObject.TYPE_PYOBJECT)
-        self._view = Gtk.IconView(self._model)
-        self._view.set_hexpand(True)
-        self._view.set_selection_mode(Gtk.SelectionMode.NONE)
-        self._view.set_column_spacing(colspacing)
-        self._view.set_row_spacing(options.row_spacing)
-        self._view.set_has_tooltip(True)
-        self._view.set_item_width(self._options.album_size)
-        self._view.connect('query-tooltip', self._on_tooltip)
         self._surface_cache = {}
+        self._view = self._build_view()
         self.add(self._view)
         self.connect('notify::scale-factor', self._on_scale)
+        self._selected_artist = None
+        self._selected_album = None
+        self._artists = []
+        self.show_all()
 
+    def _colspacing(self):
+        return int(1.3 * (self._options.col_spacing // self.get_scale_factor()))
+
+    def _build_view(self):
+        self.set_min_content_width(self._album_width() + self._colspacing())
+        self._create_placeholder_surface()
+
+        view = Gtk.IconView(self._model)
+        view.set_hexpand(True)
+        view.set_selection_mode(Gtk.SelectionMode.NONE)
+        view.set_column_spacing(self._colspacing())
+        view.set_row_spacing(self._options.row_spacing)
+        view.set_has_tooltip(True)
+        view.set_item_width(self._options.album_size)
+        view.connect('query-tooltip', self._on_tooltip)
         renderer = Gtk.CellRendererPixbuf()
-        self._view.pack_start(renderer, False)
-        self._border_color = border_style_context.get_background_color(0)
-        self._placeholder_surface = self.pixbuf_surface(
-            add_pixbuf_border(self._placeholder_pixbuf, self._border_color,
-                              border_width=0))
-
-        def render_cover(view, cell, model, iter, placeholder_pb):
-            album = model[iter][0]
-            surface = self._surface_cache.get(album, self._placeholder_surface)
-            if surface != self._placeholder_surface:
-                cell.set_property('surface', surface)
-                return
-            if album.art is None:
-                album.art = AlbumArt(art_cache, album, placeholder_pb)
-                row = Gtk.TreeRowReference.new(model, model.get_path(iter))
-
-                def on_art_ready(ready_pb, _):
-                    path = row.get_path()
-                    if path:
-                        model.row_changed(path, model.get_iter(path))
-                    self.queue_draw()
-
-                album.art.resolve(on_art_ready, None)
-            elif album.art.is_resolved():
-                pb = add_pixbuf_border(
-                    album.art.get_scaled_pixbuf(self._album_width()),
-                    self._get_border_color(),
-                    border_width=self._options.border_width
-                )
-                surface = self.pixbuf_surface(pb)
-                self._surface_cache[album] = surface
-            cell.set_property('surface', surface)
-
-        self._view.set_cell_data_func(renderer, render_cover, None)
+        view.pack_start(renderer, False)
+        view.set_cell_data_func(renderer, self._render_cover, None)
 
         def render_album_info(view, cell, model, iter, data):
             album = model[iter][0]
@@ -87,13 +67,66 @@ class Albums(Gtk.ScrolledWindow):
         txt_render.set_property('alignment', Pango.Alignment.CENTER)
         txt_render.set_property('xalign', 0.5)
         txt_render.set_property('ellipsize', Pango.EllipsizeMode.END)
-        self._view.pack_start(txt_render, False)
-        self._view.set_cell_data_func(txt_render, render_album_info, None)
-        self._view.connect('button-press-event', self._on_button_press)
-        self._selected_artist = None
-        self._selected_album = None
-        self._artists = []
-        self.show_all()
+        view.pack_start(txt_render, False)
+        view.set_cell_data_func(txt_render, render_album_info, None)
+        view.connect('button-press-event', self._on_button_press)
+        view.show_all()
+        return view
+
+    def _render_cover(self, view, cell, model, iter, placeholder_pb):
+        album = model[iter][0]
+        surface = self._surface_cache.get(album, self._placeholder_surface)
+        if surface != self._placeholder_surface:
+            cell.set_property('surface', surface)
+            return
+        if album.art is None:
+            album.art = AlbumArt(self._art, album, placeholder_pb)
+            row = Gtk.TreeRowReference.new(model, model.get_path(iter))
+
+            def on_art_ready(ready_pb, _):
+                path = row.get_path()
+                if path:
+                    model.row_changed(path, model.get_iter(path))
+                self.queue_draw()
+
+            album.art.resolve(on_art_ready, None)
+        elif album.art.is_resolved():
+            pb = add_pixbuf_border(
+                album.art.get_scaled_pixbuf(self._album_width()),
+                self._get_border_color(),
+                border_width=self._options.border_width
+            )
+            surface = self.pixbuf_surface(pb)
+            self._surface_cache[album] = surface
+        cell.set_property('surface', surface)
+
+    def on_album_size(self, size):
+        if size != self._options.album_size:
+            self._create_placeholder_surface()
+            self._surface_cache.clear()
+            self._options.album_size = size
+            self.remove(self._view)
+            del self._view
+            self._view = self._build_view()
+            self.add(self._view)
+            self.queue_draw()
+
+    def _create_placeholder_surface(self):
+        if self._placeholder_surface:
+            del self._placeholder_surface
+
+        self._placeholder_pixbuf = scale_pixbuf(
+            self._placeholder_pixbuf,
+            self._album_width()
+        )
+
+        self._placeholder_surface = self.pixbuf_surface(
+            add_pixbuf_border(
+                self._placeholder_pixbuf,
+                self._border_color,
+                border_width=0
+            )
+        )
 
     def _album_width(self):
         return self.get_scale_factor() * self._options.album_size

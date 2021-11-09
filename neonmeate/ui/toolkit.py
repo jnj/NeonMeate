@@ -26,6 +26,10 @@ def glib_main(func):
     return f
 
 
+def scale_pixbuf(pixbuf, px):
+    return pixbuf.scale_simple(px, px, GdkPixbuf.InterpType.BILINEAR)
+
+
 class TimedInfoBar(Gtk.InfoBar):
     """
     An InfoBar that briefly shows a message and then hides itself.
@@ -77,7 +81,7 @@ class AlbumArt:
 
     def get_scaled_pixbuf(self, edge_size):
         pixbuf = self._resolved if self.is_resolved() else self._placeholder
-        return pixbuf.scale_simple(edge_size, edge_size, AlbumArt.ScaleMode)
+        return scale_pixbuf(pixbuf, edge_size)
 
     def resolve(self, on_done, user_data):
         """

@@ -12,6 +12,7 @@ class ConfigKey:
     CONN_PORT = 'port'
     CONN_HB = 'hb'
     CONNECTED = 'connected'
+    ALBUM_SIZE = 'album_size'
 
 
 def main_config_file():
@@ -53,6 +54,8 @@ class Config:
         # Whether to include compilation appearances among an
         # artist's albums in the library view
         'albums_include_comps': True,
+
+        ConfigKey.ALBUM_SIZE: 120,
 
         ConfigKey.CONN_SETTINGS: {
             ConfigKey.CONN_HOST: 'localhost',
@@ -106,6 +109,9 @@ class Config:
     def set(self, key, item):
         self._config[key] = item
 
+    def save_default(self):
+        self.save(main_config_file())
+
     def save(self, file):
         if not os.path.exists(os.path.dirname(file)):
             os.makedirs(os.path.dirname(file))
@@ -114,6 +120,13 @@ class Config:
 
     def mpd_hb_interval(self):
         return self._config.get(ConfigKey.CONN_HB, 500)
+
+    def album_size(self):
+        return self[ConfigKey.ALBUM_SIZE]
+
+    def save_album_size(self, size):
+        self.set(ConfigKey.ALBUM_SIZE, size)
+        self.save_default()
 
     def mpd_host(self):
         return self[ConfigKey.CONN_SETTINGS][ConfigKey.CONN_HOST]

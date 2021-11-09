@@ -32,6 +32,7 @@ class NetworkSettings(SettingsGrid):
 
     def __init__(self, configstate):
         super(NetworkSettings, self).__init__()
+        self.set_column_spacing(30)
         host_label = left_label('Host')
         self.add(host_label)
         host, port = configstate.get_host_and_port()
@@ -208,18 +209,84 @@ class OutputsSettings(SettingsGrid):
         self.show_all()
 
 
+class InterfaceSettings(SettingsGrid):
+    SIG_ALBUM_SCALE_CHANGE = 'neonmeate-album-scale-change'
+
+    __gsignals__ = {
+        SIG_ALBUM_SCALE_CHANGE: (GObject.SignalFlags.RUN_FIRST, None, (int,))
+    }
+
+    def __init__(self, cfg):
+        super(InterfaceSettings, self).__init__()
+        album_size_lbl = Gtk.Label('Album size in grid')
+        album_size_lbl.set_xalign(0)
+        self.add(album_size_lbl)
+
+        min_sz = 80
+        max_sz = 420
+        incr = 40
+        self._album_sizes = []
+        self._album_scale = album_size_scale = Gtk.HScale.new_with_range(
+            min_sz,
+            max_sz,
+            incr
+        )
+
+        album_size_scale.set_digits(0)
+        album_size_scale.set_draw_value(False)
+        album_size_scale.set_hexpand(True)
+        album_size_scale.set_increments(incr, incr)
+        album_size_scale.set_can_focus(False)
+        album_size_scale.set_value(cfg.album_size())
+        album_size_scale.connect('value-changed', self._on_size_change)
+
+        i = min_sz
+        alternate = True
+        while i <= max_sz:
+            self._album_sizes.append(i)
+            if alternate:
+                album_size_scale.add_mark(i, Gtk.PositionType.BOTTOM, str(i))
+            alternate = not alternate
+            i += incr
+
+        self.attach_under(album_size_scale, album_size_lbl)
+        self._album_sizes.sort()
+
+    def get_album_scale(self):
+        return self._album_scale.get_value()
+
+    def _on_size_change(self, widget):
+        value = self._album_scale.get_value()
+        if value not in self._album_sizes:
+            l = self._album_sizes
+            snapped = value
+            for prv, nxt in zip(l, l[1:]):
+                if prv <= value <= nxt:
+                    if abs(value - prv) < abs(value - nxt):
+                        snapped = prv
+                    else:
+                        snapped = nxt
+                    break
+            if snapped != value:
+                self._album_scale.set_value(snapped)
+        else:
+            self.emit(InterfaceSettings.SIG_ALBUM_SCALE_CHANGE, value)
+
+
 class SettingsMenu(Gtk.Popover):
     SIG_CONNECT_ATTEMPT = 'neonmeate-connect-attempt'
     SIG_MUSIC_DIR_UPDATED = 'neonmeate-musicdir-updated'
     SIG_UPDATE_REQUESTED = 'neonmeate-update-requested'
     SIG_OUTPUT_CHANGE = 'neonmeate-output-change'
+    SIG_ALBUM_SCALE_CHANGE = 'neonmeate-album-scale-change'
 
     __gsignals__ = {
         SIG_CONNECT_ATTEMPT:
             (GObject.SignalFlags.RUN_FIRST, None, (str, int, bool,)),
         SIG_MUSIC_DIR_UPDATED: (GObject.SignalFlags.RUN_FIRST, None, (str,)),
         SIG_UPDATE_REQUESTED: (GObject.SignalFlags.RUN_FIRST, None, ()),
-        SIG_OUTPUT_CHANGE: (GObject.SignalFlags.RUN_FIRST, None, (int, bool,))
+        SIG_OUTPUT_CHANGE: (GObject.SignalFlags.RUN_FIRST, None, (int, bool,)),
+        SIG_ALBUM_SCALE_CHANGE: (GObject.SignalFlags.RUN_FIRST, None, (int,))
     }
 
     def __init__(self, executor, configstate, connstatus, cfg):
@@ -240,10 +307,12 @@ class SettingsMenu(Gtk.Popover):
         self._network_settings = NetworkSettings(configstate)
         self._library_settings = LibrarySettings(configstate, cfg)
         self._output_settings = OutputsSettings()
+        self._interface_settings = InterfaceSettings(cfg)
 
         notebook.append_page(self._network_settings, Gtk.Label('Network'))
         notebook.append_page(self._library_settings, Gtk.Label('Library'))
         notebook.append_page(self._output_settings, Gtk.Label('Outputs'))
+        notebook.append_page(self._interface_settings, Gtk.Label('Interface'))
 
         self._connect_label = Gtk.Label('Connect')
         self._connected_label = Gtk.Label('Connected')
@@ -276,9 +345,18 @@ class SettingsMenu(Gtk.Popover):
             self._on_outputs_change
         )
 
+        self._interface_settings.connect(
+            InterfaceSettings.SIG_ALBUM_SCALE_CHANGE,
+            self._on_album_scale_change
+        )
+
         self._box.add(notebook)
         self._box.add(self._connect_switch)
         self._box.show_all()
+
+    def _on_album_scale_change(self, widget, gparam):
+        size = widget.get_album_scale()
+        self.emit(SettingsMenu.SIG_ALBUM_SCALE_CHANGE, size)
 
     def _on_cache_clear(self, widget):
         self._save()

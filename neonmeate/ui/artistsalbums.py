@@ -9,7 +9,7 @@ from neonmeate.ui.toolkit import TimedInfoBar, \
 class AlbumViewOptions:
     def __init__(self):
         self.border_width = 4
-        self.album_size = 220
+        self.album_size = 120
         self.col_spacing = 50
         self.row_spacing = 30
 
@@ -20,6 +20,7 @@ class ArtistsAlbums(Gtk.Overlay):
     def __init__(self, mpdclient, art, cfg, style_context, include_comps):
         super(ArtistsAlbums, self).__init__()
         album_view_opts = AlbumViewOptions()
+        album_view_opts.album_size = cfg.album_size()
         self.set_hexpand(True)
         self.set_vexpand(True)
         self._box = Gtk.VBox()
@@ -63,6 +64,9 @@ class ArtistsAlbums(Gtk.Overlay):
         columns.pack_end(self._albums_songs, True, True, 0)
         self._box.pack_end(columns, True, True, 0)
         self.show_all()
+
+    def on_album_size_change(self, size):
+        self._albums_songs.on_album_size_change(size)
 
     def on_include_comps_change(self, enabled):
         self._artists.on_include_comps_change(enabled)
