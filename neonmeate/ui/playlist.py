@@ -46,10 +46,12 @@ class PlayListControls(NeonMeateButtonBox):
 
 
 class PlaylistContainer(Gtk.Frame):
+    SIG_PENDING_PLAYLIST_CHG = 'neonmeate_playlist_change'
     SIG_RANDOM_FILL = 'neonmeate_random_fill'
 
     __gsignals__ = {
-        SIG_RANDOM_FILL: (GObject.SignalFlags.RUN_FIRST, None, (str, int))
+        SIG_RANDOM_FILL: (GObject.SignalFlags.RUN_FIRST, None, (str, int)),
+        SIG_PENDING_PLAYLIST_CHG: (GObject.SignalFlags.RUN_FIRST, None, ())
     }
 
     def __init__(self, mpdclient):
@@ -85,6 +87,7 @@ class PlaylistContainer(Gtk.Frame):
         self._box.show_all()
 
     def _on_add_random(self, widget, item_type, n):
+        self.emit(PlaylistContainer.SIG_PENDING_PLAYLIST_CHG)
         self.emit(PlaylistContainer.SIG_RANDOM_FILL, item_type, n)
 
     def _on_del_item(self, pl):
@@ -92,15 +95,15 @@ class PlaylistContainer(Gtk.Frame):
             self._mpdclient.delete_playlist_item(i)
 
     def _on_shuffle(self, _):
+        self.emit(PlaylistContainer.SIG_PENDING_PLAYLIST_CHG)
         self._mpdclient.shuffle_playlist()
 
-    def _rand_fill(self, _):
-        self.emit('neonmeate_random_fill')
-
     def _on_clear(self, _):
+        self.emit(PlaylistContainer.SIG_PENDING_PLAYLIST_CHG)
         self._mpdclient.clear_playlist()
 
     def _on_crop(self, _):
+        self.emit(PlaylistContainer.SIG_PENDING_PLAYLIST_CHG)
         self._mpdclient.crop_playlist()
 
     def clear(self):

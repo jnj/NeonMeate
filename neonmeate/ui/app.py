@@ -115,6 +115,10 @@ class App(Gtk.ApplicationWindow):
             PlaylistContainer.SIG_RANDOM_FILL,
             self._on_random_fill
         )
+        self._playlist.connect(
+            PlaylistContainer.SIG_PENDING_PLAYLIST_CHG,
+            self._on_playlist_pending_change
+        )
         self._now_playing = NowPlaying(rng, art_cache, executor, cfg)
         self._stack.add_named(self._artists, 'library')
         self._stack.add_named(self._playlist, 'playlist')
@@ -137,7 +141,11 @@ class App(Gtk.ApplicationWindow):
         self._stack_switcher = Gtk.StackSwitcher()
         self._stack_switcher.set_stack(self._stack)
         self._stack.connect('notify::visible-child', self._on_stack_change)
+        self._spinner = Gtk.Spinner()
+        self._spinner.set_vexpand(False)
+        self._spinner.set_hexpand(False)
         self._titlebar.pack_start(self._stack_switcher)
+        self._titlebar.pack_start(self._spinner)
         self._titlebar.pack_end(self._volume_btn)
         self._titlebar.pack_end(self._settings_btn)
         self._main_box.pack_start(self._stack, True, True, 0)
@@ -191,6 +199,9 @@ class App(Gtk.ApplicationWindow):
                 False
             )
 
+    def _on_playlist_pending_change(self, widget):
+        self._spinner.start()
+
     def _on_random_fill(self, widget, item_type, n):
         with self._mpdhb.handler_block(self._playlist_change_id):
             self._mpdclient.add_random(item_type, n)
@@ -242,6 +253,7 @@ class App(Gtk.ApplicationWindow):
             self._playlist_updated = True
 
         self._mpdclient.playlistinfo(on_current_queue)
+        self._spinner.stop()
 
     def _update_play_queue(self, playqueue):
         self._playlist.clear()

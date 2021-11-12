@@ -303,7 +303,7 @@ class Mpd:
                 files.extend([r[mpdmeta.FILE_KEY] for r in
                               self._client.list(
                                   mpdmeta.FILE_KEY,
-                                  mpdmeta.RTIST_KEY,
+                                  mpdmeta.ARTIST_KEY,
                                   sel
                               )])
             self.add_files_to_playlist(files)
