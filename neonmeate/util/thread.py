@@ -1,3 +1,4 @@
+import os
 import queue
 import sched
 import threading
@@ -56,7 +57,8 @@ class ScheduledExecutor:
         self._thread = EventLoopThread(event_loop_err_handler)
         self._scheduler = sched.scheduler(timefunc=time.monotonic)
         self._exec_error_handler = executor_err_handler
-        self._executor = ThreadPoolExecutor(max_workers=4)
+        ncpus = max(1, len(os.sched_getaffinity(0)) - 1)
+        self._executor = ThreadPoolExecutor(max_workers=ncpus)
         self._single_exec = ThreadPoolExecutor(max_workers=1)
         self._nullScheduledTask = NullCancelable()
         self._stopped = False
