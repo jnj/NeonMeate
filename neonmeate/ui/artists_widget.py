@@ -1,3 +1,4 @@
+import dcl
 import re
 
 from gi.repository import Gtk, GObject
@@ -113,16 +114,14 @@ class Artists(Gtk.ScrolledWindow):
             self._artist_column.set_filter_func(None)
             return
 
-        search_txt = artist_text.lower()
+        search_txt = dcl.clean_diacritics(artist_text.lower())
         terms = search_txt.split()
-        expr = '.*' + '.*'.join([t for t in terms]) + '.*'
-        regex = re.compile(expr)
 
         self._artist_column.invalidate_filter()
 
         def filter_fn(listboxrow):
             label = listboxrow.get_child()
-            txt = label.get_text().lower()
-            return regex.search(txt) is not None
+            txt = dcl.clean_diacritics(label.get_text()).lower()
+            return all(term in txt for term in terms)
 
         self._artist_column.set_filter_func(filter_fn)
