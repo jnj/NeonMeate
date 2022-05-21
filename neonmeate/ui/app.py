@@ -37,8 +37,8 @@ class App(Gtk.ApplicationWindow):
         self._playlist_updated = False
         self.set_default_size(860, 860)
         self._titlebar = Gtk.HeaderBar()
-        self._titlebar.set_title("NeonMeate")
-        self._titlebar.set_show_close_button(True)
+        #self._titlebar.set_title("NeonMeate")
+        # self._titlebar.set_show_close_button(True)
         self.set_titlebar(self._titlebar)
 
         self._controlsbar = ControlsBar()
@@ -67,8 +67,9 @@ class App(Gtk.ApplicationWindow):
             self._on_next_song
         )
 
-        self._main_box = Gtk.VBox()
-        self.add(self._main_box)
+        self._main_box = Gtk.Box()
+        self._main_box.set_orientation(Gtk.Orientation.VERTICAL)
+        self.set_child(self._main_box)
         self._stack = Gtk.Stack()
         self._playlist = PlaylistContainer(mpdclient)
         self._settings = SettingsMenu(executor, configstate, connstatus, cfg)

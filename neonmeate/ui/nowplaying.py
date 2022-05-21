@@ -4,7 +4,7 @@ from .cover import CoverWithGradient
 
 
 # noinspection PyUnresolvedReferences
-class NowPlaying(Gtk.Bin):
+class NowPlaying(Gtk.Box):
     def __init__(self, rng, art_cache, executor, cfg):
         super(NowPlaying, self).__init__()
         self._cfg = cfg

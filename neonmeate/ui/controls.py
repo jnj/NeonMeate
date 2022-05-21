@@ -7,9 +7,9 @@ from .times import format_elapsed_time
 class ControlButton(Gtk.Button):
     def __init__(self, icon_name):
         super(ControlButton, self).__init__()
-        self.icon_size = Gtk.IconSize.MENU
-        self.icon = Gtk.Image.new_from_icon_name(icon_name, self.icon_size)
-        self.add(self.icon)
+        #self.icon_size = Gtk.IconSize.NORMAL
+        self.set_icon_name(icon_name)
+        # self.set_child(self.icon)
         self.set_can_focus(False)
 
 
@@ -18,12 +18,9 @@ class PlayModeButton(Gtk.ToggleButton):
         super(PlayModeButton, self).__init__()
         self.set_can_focus(False)
         if icon_name is not None:
-            self._icon_size = Gtk.IconSize.MENU
-            self._icon = Gtk.Image.new_from_icon_name(
-                icon_name,
-                self._icon_size
-            )
-            self.add(self._icon)
+            #self._icon_size = Gtk.IconSize.MENU
+            self._icon = icon_name
+            self.set_icon_name(self._icon)
         else:
             lbl = Gtk.Label()
             lbl.set_label(label)
@@ -39,18 +36,14 @@ class PlayPauseButton(ControlButton):
 
     def __init__(self):
         super(PlayPauseButton, self).__init__('media-playback-start')
-        self.pause_icon = Gtk.Image.new_from_icon_name(
-            'media-playback-pause',
-            self.icon_size
-        )
-        self.play_icon = self.icon
+        self.pause_icon = 'media-playback-pause'
+        self.play_icon = 'media_playback-start'
         self.paused = False
         self.set_paused(False)
         self.connect('clicked', self._toggle_pause_state)
 
     def set_play_icon(self):
-        child = self.get_child()
-        if not child == self.play_icon:
+        if not self.get_icon_name() == self.play_icon:
             self._swap_icons()
 
     def set_paused(self, paused):
@@ -65,30 +58,26 @@ class PlayPauseButton(ControlButton):
         self.emit(PlayPauseButton.SIG_PLAYPAUSE_TOGGLED, self.paused)
 
     def _swap_icons(self):
-        child = self.get_child()
-        self.remove(child)
-        new_icon = self._switch_icon(child)
-        self.add(new_icon)
-        self.get_child().show()
+        self.set_icon_name(self._switch_icon())
         self.paused = not self.paused
 
-    def _switch_icon(self, child):
-        if child == self.pause_icon:
+    def _switch_icon(self):
+        if self.get_icon_name() == self.pause_icon:
             return self.play_icon
         return self.pause_icon
 
 
-class NeonMeateButtonBox(Gtk.ButtonBox):
+class NeonMeateButtonBox(Gtk.Box):
     def __init__(self):
-        super(NeonMeateButtonBox, self).__init__(Gtk.Orientation.HORIZONTAL)
-        self.set_layout(Gtk.ButtonBoxStyle.EXPAND)
+        super(NeonMeateButtonBox, self).__init__()
+        # self.set_layout(Gtk.ButtonBoxStyle.EXPAND)
         self._buttons = []
         self._byname = {}
 
     def add_button(self, button, name, click_signal_name):
         self._buttons.append(button)
         self._byname[name] = button
-        self.add(button)
+        self.append(button)
         if click_signal_name is not None:
             self._emit_on_click(button, click_signal_name)
         return button

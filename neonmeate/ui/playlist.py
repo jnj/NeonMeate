@@ -25,7 +25,7 @@ class PlayListControls(NeonMeateButtonBox):
             PlayListControls.SIG_CROP_PLAYLIST
         )
         crop_btn.set_label('Crop')
-        crop_btn.set_always_show_image(True)
+        # crop_btn.set_always_show_image(True)
         crop_btn.set_tooltip_text('Remove all except first song')
         clear_btn = self.add_button(
             ControlButton('edit-clear'),
@@ -33,7 +33,7 @@ class PlayListControls(NeonMeateButtonBox):
             PlayListControls.SIG_CLEAR_PLAYLIST
         )
         clear_btn.set_label('Clear')
-        clear_btn.set_always_show_image(True)
+        # clear_btn.set_always_show_image(True)
         clear_btn.set_tooltip_text('Clear the play queue')
         shufl_btn = self.add_button(
             ControlButton('shuffle'),
@@ -41,7 +41,7 @@ class PlayListControls(NeonMeateButtonBox):
             PlayListControls.SIG_SHUFFLE_PLAYLIST
         )
         shufl_btn.set_label('Shuffle')
-        shufl_btn.set_always_show_image(True)
+        # shufl_btn.set_always_show_image(True)
         shufl_btn.set_tooltip_text('Shuffle the play queue')
 
 
@@ -57,7 +57,8 @@ class PlaylistContainer(Gtk.Frame):
     def __init__(self, mpdclient):
         super(PlaylistContainer, self).__init__()
         self._mpdclient = mpdclient
-        self._box = Gtk.VBox()
+        self._box = Gtk.Box()
+        self._box.set_orientation(Gtk.Orientation.VERTICAL)
         self._playlist_controls_bar = Gtk.ActionBar()
         self._controls = PlayListControls()
         self._playlist_controls_bar.pack_start(self._controls)
@@ -134,7 +135,7 @@ class Playlist(Gtk.ScrolledWindow):
         )
         self._selected_indices = []
         self._treeview = self._playlist_table.as_widget()
-        self.add(self._treeview)
+        self.append(self._treeview)
         self._playlist_table.set_selection_handler(self._on_selection)
         self._treeview.connect('key-press-event', self._on_keypress)
         self._nav_keys = {

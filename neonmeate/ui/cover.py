@@ -8,7 +8,6 @@ from neonmeate.util import cluster
 from neonmeate.util.color import RGBColor
 from neonmeate.ui.toolkit import glib_main
 
-gi.require_version('Gtk', '3.0')
 gi.require_foreign('cairo')
 
 

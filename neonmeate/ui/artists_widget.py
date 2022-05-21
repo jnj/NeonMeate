@@ -7,7 +7,7 @@ from neonmeate.ui.toolkit import glib_main
 from neonmeate.ui.toolkit import Column
 
 
-class ArtistsWidget(Gtk.VBox):
+class ArtistsWidget(Gtk.Box):
     SIG_ARTIST_SELECTED = 'artist_selected'
     SIG_ARTISTS_LOADED = 'artists_loaded'
 
@@ -17,7 +17,7 @@ class ArtistsWidget(Gtk.VBox):
     }
 
     def __init__(self, mpdclient, include_comps):
-        super(ArtistsWidget, self).__init__()
+        super(ArtistsWidget, self).__init__(Gtk.Orientation.GTK_ORIENTATION_VERTICAL)
         self._artists = Artists(mpdclient, include_comps)
         self._searchbar = Gtk.ActionBar()
         self._search_entry = Gtk.SearchEntry()
