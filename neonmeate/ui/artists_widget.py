@@ -17,14 +17,14 @@ class ArtistsWidget(Gtk.Box):
     }
 
     def __init__(self, mpdclient, include_comps):
-        super(ArtistsWidget, self).__init__(Gtk.Orientation.GTK_ORIENTATION_VERTICAL)
+        super(ArtistsWidget, self).__init__(orientation=Gtk.Orientation.VERTICAL)
         self._artists = Artists(mpdclient, include_comps)
         self._searchbar = Gtk.ActionBar()
         self._search_entry = Gtk.SearchEntry()
-        self._search_entry.set_has_frame(True)
-        self._searchbar.add(self._search_entry)
-        self.pack_start(self._searchbar, False, False, 0)
-        self.pack_start(self._artists, True, True, 0)
+        # self._search_entry.set_has_frame(True)
+        self._searchbar.pack_start(self._search_entry)
+        self.prepend(self._searchbar)
+        self.prepend(self._artists)
         self._artists.connect(
             Artists.SIG_ARTIST_SELECTED,
             self._on_artist_selected
@@ -35,7 +35,7 @@ class ArtistsWidget(Gtk.Box):
         )
         self._searched_artist = None
         self._search_entry.connect('search-changed', self._on_artist_searched)
-        self.show_all()
+        # self.show_all()
 
     def on_include_comps_change(self, enabled):
         self._artists.set_include_comps(enabled)
@@ -73,9 +73,9 @@ class Artists(Gtk.ScrolledWindow):
         super(Artists, self).__init__()
         self._include_comps = include_comps
         self.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        self.set_shadow_type(Gtk.ShadowType.NONE)
+        #self.set_shadow_type(Gtk.ShadowType.NONE)
         self._artist_column = Column(vmargin=15, selectable_rows=True)
-        self.add(self._artist_column)
+        self.set_child(self._artist_column)
         self._mpd = mpdclient
         self._artist_column.connect(
             Column.SIG_VALUE_SELECTED,

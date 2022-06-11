@@ -128,6 +128,7 @@ class Column(Gtk.ListBox):
     def __init__(self, vmargin=10, selectable_rows=True, multiselect=False):
         super(Column, self).__init__()
         self._vmargin = vmargin
+        self._children = []
         if selectable_rows:
             if multiselect:
                 self.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
@@ -138,9 +139,8 @@ class Column(Gtk.ListBox):
             self.set_selection_mode(Gtk.SelectionMode.NONE)
 
     def clear(self):
-        children = self.get_children()
-        for child in children:
-            child.destroy()
+        for c in self._children:
+            c.destroy()
 
     def add_row(self, text):
         label = Gtk.Label()
@@ -153,6 +153,7 @@ class Column(Gtk.ListBox):
         label.set_margin_start(self._vmargin)
         label.show()
         self.add(label)
+        self._children.append(label)
 
     def _on_row_selected(self, box, row):
         if row is None:

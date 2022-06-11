@@ -19,13 +19,13 @@ class Albums(Gtk.ScrolledWindow):
                  border_style_context):
         super(Albums, self).__init__()
         self._placeholder_surface = None
-        self.set_shadow_type(Gtk.ShadowType.NONE)
+        # self.set_shadow_type(Gtk.ShadowType.NONE)
         self._border_style_context = border_style_context
         self._placeholder_pixbuf = placeholder_pixbuf
         self._options = options
         self._art = art_cache
         self._mpdclient = mpdclient
-        self._border_color = border_style_context.get_background_color(0)
+        self._border_color = border_style_context.get_color()
         self._model = Gtk.ListStore(GObject.TYPE_PYOBJECT)
         self._surface_cache = {}
         self._view = self._build_view()

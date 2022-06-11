@@ -1,4 +1,4 @@
-from gi.repository import Gtk
+from gi.repository import Gtk, Gdk, GdkPixbuf
 
 from .albums_songs_widget import AlbumsAndSongs
 from .artists_widget import ArtistsWidget
@@ -31,14 +31,25 @@ class ArtistsAlbums(Gtk.Overlay):
         self.add_overlay(self._infobar)
         # self.pack_start(self._infobar, False, False, 0)
         self._update_pending = BooleanRef()
-        self._album_placeholder_pixbuf = \
-            Gtk.IconTheme.get_default().load_icon_for_scale(
+        display = Gdk.Display.get_default()
+        icon_theme = Gtk.IconTheme.get_for_display(display)
+        placeholder_icon = icon_theme.lookup_icon(
                 'media-optical-cd-audio-symbolic',
-                album_view_opts.album_size, 1, 0)
+                [],
+                album_view_opts.album_size,
+                1, 0, 0)
+
+        self._album_placeholder_pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+            placeholder_icon.get_file().get_path(),
+            album_view_opts.album_size,
+            album_view_opts.album_size,
+            False,
+        )
+
         self._art = art
         self._cfg = cfg
         self._mpdclient = mpdclient
-        columns = Gtk.HBox()
+        columns = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self._artists = ArtistsWidget(mpdclient, include_comps)
         self._artists.connect(
             ArtistsWidget.SIG_ARTIST_SELECTED,
@@ -48,10 +59,10 @@ class ArtistsAlbums(Gtk.Overlay):
             ArtistsWidget.SIG_ARTISTS_LOADED,
             self._on_artists_loaded
         )
-        columns.pack_start(self._artists, False, False, 0)
 
+        columns.prepend(self._artists)
         separator = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
-        columns.pack_start(separator, False, False, 0)
+        columns.prepend(separator)
 
         self._albums_songs = AlbumsAndSongs(
             self._mpdclient,
@@ -61,9 +72,9 @@ class ArtistsAlbums(Gtk.Overlay):
             style_context
         )
 
-        columns.pack_end(self._albums_songs, True, True, 0)
-        self._box.pack_end(columns, True, True, 0)
-        self.show_all()
+        columns.append(self._albums_songs)
+        self._box.append(columns)
+        # self.show_all()
 
     def on_album_size_change(self, size):
         self._albums_songs.on_album_size_change(size)
