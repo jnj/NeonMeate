@@ -69,9 +69,9 @@ class PlaylistContainer(Gtk.Frame):
             Playlist.SIG_DEL_PLAYLIST_ITEM,
             self._on_del_item
         )
-        self.add(self._box)
-        self._box.pack_start(self._playlist, True, True, 0)
-        self._box.pack_end(self._playlist_controls_bar, False, False, 0)
+        self.set_child(self._box)
+        self._box.prepend(self._playlist)
+        self._box.append(self._playlist_controls_bar)
         self._controls.connect(
             PlayListControls.SIG_CROP_PLAYLIST,
             self._on_crop
@@ -85,7 +85,7 @@ class PlaylistContainer(Gtk.Frame):
             self._on_shuffle
         )
         self._rand.connect(RandomWidget.SIG_RANDOM_ADDED, self._on_add_random)
-        self._box.show_all()
+        # self._box.show_all()
 
     def _on_add_random(self, widget, item_type, n):
         self.emit(PlaylistContainer.SIG_PENDING_PLAYLIST_CHG)
@@ -135,9 +135,11 @@ class Playlist(Gtk.ScrolledWindow):
         )
         self._selected_indices = []
         self._treeview = self._playlist_table.as_widget()
-        self.append(self._treeview)
+        self.set_child(self._treeview)
         self._playlist_table.set_selection_handler(self._on_selection)
-        self._treeview.connect('key-press-event', self._on_keypress)
+        key_event_ctrl = Gtk.EventControllerKey()
+        key_event_ctrl.connect('key-pressed', self._on_keypress)
+        self._treeview.add_controller(key_event_ctrl)
         self._nav_keys = {
             Gdk.KEY_Down,
             Gdk.KEY_Up,

@@ -4,7 +4,8 @@ from ..util.config import main_config_file
 
 
 def left_label(txt):
-    lbl = Gtk.Label(txt)
+    lbl = Gtk.Label()
+    lbl.set_label(txt)
     lbl.set_xalign(0)
     lbl.set_justify(Gtk.Justification.LEFT)
     return lbl
@@ -16,16 +17,25 @@ class SettingsGrid(Gtk.Grid):
         spacing = 10
         self.set_column_spacing(spacing)
         self.set_row_spacing(spacing)
-        self.set_property('margin', spacing)
+        self._children = []
+        # self.set_property('margin', spacing)
 
     def _attach(self, to_attach, attached, pos_type):
         self.attach_next_to(to_attach, attached, pos_type, 1, 1)
+        self._children.append(to_attach)
 
     def attach_right(self, to_attach, left_item):
         self._attach(to_attach, left_item, Gtk.PositionType.RIGHT)
+        self._children.append(to_attach)
 
     def attach_under(self, to_attach, top_item):
         self._attach(to_attach, top_item, Gtk.PositionType.BOTTOM)
+        self._children.append(to_attach)
+
+    def clear(self):
+        for c in self._children:
+            self.remove(c)
+        self._children = []
 
 
 class NetworkSettings(SettingsGrid):
@@ -34,12 +44,12 @@ class NetworkSettings(SettingsGrid):
         super(NetworkSettings, self).__init__()
         self.set_column_spacing(30)
         host_label = left_label('Host')
-        self.add(host_label)
+        self.attach(host_label, 0, 0, 1, 1)
         host, port = configstate.get_host_and_port()
         self._host_entry = host_entry = Gtk.Entry()
         host_entry.set_input_purpose(Gtk.InputPurpose.ALPHA)
         host_entry.set_text(host)
-        self.add(host_entry)
+        self.attach_right(host_entry, host_label)
 
         port_label = left_label('Port')
         self.attach_under(port_label, host_label)
@@ -54,7 +64,7 @@ class NetworkSettings(SettingsGrid):
         passwd_entry.set_visibility(False)
         passwd_entry.set_input_purpose(Gtk.InputPurpose.PASSWORD)
         self.attach_right(passwd_entry, passwd_label)
-        self.show_all()
+        # self.show_all()
 
     def get_host_setting(self):
         return self._host_entry.get_text()
@@ -93,14 +103,14 @@ class LibrarySettings(SettingsGrid):
         self._configstate = configstate
         self._cfg = cfg
         music_dir_label = left_label('Music Folder')
-        music_dir_chooser = Gtk.FileChooserButton()
-        music_dir_chooser.set_action(Gtk.FileChooserAction.SELECT_FOLDER)
-        music_dir_chooser.set_local_only(True)
-        music_dir_chooser.set_current_folder(configstate.get_musicpath())
-        music_dir_chooser.connect('file-set', self._on_music_folder)
+        # music_dir_chooser = Gtk.FileChooserButton()
+        # music_dir_chooser.set_action(Gtk.FileChooserAction.SELECT_FOLDER)
+        # music_dir_chooser.set_local_only(True)
+        # music_dir_chooser.set_current_folder(configstate.get_musicpath())
+        # music_dir_chooser.connect('file-set', self._on_music_folder)
 
-        self.add(music_dir_label)
-        self.attach_right(music_dir_chooser, music_dir_label)
+        self.attach(music_dir_label, 0, 0, 1, 1)
+        #self.attach_right(music_dir_chooser, music_dir_label)
         albums_view_label = left_label('Artists')
         self.attach_under(albums_view_label, music_dir_label)
 
@@ -126,7 +136,7 @@ class LibrarySettings(SettingsGrid):
         self._clear_btn.set_can_focus(False)
         self._clear_btn.connect('clicked', self._on_clear_colors)
         self.attach_right(self._clear_btn, cache_label)
-        self.show_all()
+        # self.show_all()
 
     def _on_clear_colors(self, btn):
         self._cfg.clear_background_cache()
@@ -182,8 +192,7 @@ class OutputsSettings(SettingsGrid):
         )
 
     def _update(self):
-        for c in self.get_children():
-            self.remove(c)
+        self.clear()
         prev = None
 
         for output in self._outputs:
@@ -206,7 +215,7 @@ class OutputsSettings(SettingsGrid):
             else:
                 self.attach_under(box, prev)
             prev = box
-        self.show_all()
+        # self.show_all()
 
 
 class InterfaceSettings(SettingsGrid):
@@ -218,15 +227,17 @@ class InterfaceSettings(SettingsGrid):
 
     def __init__(self, cfg):
         super(InterfaceSettings, self).__init__()
-        album_size_lbl = Gtk.Label('Album size in grid')
+        album_size_lbl = Gtk.Label()
+        album_size_lbl.set_label('Album size in grid')
         album_size_lbl.set_xalign(0)
-        self.add(album_size_lbl)
+        self.attach(album_size_lbl, 0, 0, 1, 1)
 
         min_sz = 80
         max_sz = 420
         incr = 40
         self._album_sizes = []
-        self._album_scale = album_size_scale = Gtk.HScale.new_with_range(
+        self._album_scale = album_size_scale = Gtk.Scale.new_with_range(
+            Gtk.Orientation.HORIZONTAL,
             min_sz,
             max_sz,
             incr
@@ -297,9 +308,11 @@ class SettingsMenu(Gtk.Popover):
         self._connstatus = connstatus
         self._connstatus.connect('mpd_connected', self._on_mpd_connection)
         spacing = 16
-        self.set_border_width(spacing)
-        self._box = Gtk.VBox()
-        self.add(self._box)
+        # self.set_border_width(spacing)
+        self._box = Gtk.Box()
+        self._box.set_orientation(Gtk.Orientation.VERTICAL)
+
+        self.set_child(self._box)
 
         notebook = Gtk.Notebook()
         notebook.set_tab_pos(Gtk.PositionType.LEFT)
@@ -309,15 +322,15 @@ class SettingsMenu(Gtk.Popover):
         self._output_settings = OutputsSettings()
         self._interface_settings = InterfaceSettings(cfg)
 
-        notebook.append_page(self._network_settings, Gtk.Label('Network'))
-        notebook.append_page(self._library_settings, Gtk.Label('Library'))
-        notebook.append_page(self._output_settings, Gtk.Label('Outputs'))
-        notebook.append_page(self._interface_settings, Gtk.Label('Interface'))
+        notebook.append_page(self._network_settings, Gtk.Label(label='Network'))
+        notebook.append_page(self._library_settings, Gtk.Label(label='Library'))
+        notebook.append_page(self._output_settings, Gtk.Label(label='Outputs'))
+        notebook.append_page(self._interface_settings, Gtk.Label(label='Interface'))
 
-        self._connect_label = Gtk.Label('Connect')
-        self._connected_label = Gtk.Label('Connected')
+        self._connect_label = 'Connect'
+        self._connected_label = 'Connected'
         self._connect_switch = Gtk.ToggleButton()
-        self._connect_switch.add(self._connect_label)
+        self._connect_switch.set_label(self._connect_label)
         self._connect_switch.connect(
             'notify::active',
             self._on_user_connect_change
@@ -350,9 +363,9 @@ class SettingsMenu(Gtk.Popover):
             self._on_album_scale_change
         )
 
-        self._box.add(notebook)
-        self._box.add(self._connect_switch)
-        self._box.show_all()
+        self._box.append(notebook)
+        self._box.append(self._connect_switch)
+        # self._box.show_all()
 
     def _on_album_scale_change(self, widget, gparam):
         size = widget.get_album_scale()
