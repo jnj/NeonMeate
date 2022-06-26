@@ -14,8 +14,9 @@ class NowPlaying(Gtk.Box):
         self._cover_art = None
         self._current = (None, None)
         self._covpath = None
-        self._box = Gtk.VBox()
-        self.add(self._box)
+        self._box = Gtk.Box()
+        self._box.set_orientation(Gtk.Orientation.VERTICAL)
+        self.append(self._box)
 
     def clear(self):
         self._current = (None, None)

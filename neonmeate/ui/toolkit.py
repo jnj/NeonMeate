@@ -65,7 +65,7 @@ class TimedInfoBar(Gtk.InfoBar):
 class AlbumArt:
     """
     Asynchronously resolved album artwork. This will initially be a
-    pixbuf that is the placeholder image, but will change to the album
+    pixbuf that is the placeholder image.py, but will change to the album
     artwork once that has been loaded.
     """
     ScaleMode = GdkPixbuf.InterpType.BILINEAR

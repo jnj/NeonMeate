@@ -2,6 +2,7 @@ from gi.repository import Gtk, GObject, GLib, Pango, Gdk
 
 from neonmeate.ui.songs_menu_widget import SongsMenu
 from neonmeate.ui.toolkit import add_pixbuf_border, AlbumArt, scale_pixbuf
+from neonmeate.util import image
 
 
 class Albums(Gtk.ScrolledWindow):
@@ -29,12 +30,12 @@ class Albums(Gtk.ScrolledWindow):
         self._model = Gtk.ListStore(GObject.TYPE_PYOBJECT)
         self._surface_cache = {}
         self._view = self._build_view()
-        self.add(self._view)
+        self.set_child(self._view)
         self.connect('notify::scale-factor', self._on_scale)
         self._selected_artist = None
         self._selected_album = None
         self._artists = []
-        self.show_all()
+        # self.show_all()
 
     def _colspacing(self):
         return int(1.3 * (self._options.col_spacing // self.get_scale_factor()))
@@ -43,7 +44,7 @@ class Albums(Gtk.ScrolledWindow):
         self.set_min_content_width(self._album_width() + self._colspacing())
         self._create_placeholder_surface()
 
-        view = Gtk.IconView(self._model)
+        view = Gtk.IconView.new_with_model(self._model)
         view.set_hexpand(True)
         view.set_selection_mode(Gtk.SelectionMode.NONE)
         view.set_column_spacing(self._colspacing())
@@ -69,8 +70,10 @@ class Albums(Gtk.ScrolledWindow):
         txt_render.set_property('ellipsize', Pango.EllipsizeMode.END)
         view.pack_start(txt_render, False)
         view.set_cell_data_func(txt_render, render_album_info, None)
-        view.connect('button-press-event', self._on_button_press)
-        view.show_all()
+        event_control = Gtk.GestureClick()
+        event_control.connect('pressed', self._on_button_press)
+        view.add_controller(event_control)
+        # view.show_all()
         return view
 
     def _render_cover(self, view, cell, model, iter, placeholder_pb):
@@ -142,7 +145,7 @@ class Albums(Gtk.ScrolledWindow):
         flags = Gtk.StateFlags.NORMAL
         return self._border_style_context.get_background_color(flags)
 
-    def _on_button_press(self, widget, event):
+    def _on_button_press(self, widget, npress, x, y, user_data):
         path, path_iter = self._get_path_at_position(event, widget)
         if path:  # event.button == Gdk.BUTTON_PRIMARY and path:
             popover = SongsMenu(self._model[path_iter][0], self._mpdclient)
@@ -178,10 +181,10 @@ class Albums(Gtk.ScrolledWindow):
         return True
 
     def pixbuf_surface(self, pixbuf):
-        return Gdk.cairo_surface_create_from_pixbuf(
+        return image.cairo_surface_create_from_pixbuf(
             pixbuf,
             self.get_scale_factor(),
-            self.get_window()
+            None #self.get_window()
         )
 
     def set_artists(self, artists):

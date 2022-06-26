@@ -121,24 +121,16 @@ class App(Gtk.ApplicationWindow):
             self._on_playlist_pending_change
         )
         self._now_playing = NowPlaying(rng, art_cache, executor, cfg)
-        self._stack.add_named(self._artists, 'library')
-        self._stack.add_named(self._playlist, 'playlist')
-        self._stack.add_named(self._now_playing, 'now_playing')
-        self._stack.child_set_property(
-            self._artists,
-            'icon-name',
-            'view-grid-symbolic'
-        )
-        self._stack.child_set_property(
-            self._playlist,
-            'icon-name',
-            'view-list-bullet-symbolic'
-        )
-        self._stack.child_set_property(
-            self._now_playing,
-            'icon-name',
-            'emblem-music-symbolic'
-        )
+
+        stack_page = self._stack.add_named(self._artists, 'library')
+        stack_page.set_icon_name('view-grid-symbolic')
+
+        stack_page = self._stack.add_named(self._playlist, 'playlist')
+        stack_page.set_icon_name('view-list-bullet-symbolic')
+
+        stack_page = self._stack.add_named(self._now_playing, 'now_playing')
+        stack_page.set_icon_name('emblem-music-symbolic')
+
         self._stack_switcher = Gtk.StackSwitcher()
         self._stack_switcher.set_stack(self._stack)
         self._stack.connect('notify::visible-child', self._on_stack_change)
@@ -149,8 +141,8 @@ class App(Gtk.ApplicationWindow):
         self._titlebar.pack_start(self._spinner)
         self._titlebar.pack_end(self._volume_btn)
         self._titlebar.pack_end(self._settings_btn)
-        self._main_box.pack_start(self._stack, True, True, 0)
-        self._main_box.pack_end(self._controlsbar, False, False, 0)
+        self._main_box.prepend(self._stack)
+        self._main_box.append(self._controlsbar)
 
         self._mpdhb.connect(Hb.SIG_SONG_ELAPSED, self._on_song_elapsed)
         self._mpdhb.connect(

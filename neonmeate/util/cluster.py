@@ -366,7 +366,7 @@ def main(args):
     import time
 
     parser = argparse.ArgumentParser(prog='cluster',
-                                     description='Clusterize an image using k-means',
+                                     description='Clusterize an image.py using k-means',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('file', help='jpg file path')
     parser.add_argument('-p', '--pct', help='percentage', default=25, type=int)

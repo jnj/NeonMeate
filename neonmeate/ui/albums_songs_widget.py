@@ -24,13 +24,13 @@ class AlbumsAndSongs(Gtk.Box):
             Albums.SIG_ALBUM_SELECTED,
             self._on_album_selected
         )
-        self.add(self._albums)
+        self.append(self._albums)
         self._albums_list = []
         self._artist_by_name = {}
         self._selected_artist = None
         self._selected_album = None
         self._current_songs = None
-        self.show_all()
+        # self.show_all()
 
     def _on_album_selected(self, albums, index):
         album = albums.get_selected_album()

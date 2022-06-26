@@ -90,9 +90,9 @@ def main(args=None):
             connstatus
         )
 
-        main_window.connect('destroy', Gtk.main_quit)
+        # main_window.connect('destroy', Gtk.main_quit)
         main_window.set_title('NeonMeate')
-        main_window.show_all()
+        # main_window.show_all()
 
         @toolkit.glib_main
         def connect():

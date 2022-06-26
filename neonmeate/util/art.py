@@ -140,7 +140,7 @@ class ArtCache(GObject.GObject):
 
     def fetch(self, file_path, callback, user_data):
         """
-        Asynchronously loads the image at file_path
+        Asynchronously loads the image.py at file_path
         and provides it to the callback as a GdkPixbuf
         instance.
 
@@ -195,7 +195,7 @@ class ArtCache(GObject.GObject):
 
 class ArtRequest:
     """
-    A request to fetch an image file. Once the file has
+    A request to fetch an image.py file. Once the file has
     been loaded, the associated callbacks will be called
     on the GTK main thread.
     """
