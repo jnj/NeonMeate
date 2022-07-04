@@ -21,9 +21,9 @@ class App(Gtk.ApplicationWindow):
         'stop': (False, True)
     }
 
-    def __init__(self, rng, mpdclient, executor, art_cache, mpd_hb, cfg,
+    def __init__(self, app, rng, mpdclient, executor, art_cache, mpd_hb, cfg,
                  configstate, connstatus):
-        Gtk.ApplicationWindow.__init__(self, title=App.Title)
+        Gtk.ApplicationWindow.__init__(self, application=app, title=App.Title)
         self._connstatus = connstatus
         self._configstate = configstate
         self.name = App.Title
@@ -296,7 +296,7 @@ class App(Gtk.ApplicationWindow):
         title_text = 'NeonMeate'
         if artist and title:
             title_text = f'{artist} - {title}'
-        self._titlebar.set_title(title_text)
+        #self._titlebar.set_title(title_text)
         if artist is None:
             self._now_playing.clear()
             return

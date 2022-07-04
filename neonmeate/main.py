@@ -60,56 +60,68 @@ def parseargs(args):
     return p.parse_args(args)
 
 
+class NeonMeate(Gtk.Application):
+    def __init__(self, options):
+        super(NeonMeate, self).__init__()
+        configure_logging(options.debug)
+        cfg = config.Config.load_main_config()
+        configstate = config.ConfigState()
+        configstate.init_from_cfg(cfg)
+        rng = random.Random()
+        rng.seed(int(1000 * time.time()))
+
+        with thread.ScheduledExecutor(log_errors, log_errors) as executor:
+            connstatus = nmpd.MpdConnectionStatus()
+            mpdclient = nmpd.Mpd(executor, configstate, connstatus)
+            hb_interval = cfg.mpd_hb_interval()
+            hb = nmpd.MpdHeartbeat(mpdclient, hb_interval, executor, connstatus)
+            art_cache = artcache.ArtCache(configstate, executor)
+
+
+            @toolkit.glib_main
+            def connect():
+                if cfg.is_connected():
+                    main_window.on_connect_attempt(
+                        None,
+                        cfg.mpd_host(),
+                        cfg.mpd_port(),
+                        True
+                    )
+
+            def on_activate(appl):
+                main_window = app.App(
+                    appl,
+                    rng,
+                    mpdclient,
+                    executor,
+                    art_cache,
+                    hb,
+                    cfg,
+                    configstate,
+                    connstatus
+                )
+
+                # main_window.connect('destroy', Gtk.main_quit)
+                main_window.set_title('NeonMeate')
+                # main_window.show_all()
+                connect()
+                main_window.present()
+
+            self.connect('activate', on_activate)
+            # Gtk.main()
+            hb.stop()
+            cfg.set_connected(connstatus.is_connected())
+            cfg.save(config.main_config_file())
+            logging.shutdown()
+
+
 # noinspection PyUnresolvedReferences
 def main(args=None):
     if not args:
         args = sys.argv[1:]
     options = parseargs(args)
-    configure_logging(options.debug)
-    cfg = config.Config.load_main_config()
-    configstate = config.ConfigState()
-    configstate.init_from_cfg(cfg)
-    rng = random.Random()
-    rng.seed(int(1000 * time.time()))
-
-    with thread.ScheduledExecutor(log_errors, log_errors) as executor:
-        connstatus = nmpd.MpdConnectionStatus()
-        mpdclient = nmpd.Mpd(executor, configstate, connstatus)
-        hb_interval = cfg.mpd_hb_interval()
-        hb = nmpd.MpdHeartbeat(mpdclient, hb_interval, executor, connstatus)
-        art_cache = artcache.ArtCache(configstate, executor)
-
-        main_window = app.App(
-            rng,
-            mpdclient,
-            executor,
-            art_cache,
-            hb,
-            cfg,
-            configstate,
-            connstatus
-        )
-
-        # main_window.connect('destroy', Gtk.main_quit)
-        main_window.set_title('NeonMeate')
-        # main_window.show_all()
-
-        @toolkit.glib_main
-        def connect():
-            if cfg.is_connected():
-                main_window.on_connect_attempt(
-                    None,
-                    cfg.mpd_host(),
-                    cfg.mpd_port(),
-                    True
-                )
-
-        connect()
-        Gtk.main()
-        hb.stop()
-        cfg.set_connected(connstatus.is_connected())
-        cfg.save(config.main_config_file())
-        logging.shutdown()
+    application = NeonMeate(options)
+    application.run(None)
 
 
 if __name__ == '__main__':
