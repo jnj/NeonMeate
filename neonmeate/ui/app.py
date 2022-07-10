@@ -1,7 +1,7 @@
 import logging
 import os
 
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Gdk, Adw
 
 from .artistsalbums import ArtistsAlbums
 from .controls import ControlsBar, ControlButtons, PlayModeButtons
@@ -185,12 +185,13 @@ class App(Gtk.ApplicationWindow):
         self._artists.on_theme_change()
 
     def _on_stack_change(self, s, obj):
-        if 'playlist' == self._stack.get_visible_child_name():
-            self._stack.child_set_property(
-                self._playlist,
-                'needs-attention',
-                False
-            )
+        pass
+        # if 'playlist' == self._stack.get_visible_child_name():
+        #     self._stack.child_set_property(
+        #         self._playlist,
+        #         'needs-attention',
+        #         False
+        #     )
 
     def _on_playlist_pending_change(self, widget):
         self._spinner.start()
@@ -207,7 +208,7 @@ class App(Gtk.ApplicationWindow):
 
     def on_connect_attempt(self, settings, host, port, should_connect):
         with self._settings.handler_block(self._connect_handler):
-            if self._connstatus == should_connect:
+            if self._connstatus.is_connected() == should_connect:
                 return
             if should_connect:
                 if self._playlist_updated:

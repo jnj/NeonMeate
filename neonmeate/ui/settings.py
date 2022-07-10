@@ -206,14 +206,14 @@ class OutputsSettings(SettingsGrid):
             switch.set_can_focus(False)
             name = output['outputname']
             id = output['outputid']
-            box.pack_start(label, False, False, 10)
-            box.pack_end(switch, False, False, 0)
+            box.prepend(label)
+            box.append(switch)
             self._connect_switch(switch, id, name)
 
-            if prev is None:
-                self.add(box)
-            else:
-                self.attach_under(box, prev)
+            # if prev is None:
+            #     self.attach_under(box)
+            # else:
+            #     self.attach_under(box, prev)
             prev = box
         # self.show_all()
 
@@ -384,10 +384,8 @@ class SettingsMenu(Gtk.Popover):
         switch = self._connect_switch
         switch.set_active(success)
         label = self._connected_label if success else self._connect_label
-        for c in switch.get_children():
-            switch.remove(c)
-        switch.add(label)
-        switch.show_all()
+        switch.set_label(label)
+        # switch.show_all()
 
     def _on_update_request(self, btn):
         self.emit(SettingsMenu.SIG_UPDATE_REQUESTED)
