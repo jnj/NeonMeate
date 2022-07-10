@@ -152,7 +152,7 @@ class Column(Gtk.ListBox):
         label.set_margin_bottom(self._vmargin)
         label.set_margin_start(self._vmargin)
         label.show()
-        self.add(label)
+        self.append(label)
         self._children.append(label)
 
     def _on_row_selected(self, box, row):
