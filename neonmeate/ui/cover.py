@@ -51,8 +51,9 @@ class CoverWithGradient(Gtk.DrawingArea):
         self.edge_size = self.w
         self.set_size_request(self.h, self.w)
         self.pixbuf = pixbuf
-        self.connect('draw', self.draw)
-        self.connect('size-allocate', self.alloc)
+        # self.connect('draw', self.draw)
+        self.set_draw_func(self.draw, None, None)
+        self.connect('resize', self.alloc)
         self._grad = Gradient.gray()
         self._border_rgb = 1, 1, 1
         self._is_default_grad = True
@@ -110,12 +111,12 @@ class CoverWithGradient(Gtk.DrawingArea):
             self._border_rgb = border_rgb.components()
             self.queue_draw()
 
-    def alloc(self, widget, allocation):
-        self.h = allocation.height
-        self.w = allocation.width
+    def alloc(self, widget, w, h):
+        self.h = h
+        self.w = w
         self.edge_size = min(self.w, self.h)
 
-    def draw(self, draw_area_obj, ctx):
+    def draw(self, draw_area_obj, ctx, w, h, user_data, x):
         grad = cairo.LinearGradient(0, 0, 0, self.h)
         grad.add_color_stop_rgb(0, *self._grad.start.rgb)
         grad.add_color_stop_rgb(1, *self._grad.stop.rgb)
