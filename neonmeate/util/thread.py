@@ -8,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 from ..ui.toolkit import glib_main
 
 
-def signal_subcribe_on_main(connect_fn, signal_name, callback, *args):
+def signal_subscribe_on_main(connect_fn, signal_name, callback, *args):
     """
     Connects to a signal, but decorates the handler function
     such that it will be called by the main GLib thread.

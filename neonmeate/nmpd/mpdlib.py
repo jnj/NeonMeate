@@ -564,7 +564,7 @@ class MpdHeartbeat(GObject.GObject):
         class emits. The handler will be called on the main GTK thread.
 
         """
-        return thread.signal_subcribe_on_main(
+        return thread.signal_subscribe_on_main(
             super(MpdHeartbeat, self).connect,
             signal_name,
             handler,
