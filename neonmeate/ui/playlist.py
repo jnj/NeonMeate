@@ -135,6 +135,7 @@ class Playlist(Gtk.ScrolledWindow):
         )
         self._selected_indices = []
         self._treeview = self._playlist_table.as_widget()
+        self._treeview.set_vexpand(True)
         self.set_child(self._treeview)
         self._playlist_table.set_selection_handler(self._on_selection)
         key_event_ctrl = Gtk.EventControllerKey()
