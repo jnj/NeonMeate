@@ -17,7 +17,8 @@ class ArtistsWidget(Gtk.Box):
     }
 
     def __init__(self, mpdclient, include_comps):
-        super(ArtistsWidget, self).__init__(orientation=Gtk.Orientation.VERTICAL)
+        super(ArtistsWidget, self).__init__(
+            orientation=Gtk.Orientation.VERTICAL)
         self._artists = Artists(mpdclient, include_comps)
         self._searchbar = Gtk.ActionBar()
         self._search_entry = Gtk.SearchEntry()
@@ -73,8 +74,9 @@ class Artists(Gtk.ScrolledWindow):
         super(Artists, self).__init__()
         self._include_comps = include_comps
         self.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        #self.set_shadow_type(Gtk.ShadowType.NONE)
+        # self.set_shadow_type(Gtk.ShadowType.NONE)
         self._artist_column = Column(vmargin=15, selectable_rows=True)
+        self._artist_column.set_vexpand(True)
         self.set_child(self._artist_column)
         self._mpd = mpdclient
         self._artist_column.connect(
