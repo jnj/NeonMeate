@@ -234,6 +234,7 @@ class ControlsBar(Gtk.ActionBar):
 
     def __init__(self):
         super(ControlsBar, self).__init__()
+        self.set_hexpand(True)
         self._ctrl_btns = ControlButtons()
         self._mode_btns = PlayModeButtons()
         self._progress = SongProgress()
@@ -241,9 +242,14 @@ class ControlsBar(Gtk.ActionBar):
         self._time_label.set_margin_start(6)
         self._time_label.set_margin_end(6)
         self.pack_start(self._ctrl_btns)
-        self.pack_start(self._progress)
-        self.pack_start(self._time_label)
-        self.pack_start(self._mode_btns)
+
+        center_box = Gtk.Box()
+        center_box.set_hexpand(True)
+        center_box.append(self._time_label)
+        center_box.append(self._progress)
+        self.set_center_widget(center_box)
+
+        self.pack_end(self._mode_btns)
 
         for signame in [ControlButtons.SIG_STOP_PLAYING,
                         ControlButtons.SIG_START_PLAYING,

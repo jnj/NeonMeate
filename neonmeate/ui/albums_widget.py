@@ -1,4 +1,4 @@
-from gi.repository import Gtk, GObject, GLib, Pango, Gdk
+from gi.repository import Gtk, GObject, GLib, Pango, Gdk, Gio
 
 from neonmeate.ui.songs_menu_widget import SongsMenu
 from neonmeate.ui.toolkit import add_pixbuf_border, AlbumArt, scale_pixbuf
@@ -27,7 +27,9 @@ class Albums(Gtk.ScrolledWindow):
         self._art = art_cache
         self._mpdclient = mpdclient
         self._border_color = border_style_context.get_color()
-        self._model = Gtk.ListStore(GObject.TYPE_PYOBJECT)
+        # self._model = Gtk.ListStore(GObject.TYPE_PYOBJECT)
+        liststore = Gio.ListStore()
+        self._model = liststore
         self._surface_cache = {}
         self._view = self._build_view()
         self.set_child(self._view)
@@ -44,13 +46,17 @@ class Albums(Gtk.ScrolledWindow):
         self.set_min_content_width(self._album_width() + self._colspacing())
         self._create_placeholder_surface()
 
-        view = Gtk.IconView.new_with_model(self._model)
+        #view = Gtk.IconView.new_with_model(self._model)
+        view = Gtk.GridView()
+        sel_model = Gtk.SingleSelection()
+        sel_model.set_model(self._model)
+        view.set_model(sel_model)
         view.set_hexpand(True)
-        view.set_selection_mode(Gtk.SelectionMode.NONE)
-        view.set_column_spacing(self._colspacing())
-        view.set_row_spacing(self._options.row_spacing)
+        #view.set_selection_mode(Gtk.SelectionMode.NONE)
+        # view.set_column_spacing(self._colspacing())
+        # view.set_row_spacing(self._options.row_spacing)
         view.set_has_tooltip(True)
-        view.set_item_width(self._options.album_size)
+        # view.set_item_width(self._options.album_size)
         view.connect('query-tooltip', self._on_tooltip)
         renderer = Gtk.CellRendererPixbuf()
         view.pack_start(renderer, False)

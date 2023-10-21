@@ -64,15 +64,15 @@ class ArtistsAlbums(Gtk.Overlay):
         separator = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
         columns.prepend(separator)
 
-        self._albums_songs = AlbumsAndSongs(
-            self._mpdclient,
-            self._art,
-            self._album_placeholder_pixbuf,
-            album_view_opts,
-            style_context
-        )
+        # self._albums_songs = AlbumsAndSongs(
+        #     self._mpdclient,
+        #     self._art,
+        #     self._album_placeholder_pixbuf,
+        #     album_view_opts,
+        #     style_context
+        # )
 
-        columns.append(self._albums_songs)
+        #columns.append(self._albums_songs)
         self._box.append(columns)
         # self.show_all()
 
