@@ -37,7 +37,10 @@ class App(Gtk.ApplicationWindow):
         self._playlist_updated = False
         self.set_default_size(860, 860)
         self._titlebar = Gtk.HeaderBar()
-        #self._titlebar.set_title("NeonMeate")
+        self._default_title_label = Gtk.Label()
+        self._default_title_label.set_text("NeonMeate")
+        self._title_label = Gtk.Label()
+        self._titlebar.set_title_widget(self._default_title_label)
         # self._titlebar.set_show_close_button(True)
         self.set_titlebar(self._titlebar)
 
@@ -218,7 +221,7 @@ class App(Gtk.ApplicationWindow):
                 self._settings.on_outputs(self._mpdclient.get_outputs())
             else:
                 self._playlist_updated = False
-                self._titlebar.set_title('NeonMeate')
+                self._titlebar.set_title_widget(self._default_title_label)
                 self._artists.on_mpd_connected(False)
                 self._playlist.clear()
                 self._now_playing.on_connection_status(False)
@@ -297,7 +300,8 @@ class App(Gtk.ApplicationWindow):
         title_text = 'NeonMeate'
         if artist and title:
             title_text = f'{artist} - {title}'
-        #self._titlebar.set_title(title_text)
+        self._title_label.set_text(title_text)
+        self._titlebar.set_title_widget(self._title_label)
         if artist is None:
             self._now_playing.clear()
             return
