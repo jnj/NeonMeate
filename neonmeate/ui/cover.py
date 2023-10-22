@@ -9,7 +9,7 @@ from gi.repository import GdkPixbuf, Gtk, Gdk, GLib
 from neonmeate.util import cluster
 from neonmeate.util.color import RGBColor
 from neonmeate.ui.toolkit import glib_main
-from PIL import Image, ImageFilter
+from PIL import Image, ImageFilter, ImageEnhance
 
 gi.require_version('Gtk', '3.0')
 gi.require_foreign('cairo')
@@ -75,6 +75,8 @@ class CoverWithGradient(Gtk.DrawingArea):
         img = Image.frombytes(mode, (w, h), pb_data,  'raw', mode, stride)
         img = img.filter(ImageFilter.GaussianBlur(radius=40))
         img = img.filter(ImageFilter.SMOOTH_MORE)
+        to_bw = ImageEnhance.Color(img)
+        img = to_bw.enhance(0.5)
         self._blurred = GdkPixbuf.Pixbuf.new_from_bytes(
             GLib.Bytes.new(img.tobytes()),
             GdkPixbuf.Colorspace.RGB,
