@@ -74,7 +74,10 @@ class Config:
     @staticmethod
     def load_from(file):
         with open(file, 'r') as f:
-            return Config(json.load(f))
+            try:
+                return Config(json.load(f))
+            except json.decoder.JSONDecodeError:
+                return Config({})
 
     @staticmethod
     def hash_file(filepath):

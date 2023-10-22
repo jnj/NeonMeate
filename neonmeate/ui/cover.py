@@ -1,12 +1,15 @@
 import cairo
 import gi
 import logging
+import PIL
+import array
 
-from gi.repository import GdkPixbuf, Gtk, Gdk
+from gi.repository import GdkPixbuf, Gtk, Gdk, GLib
 
 from neonmeate.util import cluster
 from neonmeate.util.color import RGBColor
 from neonmeate.ui.toolkit import glib_main
+from PIL import Image, ImageFilter
 
 gi.require_version('Gtk', '3.0')
 gi.require_foreign('cairo')
@@ -57,10 +60,30 @@ class CoverWithGradient(Gtk.DrawingArea):
         self._grad = Gradient.gray()
         self._border_rgb = 1, 1, 1
         self._is_default_grad = True
-        self._border_thickness = 8
+        self._border_thickness = 4
         self.artist = artist
         self.album = album
         self.covpath = covpath
+
+        pb_data = self.pixbuf.get_pixels()
+        w = self.pixbuf.props.width
+        h = self.pixbuf.props.height
+        stride = self.pixbuf.props.rowstride
+        mode = 'RGB'
+        if self.pixbuf.props.has_alpha == True:
+            mode = 'RGBA'
+        img = Image.frombytes(mode, (w, h), pb_data,  'raw', mode, stride)
+        img = img.filter(ImageFilter.GaussianBlur(radius=40))
+        img = img.filter(ImageFilter.SMOOTH_MORE)
+        self._blurred = GdkPixbuf.Pixbuf.new_from_bytes(
+            GLib.Bytes.new(img.tobytes()),
+            GdkPixbuf.Colorspace.RGB,
+            mode == 'RGBA',
+            8,
+            w,
+            h,
+            stride
+        )
 
         def on_gradient_ready(fut):
             ex = fut.exception(timeout=1)
@@ -79,11 +102,9 @@ class CoverWithGradient(Gtk.DrawingArea):
 
                 bordercolor, start = result.complementary(), result.dominant()
                 self._update_grad(start, bordercolor)
-                self._cfg.save_clusters(self.artist, self.album, clusters,
-                                        self.covpath)
+                self._cfg.save_clusters(self.artist, self.album, clusters, self.covpath)
 
         border, bg = self._cfg.get_background(artist, album, covpath, rng)
-
         if border is not None and bg is not None:
             self.logger.debug(f'Found cached clusters for {covpath}')
             a, b = CoverWithGradient.rand_switch(self._rng, border, bg)
@@ -117,12 +138,17 @@ class CoverWithGradient(Gtk.DrawingArea):
         self.edge_size = min(self.w, self.h)
 
     def draw(self, draw_area_obj, ctx):
-        grad = cairo.LinearGradient(0, 0, 0, self.h)
-        grad.add_color_stop_rgb(0, *self._grad.start.rgb)
-        grad.add_color_stop_rgb(1, *self._grad.stop.rgb)
-        ctx.set_source(grad)
-        ctx.rectangle(0, 0, self.w, self.h)
-        ctx.fill()
+        #grad = cairo.LinearGradient(0, 0, 0, self.h)
+        #grad.add_color_stop_rgb(0, *self._grad.start.rgb)
+        #grad.add_color_stop_rgb(1, *self._grad.stop.rgb)
+        #ctx.set_source(grad)
+        #ctx.rectangle(0, 0, self.w, self.h)
+        #ctx.fill()
+
+        blurred = self._scalepb(self._blurred, self.w, self.h)
+        Gdk.cairo_set_source_pixbuf(ctx, blurred, 0, 0)
+        ctx.paint()
+
         edge_size = self.edge_size - 200
         p = self._scale(edge_size)
         pixbuf_x = (self.w - p.get_width()) / 2
@@ -141,3 +167,6 @@ class CoverWithGradient(Gtk.DrawingArea):
 
     def _scale(self, size):
         return self.pixbuf.scale_simple(size, size, CoverWithGradient.ScaleMode)
+
+    def _scalepb(self, pb, w, h):
+        return pb.scale_simple(w, h, CoverWithGradient.ScaleMode)
