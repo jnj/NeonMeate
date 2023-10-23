@@ -72,7 +72,7 @@ class CoverWithGradient(Gtk.DrawingArea):
         mode = 'RGB'
         if self.pixbuf.props.has_alpha == True:
             mode = 'RGBA'
-        img = Image.frombytes(mode, (w, h), pb_data,  'raw', mode, stride)
+        img = Image.frombytes(mode, (w, h), pb_data,  'raw', 'RGB', stride)
         img = img.filter(ImageFilter.GaussianBlur(radius=40))
         img = img.filter(ImageFilter.SMOOTH_MORE)
         colorize = ImageEnhance.Color(img)
@@ -80,11 +80,11 @@ class CoverWithGradient(Gtk.DrawingArea):
         self._blurred = GdkPixbuf.Pixbuf.new_from_bytes(
             GLib.Bytes.new(img.tobytes()),
             GdkPixbuf.Colorspace.RGB,
-            mode == 'RGBA',
-            8,
+            self.pixbuf.props.has_alpha,
+            self.pixbuf.props.bits_per_sample,
             w,
             h,
-            stride
+            3 * w
         )
 
         def on_gradient_ready(fut):
